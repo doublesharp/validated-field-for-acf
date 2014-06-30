@@ -298,13 +298,25 @@ class acf_field_validated_field extends acf_field {
 			if ( $valid && ! empty( $value ) && ! empty( $unique ) && $unique != 'non-unique' ){
 				global $wpdb;
 				$status_in = "'" . implode( "','", $field['unique_statuses'] ) . "'";
+
+				// WPML compatibility, get code list of active languages
+				if ( function_exists( 'icl_object_id' ) ){
+					$languages = $wpdb->get_results( "SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = 1", ARRAY_A );
+					$wpml_ids = array();
+					foreach( $languages as $lang ){
+						$wpml_ids[] = (int) icl_object_id( $post_id, $post_type, true, $lang['code'] );
+					}
+					$post_ids = implode( ',', array_unique( $wpml_ids ) );
+				} else {
+					$post_ids = array( (int) $post_id );
+				}
+
 				$sql_prefix = "SELECT pm.meta_id AS meta_id, pm.post_id AS post_id, p.post_title AS post_title FROM {$wpdb->postmeta} pm JOIN {$wpdb->posts} p ON p.ID = pm.post_id AND p.post_status IN ($status_in)";
 				switch ( $unique ){
 					case 'global': 
 						// check to see if this value exists anywhere in the postmeta table
 						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND post_id != %d WHERE ( meta_value = %s OR meta_value LIKE %s )", 
-							$post_id, 
+							"{$sql_prefix} AND post_id NOT IN [NOT_IN] WHERE ( meta_value = %s OR meta_value LIKE %s )",
 							$value,
 							'%"' . like_escape( $value ) . '"%'
 						);
@@ -312,9 +324,8 @@ class acf_field_validated_field extends acf_field {
 					case 'post_type':
 						// check to see if this value exists in the postmeta table with this $post_id
 						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND p.post_type = %s AND post_id != %d WHERE ( meta_value = %s OR meta_value LIKE %s )", 
-							$post_type, 
-							$post_id, 
+							"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN [NOT_IN] WHERE ( meta_value = %s OR meta_value LIKE %s )", 
+							$post_type,
 							$value,
 							'%"' . like_escape( $value ) . '"%'
 						);
@@ -324,23 +335,20 @@ class acf_field_validated_field extends acf_field {
 						if ( $is_repeater ){
 							$this_key = $parent_field['name'] . '_' . $index . '_' . $field['name'];
 							$meta_key = $parent_field['name'] . '_%_' . $field['name'];
-							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND p.post_type = %s WHERE ( ( post_id = %d AND meta_key != %s AND meta_key LIKE %s ) OR ( post_id != %d AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
-								$post_type, 
-								$post_id, 
-								$this_key, 
-								$meta_key, 
-								$post_id, 
-								$meta_key, 
+							$sql = $wpdb->prepare(
+								"{$sql_prefix} AND p.post_type = %s WHERE ( ( post_id NOT IN [NOT_IN] AND meta_key != %s AND meta_key LIKE %s ) OR ( post_id NOT IN [NOT_IN] AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
+								$post_type,
+								$this_key,
+								$meta_key,
+								$meta_key,
 								$value,
 								'%"' . like_escape( $value ) . '"%'
 							);
 						} else {
 							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND p.post_type = %s AND post_id != %d WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
-								$post_type, 
-								$post_id, 
-								$field['name'], 
+								"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN ([NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+								$post_type,
+								$field['name'],
 								$value,
 								'%"' . like_escape( $value ) . '"%'
 							);
@@ -354,6 +362,10 @@ class acf_field_validated_field extends acf_field {
 
 				// Only run if we hit a condition above
 				if ( ! empty( $sql ) ){
+
+					// Update the [NOT_IN] values
+					$sql = $this->prepare_not_in( $sql, $post_ids );
+
 					// Execute the SQL
 					$rows = $wpdb->get_results( $sql );
 					if ( count( $rows ) ){
@@ -380,6 +392,19 @@ class acf_field_validated_field extends acf_field {
 		// Send the results back to the browser as JSON
 		echo json_encode( $return_fields, $this->debug? JSON_PRETTY_PRINT : 0 );
 		die();
+	}
+
+	private function prepare_not_in( $sql, $post_ids ){
+		global $wpdb;
+		$not_in_count = substr_count( $sql, '[NOT_IN]' );
+		if ( $not_in_count > 0 ){
+			$args = array( str_replace( '[NOT_IN]', implode( ', ', array_fill( 0, count( $post_ids ), '%d' ) ), str_replace( '%', '%%', $sql ) ) );
+			for ( $i=0; $i < substr_count( $sql, '[NOT_IN]' ); $i++ ) { 
+				$args = array_merge( $args, $post_ids );
+			}
+			$sql = call_user_func_array( array( $wpdb, 'prepare' ), $args );
+		}
+		return $sql;
 	}
 
 	/*

@@ -45,6 +45,7 @@ Validated Field will appear as a new input type in the field group editor.
 == Changelog ==
 = 1.3rc1 =
 * Support front end validation using [`acf_form()`](http://www.advancedcustomfields.com/resources/functions/acf_form/).
+* Support for WPML, props @gunnyst.
 * Move configuration to WordPress Admin under `Custom Fields > Validated Field Settings`.
 * Improved SQL for unique queries to support Relationship fields - check arrays and single IDs.
 * Fix conflicts with ACF client side validation.
