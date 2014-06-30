@@ -115,7 +115,7 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	function option_value( $key ){
-		return ( $option = get_option( $key ) )?
+		return ( false !== $option = get_option( $key ) )?
 			$option == $this->config[$key]['default'] :
 			$this->strbool[$this->config[$key]['default']];
 	}
