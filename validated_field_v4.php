@@ -22,32 +22,40 @@ class acf_field_validated_field extends acf_field {
 	function __construct(){
 		// vars
 		$this->slug 	= 'acf-validated-field';
+		$this->strbool 	= array( 'true' => true, 'false' => false );
 		$this->config 	= array(
 			'acf_vf_debug' => array(
-				'type' => 'checkbox',
-				'label' => 'Enable Debug',
-				'default' => 'false',
-				'help' => 'Check this box to turn on debugging for Validated Fields.',
+				'type' 		=> 'checkbox',
+				'label'  	=> 'Enable Debug',
+				'default' 	=> 'false',
+				'help' 		=> 'Check this box to turn on debugging for Validated Fields.',
 			),
 			'acf_vf_drafts' => array(
-				'type' => 'checkbox',
-				'default' => 'true',
-				'label' => 'Enable Draft Validation',
-				'help' => 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.',
+				'type' 		=> 'checkbox',
+				'default' 	=> 'true',
+				'label'  	=> 'Enable Draft Validation',
+				'help' 		=> 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.',
 			),
 			'acf_vf_frontend' => array(
-				'type' => 'checkbox',
-				'default' => 'false',
-				'label' => 'Enable Front-End Validation',
-				'help' => 'Check this box to turn on validation for front-end forms created with <code>acf_form()</code>.',
+				'type' 		=> 'checkbox',
+				'default' 	=> 'false',
+				'label'  	=> 'Enable Front-End Validation',
+				'help'		=> 'Check this box to turn on validation for front-end forms created with <code>acf_form()</code>.',
+			),
+			'acf_vf_frontend_css' => array(
+				'type' 		=> 'checkbox',
+				'default' 	=> 'true',
+				'label'  	=> 'Enqueue Admin CSS on Front-End',
+				'help' 		=> 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by <code>acf_form_head()</code>.',
 			),
 		);
 		$this->name		= 'validated_field';
-		$this->label	= __( 'Validated Field', 'acf_vf' );
+		$this->label 	= __( 'Validated Field', 'acf_vf' );
 		$this->category	= __( 'Basic', 'acf' );
-		$this->drafts	= ( $option = get_option( 'acf_vf_drafts' ) )? $option == 'true' : true;
-		$this->frontend = ( $option = get_option( 'acf_vf_frontend' ) )? $option == 'false' : false;
-		$this->debug	= ( $option = get_option( 'acf_vf_debug' ) )? $option == 'false' : false;
+		$this->drafts	= $this->option_value( 'acf_vf_drafts' );
+		$this->frontend = $this->option_value( 'acf_vf_frontend' );
+		$this->frontend_css = $this->option_value( 'acf_vf_frontend_css' );
+		$this->debug 	= $this->option_value( 'acf_vf_debug' );
 
 		$this->defaults = array(
 			'read_only' => false,
@@ -91,6 +99,10 @@ class acf_field_validated_field extends acf_field {
 
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'input_admin_head' ) );
 			if ( ! is_admin() && $this->frontend ){
+				if ( ! $this->frontend_css ){
+					add_action( 'acf/input/admin_enqueue_scripts',  array( &$this, 'remove_acf_form_style' ) );
+				}
+
 				add_action( 'wp_ajax_nopriv_validate_fields', array( &$this, 'ajax_validate_fields' ) );
 				add_action( 'wp_head', array( &$this, 'ajaxurl' ), 1 );
 				add_action( 'wp_head', array( &$this, 'input_admin_enqueue_scripts' ), 1 );
@@ -100,6 +112,12 @@ class acf_field_validated_field extends acf_field {
 				add_action( 'admin_menu', array( &$this, 'admin_add_menu' ), 11 );
 			}
 		}
+	}
+
+	function option_value( $key ){
+		return ( $option = get_option( $key ) )?
+			$option == $this->config[$key]['default'] :
+			$this->strbool[$this->config[$key]['default']];
 	}
 
 	function ajaxurl(){
@@ -127,11 +145,10 @@ class acf_field_validated_field extends acf_field {
 		    <?php do_settings_sections( $this->slug ); ?>
 			<table class="form-table">
 			<?php foreach ( $this->config as $key => $value ) { ?>
-			    <?php if ( false === ( $option = get_option( $key ) ) ){ $option = $value['default']; } ?>
 				<tr valign="top">
 					<th scope="row"><?php echo $value['label']; ?></th>
 					<td>
-						<input type="checkbox" id="<?php echo $key; ?>" name="<?php echo $key; ?>" value="<?php echo $value['default']; ?>" <?php if ( get_option( $key ) == $value['default'] ) echo 'checked'; ?>/>
+						<input type="checkbox" id="<?php echo $key; ?>" name="<?php echo $key; ?>" value="<?php echo $value['default']; ?>" <?php if ( $this->option_value( $key ) ) echo 'checked'; ?>/>
 						<small><em><?php echo $value['help']; ?></em></small>
 					</td>
 				</tr>
@@ -141,6 +158,10 @@ class acf_field_validated_field extends acf_field {
 		</form>
 		</div>
     	<?php
+	}
+
+	function remove_acf_form_style(){
+		wp_dequeue_style( array( 'colors-fresh' ) );
 	}
 
 	function setup_field( $field ){
