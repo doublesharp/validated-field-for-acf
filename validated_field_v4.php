@@ -327,7 +327,7 @@ class acf_field_validated_field extends acf_field {
 					foreach( $languages as $lang ){
 						$wpml_ids[] = (int) icl_object_id( $post_id, $post_type, true, $lang['code'] );
 					}
-					$post_ids = implode( ',', array_unique( $wpml_ids ) );
+					$post_ids = array_unique( $wpml_ids );
 				} else {
 					$post_ids = array( (int) $post_id );
 				}
