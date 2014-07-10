@@ -26,27 +26,27 @@ class acf_field_validated_field extends acf_field {
 		$this->config 	= array(
 			'acf_vf_debug' => array(
 				'type' 		=> 'checkbox',
-				'label'  	=> 'Enable Debug',
 				'default' 	=> 'false',
-				'help' 		=> 'Check this box to turn on debugging for Validated Fields.',
+				'label'  	=> __( 'Enable Debug', 'acf_vf' ),
+				'help' 		=> __( 'Check this box to turn on debugging for Validated Fields.', 'acf_vf' ),
 			),
 			'acf_vf_drafts' => array(
 				'type' 		=> 'checkbox',
 				'default' 	=> 'true',
-				'label'  	=> 'Enable Draft Validation',
-				'help' 		=> 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.',
+				'label'  	=> __( 'Enable Draft Validation',
+				'help' 		=> __( 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.', 'acf_vf' ),
 			),
 			'acf_vf_frontend' => array(
 				'type' 		=> 'checkbox',
 				'default' 	=> 'false',
-				'label'  	=> 'Enable Front-End Validation',
-				'help'		=> 'Check this box to turn on validation for front-end forms created with <code>acf_form()</code>.',
+				'label'  	=> __( 'Enable Front-End Validation',
+				'help'		=> __( 'Check this box to turn on validation for front-end forms created with', 'acf_vf' ) . ' <code>acf_form()</code>.',
 			),
 			'acf_vf_frontend_css' => array(
 				'type' 		=> 'checkbox',
 				'default' 	=> 'true',
-				'label'  	=> 'Enqueue Admin CSS on Front-End',
-				'help' 		=> 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by <code>acf_form_head()</code>.',
+				'label'  	=> __( 'Enqueue Admin CSS on Front-End',
+				'help' 		=> __( 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by', 'acf_vf' ) . ' <code>acf_form_head()</code>.',
 			),
 		);
 		$this->name		= 'validated_field';
