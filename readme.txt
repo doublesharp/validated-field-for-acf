@@ -3,7 +3,7 @@ Contributors: doublesharp
 Tags: acf, advanced custom fields, validation, validate, regex, php, mask, input, readonly, add-on, unique, input, edit
 Requires at least: 3.0
 Tested up to: 3.9.1
-Stable tag: 1.2.7
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,9 +32,12 @@ Requires [Advanced Custom Fields](http://wordpress.org/extend/plugins/advanced-c
 3. Configure validated fields within the Advanced Custom Fields menus
 
 == Frequently Asked Questions ==
-= I've activated the Validated Fields plugin, but nothing happens =
+= I've activated the Validated Field plugin, but nothing happens =
 Ensure that you have [Advanced Custom Fields](http://wordpress.org/extend/plugins/advanced-custom-fields/) installed, and that it is activated. 
 Validated Field will appear as a new input type in the field group editor.
+
+= Configuration Options =
+Global configurations for the Validated Field plugin can be found in the WordPress Admin under `Custom Fields > Validated Field Settings`.
 
 == Screenshots ==
 1. Example configuration to validate a telephone number field.
@@ -43,7 +46,7 @@ Validated Field will appear as a new input type in the field group editor.
 4. Example of PHP validation failure with the error message raised to the UI.
 
 == Changelog ==
-= 1.3rc1 =
+= 1.3 =
 * Support front end validation using [`acf_form()`](http://www.advancedcustomfields.com/resources/functions/acf_form/).
 * Support for WPML, props @gunnyst.
 * Move configuration to WordPress Admin under `Custom Fields > Validated Field Settings`.
@@ -51,8 +54,8 @@ Validated Field will appear as a new input type in the field group editor.
  * Drafts - enable draft validation, defaults to on.
  * Front End - enable front end validation, defaults to off.
  * Front End Admin CSS - enable `acf_form_head()` to enqueue an admin theme, defaults to on.
-* Improved SQL for unique queries to support Relationship fields - check arrays and single IDs.
-* Fix conflicts with ACF client side validation.
+* Improved SQL for unique queries to support Relationship fields - check both arrays and single IDs.
+* Fix conflicts with ACF client side validation (required fields, etc).
 * Fix reference to `$sub_field['read_only']` with `$field['read_only']` for jQuery masking, props @johnny_br.
 
 = 1.2.7 =
