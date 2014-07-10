@@ -337,7 +337,7 @@ class acf_field_validated_field extends acf_field {
 					case 'global': 
 						// check to see if this value exists anywhere in the postmeta table
 						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND post_id NOT IN [NOT_IN] WHERE ( meta_value = %s OR meta_value LIKE %s )",
+							"{$sql_prefix} AND post_id NOT IN ([NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )",
 							$value,
 							'%"' . like_escape( $value ) . '"%'
 						);
@@ -345,7 +345,7 @@ class acf_field_validated_field extends acf_field {
 					case 'post_type':
 						// check to see if this value exists in the postmeta table with this $post_id
 						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN [NOT_IN] WHERE ( meta_value = %s OR meta_value LIKE %s )", 
+							"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN ([NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )", 
 							$post_type,
 							$value,
 							'%"' . like_escape( $value ) . '"%'
@@ -357,7 +357,7 @@ class acf_field_validated_field extends acf_field {
 							$this_key = $parent_field['name'] . '_' . $index . '_' . $field['name'];
 							$meta_key = $parent_field['name'] . '_%_' . $field['name'];
 							$sql = $wpdb->prepare(
-								"{$sql_prefix} AND p.post_type = %s WHERE ( ( post_id NOT IN [NOT_IN] AND meta_key != %s AND meta_key LIKE %s ) OR ( post_id NOT IN [NOT_IN] AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
+								"{$sql_prefix} AND p.post_type = %s WHERE ( ( post_id NOT IN ([NOT_IN]) AND meta_key != %s AND meta_key LIKE %s ) OR ( post_id NOT IN ([NOT_IN]) AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
 								$post_type,
 								$this_key,
 								$meta_key,
