@@ -64,25 +64,81 @@ var vf = {
 		if (!vf.drafts&&clickObj.attr('id')!='publish') return true;
 		// gather form fields and values to submit to the server
 		var fields = [];
-		formObj.find('.validated-field:visible').each(function(){
-			parent = $(this).closest('.field');
-			
-			$(this).find(inputSelector).each(function(index, elem){
-				el = $(elem);
-				if (el.attr('name') && el.attr('name').indexOf('acfcloneindex')<0){
-					var field = { 
-							id: el.attr('name'),
-							value: el.val()
-					};
-					fields.push(field);
+
+		// inspect each of the validated fields
+		formObj.find('.field_type-validated_field').each( function(){
+			div = $(this);
+
+			// we want to show some of the hidden fields.
+			var validate = true;
+			if ( div.is(':hidden') ){
+				validate = false;
+
+				// if this field is hidden by a tab group, allow validation
+				if ( div.hasClass('acf-tab_group-hide') ){
+					validate = true;
+					
+					// vars
+					var $tab_field = div.prevAll('.field_type-tab:first'),
+						$tab_group = div.prevAll('.acf-tab-wrap:first');			
+					
+					// if the tab itself is hidden, bypass validation
+					if ( $tab_field.hasClass('acf-conditional_logic-hide') ){
+						validate = false;
+					} else {
+						// activate this tab as it holds hidden required field!
+						$tab = $tab_group.find('.acf-tab-button[data-key="' + $tab_field.attr('data-field_key') + '"]');
+					}
 				}
-			});
+			}
+			
+			// if is hidden by conditional logic, ignore
+			if ( div.hasClass('acf-conditional_logic-hide') ){
+				validate = false;
+			}
+			
+			// if field group is hidden, ignore
+			if ( div.closest('.postbox.acf-hidden').exists() ){
+				validate = false;		
+			}
+			
+			// we want to validate this field
+			if ( validate ){
+				if ( div.find('.acf_wysiwyg').exists() && typeof( tinyMCE ) == "object" ){
+					// wysiwyg
+					var id = div.find('.wp-editor-area').attr('id'),
+						editor = tinyMCE.get( id );
+					field = { 
+						id: div.find('.wp-editor-area').attr('name'),
+						value: editor.getContent()
+					};
+				} else if ( div.find('.acf_relationship, input[type="radio"], input[type="checkbox"]').exists() ) {
+					// relationship / radio / checkbox
+					sel = '.acf_relationship .relationship_right input, input[type="radio"]:checked, input[type="checkbox"]:checked';
+					field = { id: div.find('input[type="hidden"], ' + sel ).attr('name'), value: [] };
+					div.find( sel ).each( function(){
+						field.value.push( $( this ).val() );
+					});
+				} else {
+					// text / textarea / select
+					var text = div.find('input[type="text"], input[type="email"], input[type="number"], input[type="hidden"], textarea, select');
+					if ( text.exists() ){
+						field = { 
+								id: text.attr('name'),
+								value: text.val()
+						};
+					}
+				}
+
+				// add to the array to send to the server
+				fields.push( field );
+			}
 		});
 
 		$('.acf_postbox:hidden').remove();
 
 		// if there are no fields, don't make an ajax call.
-		if ( !fields.length ){
+		if ( ! fields.length ){
 			vf.valid = true;
 			return true;
 		} else {
