@@ -282,14 +282,48 @@ class acf_field_validated_field extends acf_field {
 						$this_key = $field['name'];
 						if ( $is_repeater ) $this_key .= '_' . $index . '_' . $sub_sub_field['name'];
 
-						$message = $field['message'];
-						$prev_value = get_post_meta( $post_id, $this_key, true );
+						// get the fields based on the keys and then index by the meta value for easy of use
+						$input_fields = array();
+						foreach ( $input_fields as $key => $val ){
+							if ( $false !== ( $input_field = get_field_object( $key, $post_id ) ) ){
+								$meta_key = $input_field['name'];
+								$input_fields[$meta_key] = array(
+									'field'=>$input_field,
+									'value'=>$val,
+									'prev_val'=>get_post_meta( $post_id, $meta_key, true )
+								);
+							}
+						}
+
+						// it gets tricky but we are trying to account for an capture bad php code where possible
+						$pattern = addcslashes( trim( $pattern ), "'" );
+						if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
+
+						$value = addslashes( $value );
+
+						$prev_value = addslashes( $prev_value );
+
 						$function_name = 'validate_' . preg_replace( '~[\\[\\]]+~', '_', $input['id'] ) . 'function';
 						
+					$php = <<<PHP
+if ( ! function_exists( '$function_name' ) ):
+function $function_name( \$args, &\$message ){
+	extract( \$args );
+	try {
+		\$code = '$pattern return true;';
+		return eval( \$code );
+	} catch ( Exception \$e ){
+		\$message = "Error: ".\$e->getMessage(); return false;
+	}
+}
+endif; // function_exists
+\$valid = $function_name( array( 'post_id'=>'$post_id', 'post_type'=>'$post_type', 'this_key'=>'$this_key', 'value'=>'$value', 'prev_value'=>'$prev_value', 'inputs'=>\$input_fields ), \$message );
+PHP;
+
 						// it gets tricky but we are trying to account for an capture bad php code where possible
 						$pattern = trim( $pattern );
 						if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
-						$php = 'function '.$function_name.'( $post_id, $post_type, $name, $value, $prev_value, &$message ) { '."\n";
+						$php = 'function '.$function_name.'( $post_id, $post_type, $name, $value, $prev_value, $inputs, &$message ) { '."\n";
 						$php.= '	try { '."\n";
 						$php.= '		$code = \'' . str_replace("'", "\'", $pattern . ' return true;' ) . '\';'."\n";
 						$php.= '		return eval( $code ); '."\n";
@@ -297,7 +331,7 @@ class acf_field_validated_field extends acf_field {
 						$php.= '		$message = "Error: ".$e->getMessage(); return false; '."\n";
 						$php.= '	} '."\n";
 						$php.= '} '."\n";
-						$php.= '$valid = '.$function_name.'( '.$post_id.', "'.$post_type.'", "'.$this_key.'", "'.addslashes( $value ).'", "'.addslashes( $prev_value ).'", $message );'."\n";
+						$php.= '$valid = '.$function_name.'( "'.$post_id.'", "'.$post_type.'", "'.$this_key.'", "'.addslashes( $value ).'", "'.addslashes( $prev_value ).'", $inputs, $message );'."\n";
 						
 						if ( true !== eval( $php ) ){			// run the eval() in the eval()
 							$error = error_get_last();			// get the error from the eval() on failure

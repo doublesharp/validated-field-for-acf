@@ -46,6 +46,15 @@ Global configurations for the Validated Field plugin can be found in the WordPre
 4. Example of PHP validation failure with the error message raised to the UI.
 
 == Changelog ==
+= 1.4 beta = 
+* Beta support for Advanced Custom Fields 5.0
+* The `$inputs` variable is now available using and index of `meta_key` and returning an array with the values "field", "value", and "prev_value".
+* Fix for custom "post_id" string value instead of integer
+* For ACF 5+ only
+ * The new ['acf/validate_value`](http://www.advancedcustomfields.com/resources/acf-validate_value/) filter is used for better compatibility and performance.
+* For ACF 4 only
+ * Compatibility with tabbed layouts (natively supported in ACF 5)
+
 = 1.3.1 =
 * Bug Fix: Apply input masking to fields for new posts, not just editing existing ones.
 
