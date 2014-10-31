@@ -21,7 +21,7 @@ or PHP code, the option of ensuring a field's uniqueness by `post_type` and `met
 2. **Server Side Validation** - validate the inputs using server side PHP code or regular expressions.
 3. **Uniqueness** - ensure that the value being updated is not already in use.
 4. **Repeater Fields** - validated fields within a [Repeater Field](http://www.advancedcustomfields.com/add-ons/repeater-field/).
-5. **Read Only** - specify a field a read-only allowing it to be displayed but not updated. *BETA*
+5. **Read Only** - specify a field as read-only allowing it to be displayed but not updated. *BETA*
 
 = Compatibility =
 Requires [Advanced Custom Fields](http://wordpress.org/extend/plugins/advanced-custom-fields/) version 4.0 or greater.
@@ -47,11 +47,12 @@ Global configurations for the Validated Field plugin can be found in the WordPre
 
 == Changelog ==
 = 1.4 beta = 
-* Beta support for Advanced Custom Fields 5.0
+* Support for Advanced Custom Fields 5.0
 * The `$inputs` variable is now available using and index of `meta_key` and returning an array with the values "field", "value", and "prev_value".
 * Fix for custom "post_id" string value instead of integer
 * For ACF 5+ only
  * The new ['acf/validate_value`](http://www.advancedcustomfields.com/resources/acf-validate_value/) filter is used for better compatibility and performance.
+ * Get rid of inline JavaScript in the WordPress Admin and leverage ACF JavaScript events.
 * For ACF 4 only
  * Compatibility with tabbed layouts (natively supported in ACF 5)
 

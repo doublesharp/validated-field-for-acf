@@ -758,7 +758,7 @@ PHP;
 							editor.getSession().setMode("ace/mode/text");
 							jQuery("#acf-field-<?php echo $html_key; ?>_editor").css('height','18px');
 						}
-						editor.resize()
+						editor.resize();
 						editor.gotoLine(1, 1, false);
 						jQuery('#field_option_<?php echo $html_key; ?>_validation, #field_option_<?php echo $html_key; ?>_message').show(300);
 					}
@@ -841,7 +841,7 @@ PHP;
 	function input_admin_enqueue_scripts(){
 		// register acf scripts
 		$min = ( ! $this->debug )? '.min' : '';
-		wp_register_script( 'acf-validated-field', $this->settings['dir'] . "js/input{$min}.js", array(), $this->settings['version'] );
+		wp_register_script( 'acf-validated-field', $this->settings['dir'] . "js/input{$min}.js", array( 'jquery' ), $this->settings['version'] );
 		wp_register_script( 'jquery-masking', $this->settings['dir'] . "js/jquery.maskedinput{$min}.js", array( 'jquery' ), $this->settings['version']);
 		wp_register_script( 'sh-core', $this->settings['dir'] . 'js/shCore.js', array( 'acf-input' ), $this->settings['version'] );
 		wp_register_script( 'sh-autoloader', $this->settings['dir'] . 'js/shAutoloader.js', array( 'sh-core' ), $this->settings['version']);

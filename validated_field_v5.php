@@ -107,6 +107,7 @@ class acf_field_validated_field extends acf_field {
 			if ( is_admin() ){
 				add_action( 'admin_init', array( &$this, 'admin_register_settings' ) );
 				add_action( 'admin_menu', array( &$this, 'admin_add_menu' ), 11 );
+				add_action( 'admin_head', array( &$this, 'admin_head' ) );
 				// add the post_ID to the acf[] form
 				add_action( 'edit_form_after_editor', array( $this, 'edit_form_after_editor' ) );
 			}
@@ -125,7 +126,7 @@ class acf_field_validated_field extends acf_field {
 		?>
 
 		<script type="text/javascript">
-			alert(1);
+		//	alert(1);
 		jQuery(document).ready(function(){
 			jQuery('form.acf-form').append('<input type="hidden" name="acf[post_ID]" value="<?php echo $post->ID; ?>"/>');
 			jQuery('form.acf-form').append('<input type="hidden" name="acf[frontend]" value="true"/>');
@@ -143,6 +144,16 @@ class acf_field_validated_field extends acf_field {
 		return ( false !== $option = get_option( $key ) )?
 			$option == $this->config[$key]['default'] :
 			$this->strbool[$this->config[$key]['default']];
+	}
+
+	function admin_head(){
+		global $pagenow;
+		$min = '';
+		wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'] );
+		wp_enqueue_script( array(
+			'jquery',
+			'acf-validated-field-admin',
+		));	
 	}
 
 	function admin_add_menu(){
@@ -187,7 +198,8 @@ class acf_field_validated_field extends acf_field {
 		// setup booleans, for compatibility
 		$field['read_only'] = ( false == $field['read_only'] || 'false' === $field['read_only'] )? false : true;
 		$field['drafts'] = ( false == $field['drafts'] || 'false' === $field['drafts'] )? false : true;
-		return array_merge( $this->defaults, $field );
+
+		return acf_prepare_field( array_merge( $this->defaults, $field ) );
 	}
 
 	function setup_sub_field( $field ){
@@ -199,6 +211,7 @@ class acf_field_validated_field extends acf_field {
 			$sub_field[$key] = isset( $field[$key] )? $field[$key] : '';
 		}
 		$sub_field['key'] = 'acf['.$sub_field['key'].']';
+		$sub_field['prefix'] = "{$field['prefix']}[sub_field]";
 		// make sure all the defaults are set
 		return array_merge( $this->sub_defaults, $sub_field );
 	}
@@ -457,15 +470,17 @@ PHP;
 
 		// key is needed in the field names to correctly save the data
 		$key = $field['key'];
-		$html_key = preg_replace( '~[\\[\\]]+~', '_', $key );
+		$html_key = 'acf_fields-'.$field['ID'];
 
 		$sub_field = $this->setup_sub_field( $field );
-		$sub_field['prefix'] = "acf_fields[{$field['ID']}][sub_field]";
 
 		// remove types that don't jive well with this one
 		$fields_names = apply_filters( 'acf/get_field_types', array() );
 		unset( $fields_names[__( 'Layout', 'acf' )] );
 		unset( $fields_names[__( 'Basic', 'acf' )][ 'validated_field' ] );
+
+		$field_id = str_replace("-temp", "", $field['id'] );
+		$field_key = $field['key'];
 
 		// layout
 		acf_render_field_setting( $field, array(
@@ -516,13 +531,13 @@ PHP;
 				$atts = array(
 					'id' => 'acfcloneindex',
 					'class' => "field field_type-{$sub_field['type']}",
-					'data-id'	=> $sub_field['ID'],
+					'data-id'	=> $sub_field['id'],
 					'data-key'	=> $sub_field['key'],
 					'data-type'	=> $sub_field['type'],
 				);
 
 				$metas = array(
-					'ID'			=> $sub_field['ID'],
+					'id'			=> $sub_field['id'],
 					'key'			=> $sub_field['key'],
 					'parent'		=> $sub_field['parent'],
 					'save'			=> '',
@@ -546,8 +561,13 @@ PHP;
 							<tbody>
 							<?php 
 
-							if ( ! isset( $sub_field['type'] )  || empty( $sub_field['type'] ) ){
+							if ( ! isset( $sub_field['type'] ) || empty( $sub_field['type'] ) ){
 								$sub_field['type'] = 'text';
+							}
+
+
+							if ( ! isset( $sub_field['function'] ) || empty( $sub_field['function'] ) ){
+								$sub_field['function'] = 'none';
 							}
 
 							// Validated Field Type
@@ -605,16 +625,16 @@ PHP;
 			'layout'		=> 'horizontal',
 			'optgroup' => true,
 			'multiple' => '0',
-			'class'			=> 'validated_select',
+			'class'			=> 'validated_select validation-function',
 		));
 
 		?>
-		<tr class="acf-field" data-setting="validated_field" data-name="pattern" id="field_option_<?php echo $html_key; ?>_validation">
+		<tr class="acf-field validation-settings" data-setting="validated_field" data-name="pattern" id="field_option_<?php echo $html_key; ?>_validation">
 			<td class="acf-label">
 				<label><?php _e( 'Pattern', 'acf_vf' ); ?></label>
 				<p class="description">	
 				<small>
-				<div id="validated-<?php echo $html_key; ?>-info">
+				<div class="validation-info">
 					<div class='validation-type regex'>
 						<?php _e( 'Pattern match the input using', 'acf_vf' ); ?> <a href="http://php.net/manual/en/function.preg-match.php" target="_new">PHP preg_match()</a>.
 						<br />
@@ -656,7 +676,7 @@ PHP;
 				));
 
 				?>
-				<div id="acf_fields-<?php echo $field['ID']; ?>-editor" style="height:200px;"><?php echo $field['pattern']; ?></div>
+				<div id="<?php echo $html_key; ?>-editor" class='ace-editor' style="height:200px;"><?php echo $field['pattern']; ?></div>
 			</td>
 		</tr>
 		<?php
@@ -670,6 +690,7 @@ PHP;
 			'prefix'		=> $field['prefix'],
 			'value'			=> $field['message'],
 			'layout'		=> 'horizontal',
+			'class'			=> 'validation-settings'
 		));
 
 		// Validation Function
@@ -689,7 +710,7 @@ PHP;
 			'layout'		=> 'horizontal',
 			'optgroup' 		=> false,
 			'multiple' 		=> '0',
-			'class'			=> 'validated_select',
+			'class'			=> 'validated_select validation-unique',
 		));
 
 		// Unique Status
@@ -707,78 +728,6 @@ PHP;
 			'value'			=> $field['unique_statuses'],
 			'choices' 		=> $choices,
 		));
-
-		?>
-		<?php $field_id = $field['ID']; ?>
-		<script type="text/javascript">
-		jQuery(document).ready(function(){
-			var $field = jQuery('div [data-id="<?= $field_id; ?>"]');
-
-			// hide the textarea input
-			jQuery("#acf_fields-<?= $field_id; ?>-pattern").hide();
-			var editor = ace.edit("acf_fields-<?= $field_id; ?>-editor");
-			editor.setTheme("ace/theme/monokai");
-			editor.getSession().setMode("ace/mode/text");
-			editor.getSession().on('change', function(e){
-				var val = editor.getValue();
-				var func = jQuery('#acf_fields-<?= $field_id; ?>-function').val();
-				if (func=='php'){
-					val = val.substr(val.indexOf('\n')+1);
-				} else if (func=='regex'){
-					if (val.indexOf('\n')>0){
-						editor.setValue(val.trim().split('\n')[0]);
-					}
-				}
-				jQuery("#acf_fields-<?= $field_id; ?>-pattern").val(val);
-			});
-			jQuery("#acf_fields-<?= $field_id; ?>-editor").data('editor', editor);
-
-			jQuery('#acf_fields-<?= $field_id; ?>-function').on('change',function(){
-				jQuery('#validated-<?= $html_key; ?>-info div').hide(300);
-				jQuery('#validated-<?= $html_key; ?>-info div.'+jQuery(this).val()).show(300);
-				if (jQuery(this).val()!='none'){
-					jQuery('#validated-<?= $html_key; ?>-info .field_option_<?php echo $this->name; ?>_validation').show();
-				} else {
-					jQuery('#validated-<?= $html_key; ?>-info .field_option_<?php echo $this->name; ?>_validation').hide();
-				}
-				var sPhp = '<'+'?'+'php';
-				var editor = jQuery('#acf_fields-<?= $field_id; ?>-editor').data('editor');
-				var val = editor.getValue();
-				if (jQuery(this).val()=='none'){
-					jQuery('div [data-id="<?= $field_id; ?>"]').find('[data-name="pattern"], [data-name="message"]').hide(300);
-				} else {
-					if (jQuery(this).val()=='php'){
-						if (val.indexOf(sPhp)!=0){
-							editor.setValue(sPhp +'\n' + val);
-						}
-						editor.getSession().setMode("ace/mode/php");
-						jQuery("#acf_fields-<?= $field_id; ?>-editor").css('height','200px');
-					} else {
-						if (val.indexOf(sPhp)==0){
-							editor.setValue(val.substr(val.indexOf('\n')+1));
-						}
-						editor.getSession().setMode("ace/mode/text");
-						jQuery("#acf_fields-<?= $field_id; ?>-editor").css('height','18px');
-					}
-					editor.resize()
-					editor.gotoLine(1, 1, false);
-					jQuery('div [data-id="<?= $field_id; ?>"]').find('[data-name="pattern"], [data-name="message"]').show(300);
-				}
-			});
-
-			jQuery('#acf_fields-<?= $field_id; ?>-unique').on('change',function(){
-				var unqa = jQuery('#validated-<?= $field_id; ?>-unique .unique_statuses');
-				var val = jQuery(this).val();
-				if (val=='non-unique'||val=='') { unqa.hide(300); } else { unqa.show(300); }
-			});
-
-			// update ui
-			jQuery('#acf_fields-<?= $field_id; ?>-function').trigger('change');
-			jQuery('#acf_fields-<?= $field_id; ?>-unique').trigger('change');
-			jQuery('#acf_fields-<?= $field_id; ?>-sub_field_type').trigger('change');
-		});
-		</script>
-		<?php
 	}
 
 	/*
