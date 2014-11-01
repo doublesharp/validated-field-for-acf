@@ -98,6 +98,7 @@ class acf_field_validated_field extends acf_field {
 
 			// bug fix for acf with backslashes in the content.
 			add_filter( 'content_save_pre', array( $this, 'fix_post_content' ) );
+			add_filter( 'acf/get_valid_field', array( $this, 'fix_upgrade' ) );
 
 			// override the default ajax actions to provide our own messages since they aren't filtered
 			add_action( 'init', array( $this, 'override_acf_ajax_validation' ) );
@@ -125,14 +126,60 @@ class acf_field_validated_field extends acf_field {
 		}
 	}
 
+	function fix_upgrade( $field ){
+
+		// the $_POST will tell us if this is an upgrade
+		$is_5_upgrade = 
+			isset( $_POST['action'] ) && $_POST['action'] == 'acf/admin/data_upgrade' && 
+			isset( $_POST['version'] ) && $_POST['version'] == '5.0.0';
+
+		// if it is an upgrade recursively fix the field values
+		if ( $is_5_upgrade ){
+			$field = $this->do_recursive_slash_fix( $field );
+		}
+
+		return $field;
+	}
+
 	function fix_post_content( $content ){
 		global $post;
-		if ( get_post_type() == 'acf-field-group' ){
-			if ( preg_match( '~(?<!\\\\)\\\\(?!\\\\)~', $content ) ){
-				$content = str_replace('\\', '\\\\', $content);
+
+		// are we saving a field group?
+		$is_field_group = get_post_type() == 'acf-field-group';
+
+		// are we upgrading to ACF 5?
+		$is_5_upgrade = 
+			isset( $_POST['action'] ) && $_POST['action'] == 'acf/admin/data_upgrade' && 
+			isset( $_POST['version'] ) && $_POST['version'] == '5.0.0';
+
+		// if we are, we need to check the values for single, but not double, backslashes and make them double
+		if ( $is_field_group || $is_5_upgrade ){
+			$content = $this->do_slash_fix( $content );
+		}
+
+		return $content;
+	}
+
+	function do_slash_fix( $string ){
+		return preg_match( '~(?<!\\\\)\\\\(?!\\\\)~', $string )?
+			str_replace('\\', '\\\\', $string ) :
+			$string;
+	}
+
+	function do_recursive_slash_fix( $array ){
+
+		// loop through all levels of the array
+		foreach( $array as $key => &$value ){
+			if ( is_array( $value ) ){
+				// div deeper
+				$value = $this->do_recursive_slash_fix( $value );
+			} elseif ( is_string( $value ) ){
+				// fix single backslashes to double
+				$value = $this->do_slash_fix( $value );
 			}
 		}
-		return $content;
+
+		return $array;
 	}
 
 	function override_acf_ajax_validation(){
@@ -170,9 +217,11 @@ class acf_field_validated_field extends acf_field {
 	function admin_head(){
 		$min = ( ! $this->debug )? '.min' : '';
 		wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+		wp_register_script( 'acf-validated-field-group', plugins_url( "js/field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
 		wp_enqueue_script( array(
 			'jquery',
 			'acf-validated-field-admin',
+			'acf-validated-field-group',
 		));	
 	}
 
@@ -284,7 +333,7 @@ class acf_field_validated_field extends acf_field {
 		$i = count( $json['errors'] );
 		$json['message'] .= '. ' . sprintf( _n( '1 field below is invalid.', '%s fields below are invalid. Please check your values and submit again.', $i, 'acf_vf' ), $i );
 		
-		die( json_encode($json) );
+		die( json_encode( $json ) );
 	}
 
 	function validate_field( $valid, $value, $field, $input ) {
@@ -855,12 +904,12 @@ PHP;
 			?>
 		</div>
 		<?php
-		if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ! $field['read_only'] ) ) ) { 
+		if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ( ! $field['read_only'] || $field['read_only'] == 'false' ) ) ) ) { 
 
 			?>
 			<script type="text/javascript">
 				(function($){
-				   $('[name="<?php echo str_replace('[', '\\\\[', str_replace(']', '\\\\]', $field['name'])); ?>"]').mask('<?php echo $field['mask']?>');
+				   $('#<?php echo str_replace('[', '\\\\[', str_replace(']', '\\\\]', $field['name'])); ?>').mask('<?php echo $field['mask']?>');
 				})(jQuery);
 			</script>
 			<?php
@@ -968,7 +1017,6 @@ PHP;
 	*  @return	$value - the modified value
 	*/
 	function update_value( $value, $post_id, $field ){
-		error_log($value);
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
 		return apply_filters( 'acf/update_value/type='.$sub_field['type'], $value, $post_id, $sub_field );
 	}
