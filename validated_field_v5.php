@@ -96,6 +96,9 @@ class acf_field_validated_field extends acf_field {
 
 		if ( is_admin() || $this->frontend ){ // admin actions
 
+			// bug fix for acf with backslashes in the content.
+			add_filter( 'content_save_pre', array( $this, 'fix_post_content' ) );
+
 			// override the default ajax actions to provide our own messages since they aren't filtered
 			add_action( 'init', array( $this, 'override_acf_ajax_validation' ) );
 
@@ -120,6 +123,16 @@ class acf_field_validated_field extends acf_field {
 				add_filter( "acf/validate_value/type=validated_field", array( $this, 'validate_field' ), 10, 4 );
 			}
 		}
+	}
+
+	function fix_post_content( $content ){
+		global $post;
+		if ( get_post_type() == 'acf-field-group' ){
+			if ( preg_match( '~(?<!\\\\)\\\\(?!\\\\)~', $content ) ){
+				$content = str_replace('\\', '\\\\', $content);
+			}
+		}
+		return $content;
 	}
 
 	function override_acf_ajax_validation(){
@@ -203,9 +216,6 @@ class acf_field_validated_field extends acf_field {
 
 	function setup_field( $field ){
 		// setup booleans, for compatibility
-		$field['read_only'] = ( false == $field['read_only'] || 'false' === $field['read_only'] )? false : true;
-		$field['drafts'] = ( false == $field['drafts'] || 'false' === $field['drafts'] )? false : true;
-
 		return acf_prepare_field( array_merge( $this->defaults, $field ) );
 	}
 
@@ -813,7 +823,7 @@ PHP;
 		?>
 		<div class="validated-field">
 			<?php
-			if ( $field['read_only'] ){
+			if ( $field['read_only'] && $field['read_only'] != 'false' ){
 
 				?>
 				<p>
@@ -958,6 +968,7 @@ PHP;
 	*  @return	$value - the modified value
 	*/
 	function update_value( $value, $post_id, $field ){
+		error_log($value);
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
 		return apply_filters( 'acf/update_value/type='.$sub_field['type'], $value, $post_id, $sub_field );
 	}
@@ -1016,11 +1027,12 @@ PHP;
 	*  @return	$field - the field array holding all the field options
 	*/
 	function load_field( $field ){
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
+		$field = $this->setup_field( $field );
+		$sub_field = $this->setup_sub_field( $field );
 		$sub_field = apply_filters( 'acf/load_field/type='.$sub_field['type'], $sub_field );
 		$field['sub_field'] = $sub_field;
-		if ( $field['read_only'] && get_post_type() != 'acf-field-group' ){
-			$field['label'] = $field['label'].' <i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>';
+		if ( $field['read_only'] && $field['read_only'] != 'false' && get_post_type() != 'acf-field-group' ){
+			$field['label'] .= ' <i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>';
 		}
 		return $field;
 	}
