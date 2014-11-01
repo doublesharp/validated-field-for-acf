@@ -95,19 +95,22 @@ class acf_field_validated_field extends acf_field {
 		);
 
 		if ( is_admin() || $this->frontend ){ // admin actions
-			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'input_admin_head' ) );
+
+			// override the default ajax actions to provide our own messages since they aren't filtered
+			add_action( 'init', array( $this, 'override_acf_ajax_validation' ) );
+
 			if ( ! is_admin() && $this->frontend ){
 				if ( ! $this->frontend_css ){
-					add_action( 'acf/input/admin_enqueue_scripts',  array( &$this, 'remove_acf_form_style' ) );
+					add_action( 'acf/input/admin_enqueue_scripts',  array( $this, 'remove_acf_form_style' ) );
 				}
 
-				add_action( 'wp_head', array( &$this, 'set_post_id_to_acf_form' ) );
-				add_action( 'wp_head', array( &$this, 'input_admin_enqueue_scripts' ), 1 );
+				add_action( 'wp_head', array( $this, 'set_post_id_to_acf_form' ) );
+				add_action( 'wp_head', array( $this, 'input_admin_enqueue_scripts' ), 1 );
 			}
 			if ( is_admin() ){
-				add_action( 'admin_init', array( &$this, 'admin_register_settings' ) );
-				add_action( 'admin_menu', array( &$this, 'admin_add_menu' ), 11 );
-				add_action( 'admin_head', array( &$this, 'admin_head' ) );
+				add_action( 'admin_init', array( $this, 'admin_register_settings' ) );
+				add_action( 'admin_menu', array( $this, 'admin_add_menu' ), 11 );
+				add_action( 'admin_head', array( $this, 'admin_head' ) );
 				// add the post_ID to the acf[] form
 				add_action( 'edit_form_after_editor', array( $this, 'edit_form_after_editor' ) );
 			}
@@ -117,8 +120,14 @@ class acf_field_validated_field extends acf_field {
 				add_filter( "acf/validate_value/type=validated_field", array( $this, 'validate_field' ), 10, 4 );
 			}
 		}
+	}
 
+	function override_acf_ajax_validation(){
+		remove_all_actions( 'wp_ajax_acf/validate_save_post' );
+		remove_all_actions( 'wp_ajax_nopriv_acf/validate_save_post' );
 
+		add_action( 'wp_ajax_acf/validate_save_post',			array( $this, 'ajax_validate_save_post') );
+		add_action( 'wp_ajax_nopriv_acf/validate_save_post',	array( $this, 'ajax_validate_save_post') );
 	}
 
 	function set_post_id_to_acf_form(){
@@ -147,7 +156,7 @@ class acf_field_validated_field extends acf_field {
 
 	function admin_head(){
 		$min = ( ! $this->debug )? '.min' : '';
-		wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), $this->settings['version'] );
+		wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
 		wp_enqueue_script( array(
 			'jquery',
 			'acf-validated-field-admin',
@@ -225,6 +234,47 @@ class acf_field_validated_field extends acf_field {
 	function get_post_statuses() {
 		global $wp_post_statuses;
 		return $wp_post_statuses;
+	}
+
+	/*
+	*  ajax_validate_save_post()
+	*
+	*  Override the default acf_input()->ajax_validate_save_post() to return a custom validation message
+	*
+	*  @type		function
+	*
+	*/
+	function ajax_validate_save_post() {
+		
+		// validate
+		if ( ! isset( $_POST['_acfnonce'] ) ) {
+			// ignore validation, this form $_POST was not correctly configured
+			die();
+		}
+		
+		// success
+		if ( acf_validate_save_post() ) {
+			$json = array(
+				'result'	=> 1,
+				'message'	=> __( 'Validation successful', 'acf' ),
+				'errors'	=> 0
+			);
+			
+			die( json_encode( $json ) );
+		}
+		
+		// fail
+		$json = array(
+			'result'	=> 0,
+			'message'	=> __( 'Validation failed', 'acf' ),
+			'errors'	=> acf_get_validation_errors()
+		);
+
+		// update message
+		$i = count( $json['errors'] );
+		$json['message'] .= '. ' . sprintf( _n( '1 field below is invalid.', '%s fields below are invalid. Please check your values and submit again.', $i, 'acf_vf' ), $i );
+		
+		die( json_encode($json) );
 	}
 
 	function validate_field( $valid, $value, $field, $input ) {
@@ -482,8 +532,8 @@ PHP;
 
 		// layout
 		acf_render_field_setting( $field, array(
-			'label'			=> __('Read Only?','acf_vf'),
-			'instructions'	=> '',
+			'label'			=> __( 'Read Only?', 'acf_vf' ),
+			'instructions'	=> __( 'When a field is marked read only, it will be visible but uneditable. Read only fields are marked with ', 'acf_vf' ). '<i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>.',
 			'type'			=> 'radio',
 			'name'			=> 'read_only',
 			'layout'		=> 'horizontal', 
@@ -497,7 +547,7 @@ PHP;
 
 		// Validate Drafts
 		acf_render_field_setting( $field, array(
-			'label'			=> __('Validate Drafts/Preview?', 'acf_vf'),
+			'label'			=> __( 'Validate Drafts/Preview?', 'acf_vf' ),
 			'instructions'	=> '',
 			'type'			=> 'radio',
 			'name'			=> 'drafts',
@@ -570,8 +620,8 @@ PHP;
 
 							// Validated Field Type
 							acf_render_field_setting( $sub_field, array(
-								'label'			=> __('Field Type', 'acf_vf'),
-								'instructions'	=> '',
+								'label'			=> __( 'Field Type', 'acf_vf' ),
+								'instructions'	=> __( 'The underlying field type that you would like to validate.', 'acf_vf' ),
 								'type'			=> 'select',
 								'name'			=> 'type',
 								'prefix'		=> $sub_field['prefix'],
@@ -597,8 +647,8 @@ PHP;
 
 		// Input Mask
 		acf_render_field_setting( $field, array(
-			'label'			=> __('Input mask', 'acf_vf'),
-			'instructions'	=> __( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric.', 'acf_vf' ) . ' <a href="http://digitalbush.com/projects/masked-input-plugin/" target="_new">' . __( 'More info.', 'acf_vf' ) . '</a>.',
+			'label'			=> __( 'Input mask', 'acf_vf' ),
+			'instructions'	=> __( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric.', 'acf_vf' ) . ' <a href="http://digitalbush.com/projects/masked-input-plugin/" target="_new">' . __( 'More info', 'acf_vf' ) . '</a>.',
 			'type'			=> 'text',
 			'name'			=> 'mask',
 			'prefix'		=> $field['prefix'],
@@ -608,8 +658,8 @@ PHP;
 
 		// Validation Function
 		acf_render_field_setting( $field, array(
-			'label'			=> __('Validation Function', 'acf_vf'),
-			'instructions'	=> __( "How should the field be server side validated?", 'acf_vf' ),
+			'label'			=> __( 'Validation Function', 'acf_vf' ),
+			'instructions'	=> __( 'How should the field be server side validated?', 'acf_vf' ),
 			'type'			=> 'select',
 			'name'			=> 'function',
 			'prefix'		=> $field['prefix'],
@@ -639,10 +689,18 @@ PHP;
 					</div>
 					<div class='validation-type php'>
 						<ul>
-							<li><?php _e( "Use any PHP code and return true or false. If nothing is returned it will evaluate to true.", 'acf_vf' ); ?></li>
-							<li><?php _e( 'Available variables', 'acf_vf' ); ?> - <code>$post_id</code>, <code>$post_type</code>, <code>$name</code>, <code>$value</code>, <code>$prev_value</code>, <code>$inputs</code>, <code>&amp;$message</code>.</li>
-							<li><code>$inputs</code> is an array() with the keys 'field', 'value', and 'prev_value'.</li>
-							<li><code>&amp;$message</code> (<?php _e('is returned to the UI.', 'acf_vf' ); ?>).</li>
+							<li><?php _e( 'Use any PHP code and return true for success or false for failure. If nothing is returned it will evaluate to true.', 'acf_vf' ); ?></li>
+							<li><?php _e( 'Available variables', 'acf_vf' ); ?>:
+							<ul>
+								<li><code>$post_id = $post->ID</code></li>
+								<li><code>$post_type = $post->post_type</code></li>
+								<li><code>$name = meta_key</code></li>
+								<li><code>$value = form value</code></li>
+								<li><code>$prev_value = db value</code></li>
+								<li><code>$inputs = array(<blockquote>'field'=>?,<br/>'value'=>?,<br/>'prev_value'=>?<br/></blockquote>)</code></li>
+								<li><code>&amp;$message = error message</code></li>
+							</ul>
+							</li>
 							<li><?php _e( 'Example', 'acf_vf' ); ?>: 
 							<small><code><pre>if ( empty( $value ) ){
   $message = 'required!'; 
@@ -663,7 +721,7 @@ PHP;
 
 				// Pattern
 				acf_render_field( array(
-					'label'			=> __('Pattern', 'acf_vf'),
+					'label'			=> __( 'Pattern', 'acf_vf' ),
 					'instructions'	=> '',
 					'type'			=> 'textarea',
 					'name'			=> 'pattern',
@@ -681,7 +739,7 @@ PHP;
 
 		// Error Message
 		acf_render_field_setting( $field, array(
-			'label'			=> __('Error Message', 'acf_vf'),
+			'label'			=> __( 'Error Message', 'acf_vf' ),
 			'instructions'	=> __( 'The default error message that is returned to the client.', 'acf_vf' ),
 			'type'			=> 'text',
 			'name'			=> 'message',
@@ -791,12 +849,12 @@ PHP;
 
 			?>
 			<script type="text/javascript">
-				jQuery(function($){
+				(function($){
 				   $('[name="<?php echo str_replace('[', '\\\\[', str_replace(']', '\\\\]', $field['name'])); ?>"]').mask('<?php echo $field['mask']?>');
-				});
+				})(jQuery);
 			</script>
 			<?php
-			
+
 		}
 	}
 
@@ -814,10 +872,10 @@ PHP;
 	function input_admin_enqueue_scripts(){
 		// register acf scripts
 		$min = ( ! $this->debug )? '.min' : '';
-		wp_register_script( 'acf-validated-field-input', plugins_url() . "/validated-field-for-acf/js/input{$min}.js", array('acf-validated-field'), $this->settings['version'] );
-		wp_register_script( 'jquery-masking', plugins_url() . "/validated-field-for-acf/js/jquery.maskedinput{$min}.js", array( 'jquery' ), $this->settings['version']);
-		wp_register_script( 'sh-core', plugins_url() . '/validated-field-for-acf/js/shCore.js', array( 'acf-input' ), $this->settings['version'] );
-		wp_register_script( 'sh-autoloader', plugins_url() . '/validated-field-for-acf/js/shAutoloader.js', array( 'sh-core' ), $this->settings['version']);
+		wp_register_script( 'acf-validated-field-input', plugins_url( "js/input{$min}.js", __FILE__ ), array( 'acf-validated-field' ), ACF_VF_VERSION );
+		wp_register_script( 'jquery-masking', plugins_url( "js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION);
+		wp_register_script( 'sh-core', plugins_url( 'js/shCore.js', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION );
+		wp_register_script( 'sh-autoloader', plugins_url( 'js/shAutoloader.js', __FILE__ ), array( 'sh-core' ), ACF_VF_VERSION);
 		
 		// enqueue scripts
 		wp_enqueue_script( array(
@@ -828,51 +886,26 @@ PHP;
 			'acf-validated-field',
 			'acf-validated-field-input',
 		));
-
-		if ( $this->debug ){ 
-			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'debug_head' ), 20 );
-		}
-
-		if ( ! $this->drafts ){ 
-			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'drafts_head' ), 20 );
-		}
-
-		if ( $this->frontend && ! is_admin() ){
-			add_action( 'wp_head', array( &$this, 'frontend_head' ), 20 );
-		}
-	}
-
-	function debug_head(){
-		// set debugging for javascript
-		echo '<script type="text/javascript">vf.debug=true;</script>';
-	}
-
-	function drafts_head(){
-		// don't validate drafts for anything
-		echo '<script type="text/javascript">vf.drafts=false;</script>';
-	}
-
-	function frontend_head(){
-		// indicate that this is validating the front end
-		echo '<script type="text/javascript">//vf.frontend=true;</script>';
 	}
 
 	/*
-	*  input_admin_head()
+	*  input_admin_footer()
 	*
-	*  This action is called in the admin_head action on the edit screen where your field is created.
+	*  This action is called in the wp_head/admin_head action on the edit screen where your field is created.
 	*  Use this action to add css and javascript to assist your create_field() action.
 	*
-	*  @info	http://codex.wordpress.org/Plugin_API/Action_Reference/admin_head
-	*  @type	action
+	*  @type	action (admin_footer)
 	*  @since	3.6
 	*  @date	23/01/13
+	*
+	*  @param	n/a
+	*  @return	n/a
 	*/
-	function input_admin_head(){
-		wp_enqueue_style( 'font-awesome', '//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css', array(), $this->settings['version'] );
-		wp_enqueue_style( 'acf-validated_field', plugins_url() . '/validated-field-for-acf/css/input.css', array( 'acf-input' ), $this->settings['version'] ); 
-
+	function input_admin_footer(){
+		wp_enqueue_style( 'font-awesome', plugins_url( 'css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'acf-validated_field', plugins_url( 'css/input.css', __FILE__ ), array(), ACF_VF_VERSION ); 
 	}
+
 	/*
 	*  field_group_admin_enqueue_scripts()
 	*
@@ -885,21 +918,9 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function field_group_admin_enqueue_scripts(){
-		wp_enqueue_script( 'ace-editor', '//cdnjs.cloudflare.com/ajax/libs/ace/1.1.3/ace.js', array(), $this->settings['version'] );
+		wp_enqueue_script( 'ace-editor', plugins_url( 'js/ace/ace.js', __FILE__ ), array(), '1.1.7' );
+		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( 'js/ace/ext-language_tools.js', __FILE__ ), array(), '1.1.7' );
 	}
-
-	/*
-	*  field_group_admin_head()
-	*
-	*  This action is called in the admin_head action on the edit screen where your field is edited.
-	*  Use this action to add css and javascript to assist your create_field_options() action.
-	*
-	*  @info	http://codex.wordpress.org/Plugin_API/Action_Reference/admin_head
-	*  @type	action
-	*  @since	3.6
-	*  @date	23/01/13
-	*/
-	function field_group_admin_head(){ }
 
 	/*
 	*  load_value()
@@ -995,12 +1016,11 @@ PHP;
 	*  @return	$field - the field array holding all the field options
 	*/
 	function load_field( $field ){
-		global $currentpage;
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
 		$sub_field = apply_filters( 'acf/load_field/type='.$sub_field['type'], $sub_field );
 		$field['sub_field'] = $sub_field;
-		if ( $field['read_only'] && $currentpage == 'edit.php' ){
-			$field['label'] = $field['label'].' <i class="fa fa-link" title="'. __('Read only', 'acf_vf' ) . '"></i>';
+		if ( $field['read_only'] && get_post_type() != 'acf-field-group' ){
+			$field['label'] = $field['label'].' <i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>';
 		}
 		return $field;
 	}

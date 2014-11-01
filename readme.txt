@@ -47,13 +47,19 @@ Global configurations for the Validated Field plugin can be found in the WordPre
 
 == Changelog ==
 = 1.4 beta = 
-* Support for Advanced Custom Fields 5.0
+* Support for Advanced Custom Fields 5.0.
 * The `$inputs` variable is now available using and index of `meta_key` and returning an array with the values "field", "value", and "prev_value".
-* Fix for custom "post_id" string value instead of integer
-* For ACF 5+ only
+* Fix for custom "post_id" string value instead of and integer value.
+* Host `ace.js` libraries locally and upgrade to version 1.1.7.
+* Host `fontawesome.css` CSS and fonts locally and upgrade to version 4.2.
+* Upgraded jQuery Masked Input plugin to version 1.4.
+ * Increase size of PHP editor.
+ * Support for PHP snippets and autocomplete.
+ * New editor functions: Search (`Ctrl+F`/`Cmd+F`), Replace (`Ctrl+Alt+F`/`Cmd+Opt+F`), and Replace All (`Ctrl+Alt+Shft+F`/`Cmd+Opt+Shft+F`).
+* For ACF 5+ only:
  * The new ['acf/validate_value`](http://www.advancedcustomfields.com/resources/acf-validate_value/) filter is used for better compatibility and performance.
  * Get rid of inline JavaScript in the WordPress Admin and leverage ACF JavaScript events.
-* For ACF 4 only
+* For ACF 4 only:
  * Compatibility with tabbed layouts (natively supported in ACF 5)
 
 = 1.3.1 =

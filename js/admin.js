@@ -17,6 +17,11 @@
 
 		$field.find('textarea.editor').hide();
 
+    	ace.require("ace/ext/language_tools");
+		ace.config.loadModule('ace/snippets/snippets');
+		ace.config.loadModule('ace/snippets/php');
+		ace.config.loadModule("ace/ext/searchbox");
+
 		var editor = ace.edit($field.find('.ace-editor').attr('id'));
 		editor.setTheme("ace/theme/monokai");
 		editor.getSession().setMode("ace/mode/text");
@@ -33,7 +38,6 @@
 			$field.find('textarea.editor').val(val);
 		});
 		$field.find('.ace-editor').data('editor', editor);
-
 
 		$field.find('.validation-function').on('change',function(){
 			$field.find('.validation-info div').hide(300);
@@ -55,11 +59,22 @@
 					}
 					editor.getSession().setMode("ace/mode/php");
 					$field.find('.ace-editor').css('height','420px');
+
+					editor.setOptions({
+						enableBasicAutocompletion: true,
+						enableSnippets: true,
+						enableLiveAutocompletion: true
+					});
 				} else {
 					if (val.indexOf(sPhp)==0){
 						editor.setValue(val.substr(val.indexOf('\n')+1));
 					}
 					editor.getSession().setMode("ace/mode/text");
+					editor.setOptions({
+						enableBasicAutocompletion: false,
+						enableSnippets: false,
+						enableLiveAutocompletion: false
+					});
 					$field.find('.ace-editor').css('height','18px');
 				}
 				editor.resize();

@@ -95,21 +95,21 @@ class acf_field_validated_field extends acf_field {
 
 		if ( is_admin() || $this->frontend ){ // admin actions
 			// ACF 5.0+ http://www.advancedcustomfields.com/resources/filters/acf-validate_value/
-			add_action( 'wp_ajax_validate_fields', array( &$this, 'ajax_validate_fields' ) );
+			add_action( 'wp_ajax_validate_fields', array( $this, 'ajax_validate_fields' ) );
 
-			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'input_admin_head' ) );
+			add_action( $this->frontend? 'wp_head' : 'admin_head', array( $this, 'input_admin_head' ) );
 			if ( ! is_admin() && $this->frontend ){
 				if ( ! $this->frontend_css ){
-					add_action( 'acf/input/admin_enqueue_scripts',  array( &$this, 'remove_acf_form_style' ) );
+					add_action( 'acf/input/admin_enqueue_scripts',  array( $this, 'remove_acf_form_style' ) );
 				}
 
-				add_action( 'wp_ajax_nopriv_validate_fields', array( &$this, 'ajax_validate_fields' ) );
-				add_action( 'wp_head', array( &$this, 'ajaxurl' ), 1 );
-				add_action( 'wp_head', array( &$this, 'input_admin_enqueue_scripts' ), 1 );
+				add_action( 'wp_ajax_nopriv_validate_fields', array( $this, 'ajax_validate_fields' ) );
+				add_action( 'wp_head', array( $this, 'ajaxurl' ), 1 );
+				add_action( 'wp_head', array( $this, 'input_admin_enqueue_scripts' ), 1 );
 			}
 			if ( is_admin() ){
-				add_action( 'admin_init', array( &$this, 'admin_register_settings' ) );
-				add_action( 'admin_menu', array( &$this, 'admin_add_menu' ), 11 );
+				add_action( 'admin_init', array( $this, 'admin_register_settings' ) );
+				add_action( 'admin_menu', array( $this, 'admin_add_menu' ), 11 );
 			}
 		}
 	}
@@ -582,7 +582,7 @@ PHP;
 			<td class="label"><label><?php _e( 'Input Mask', 'acf_vf' ); ?> </label>
 			</td>
 			<td><?php _e( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric.', 'acf_vf' ); ?> 
-				<a href="http://digitalbush.com/projects/masked-input-plugin/" target="_new"><?php _e( 'More info.', 'acf_vf' ); ?></a><br />
+				<a href="http://digitalbush.com/projects/masked-input-plugin/" target="_new"><?php _e( 'More info', 'acf_vf' ); ?></a>.<br />
 				<?php 
 				do_action( 'acf/create_field', 
 					array(
@@ -714,6 +714,12 @@ PHP;
 			<script type="text/javascript">
 			jQuery(document).ready(function(){
 				jQuery("#acf-field-<?php echo $html_key; ?>_pattern").hide();
+
+		    	ace.require("ace/ext/language_tools");
+				ace.config.loadModule('ace/snippets/snippets');
+				ace.config.loadModule('ace/snippets/php');
+				ace.config.loadModule("ace/ext/searchbox");
+
 				var editor = ace.edit("acf-field-<?php echo $html_key; ?>_editor");
 				editor.setTheme("ace/theme/monokai");
 				editor.getSession().setMode("ace/mode/text");
@@ -751,12 +757,23 @@ PHP;
 							}
 							editor.getSession().setMode("ace/mode/php");
 							jQuery("#acf-field-<?php echo $html_key; ?>_editor").css('height','200px');
+
+							editor.setOptions({
+								enableBasicAutocompletion: true,
+								enableSnippets: true,
+								enableLiveAutocompletion: true
+							});
 						} else {
 							if (val.indexOf(sPhp)==0){
 								editor.setValue(val.substr(val.indexOf('\n')+1));
 							}
 							editor.getSession().setMode("ace/mode/text");
 							jQuery("#acf-field-<?php echo $html_key; ?>_editor").css('height','18px');
+							editor.setOptions({
+								enableBasicAutocompletion: false,
+								enableSnippets: false,
+								enableLiveAutocompletion: false
+							});
 						}
 						editor.resize();
 						editor.gotoLine(1, 1, false);
@@ -892,8 +909,8 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function input_admin_head(){
-		wp_enqueue_style( 'font-awesome', '//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css', array(), $this->settings['version'] );
-		wp_enqueue_style( 'acf-validated_field', $this->settings['dir'] . 'css/input.css', array( 'acf-input' ), $this->settings['version'] ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( 'css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'acf-validated_field', plugins_url( 'css/input.css', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION ); 
 
 	}
 	/*
@@ -908,7 +925,8 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function field_group_admin_enqueue_scripts(){
-		wp_enqueue_script( 'ace-editor', '//cdnjs.cloudflare.com/ajax/libs/ace/1.1.3/ace.js', array(), $this->settings['version'] );
+		wp_enqueue_script( 'ace-editor', plugins_url( 'js/ace/ace.js', __FILE__ ), array(), '1.1.7' );
+		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( 'js/ace/ext-language_tools.js', __FILE__ ), array(), '1.1.7' );
 	}
 
 	/*
