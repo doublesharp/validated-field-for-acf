@@ -126,7 +126,6 @@ class acf_field_validated_field extends acf_field {
 		?>
 
 		<script type="text/javascript">
-		//	alert(1);
 		jQuery(document).ready(function(){
 			jQuery('form.acf-form').append('<input type="hidden" name="acf[post_ID]" value="<?php echo $post->ID; ?>"/>');
 			jQuery('form.acf-form').append('<input type="hidden" name="acf[frontend]" value="true"/>');
@@ -147,9 +146,8 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	function admin_head(){
-		global $pagenow;
-		$min = '';
-		wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'] );
+		$min = ( ! $this->debug )? '.min' : '';
+		wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), $this->settings['version'] );
 		wp_enqueue_script( array(
 			'jquery',
 			'acf-validated-field-admin',
@@ -210,8 +208,8 @@ class acf_field_validated_field extends acf_field {
 		foreach( array( 'key', 'name', '_name', 'id', 'value', 'field_group' ) as $key ){
 			$sub_field[$key] = isset( $field[$key] )? $field[$key] : '';
 		}
-		$sub_field['key'] = 'acf['.$sub_field['key'].']';
-		$sub_field['prefix'] = "{$field['prefix']}[sub_field]";
+		$sub_field['key'] = $field['key'];
+		$sub_field['prefix'] = 'acf';
 		// make sure all the defaults are set
 		return array_merge( $this->sub_defaults, $sub_field );
 	}
@@ -228,7 +226,6 @@ class acf_field_validated_field extends acf_field {
 		global $wp_post_statuses;
 		return $wp_post_statuses;
 	}
-
 
 	function validate_field( $valid, $value, $field, $input ) {
 		if ( ! $valid )
@@ -473,6 +470,7 @@ PHP;
 		$html_key = 'acf_fields-'.$field['ID'];
 
 		$sub_field = $this->setup_sub_field( $field );
+		$sub_field['prefix'] = "{$field['prefix']}[sub_field]";
 
 		// remove types that don't jive well with this one
 		$fields_names = apply_filters( 'acf/get_field_types', array() );
@@ -746,8 +744,11 @@ PHP;
 	*/
 	
 	function render_field( $field ) {
+
 		global $post, $pagenow;
+
 		$is_new = $pagenow=='post-new.php';
+
 		$field = $this->setup_field( $field );
 		$sub_field = $this->setup_sub_field( $field );
 
@@ -755,36 +756,47 @@ PHP;
 		<div class="validated-field">
 			<?php
 			if ( $field['read_only'] ){
-				?>
 
-				<p><?php 
+				?>
+				<p>
+				<?php 
+
+				// Buffer output
 				ob_start();
+
+				// Render the subfield
 				acf_render_field_wrap( $sub_field );
-				//do_action( 'acf/create_field', $sub_field ); 
+
+				// Try to make the field readonly
 				$contents = ob_get_contents();
 				$contents = preg_replace("~<(input|textarea|select)~", "<\${1} disabled=true read_only", $contents );
-				ob_end_clean();
-				echo $contents;
-				?></p>
 
+				// Stop buffering
+				ob_end_clean();
+
+				// Return our (hopefully) readonly input.
+				echo $contents;
+
+				?>
+				</p>
 				<?php
+
 			} else {
 				acf_render_field_wrap( $sub_field );
-			//	do_action( "acf/render_field", $sub_field );
-				//do_action( 'acf/render_field', $sub_field ); 
 			}
 			?>
 		</div>
 		<?php
-		if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ! $field['read_only'] ) ) ) { ?>
+		if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ! $field['read_only'] ) ) ) { 
 
+			?>
 			<script type="text/javascript">
 				jQuery(function($){
 				   $('[name="<?php echo str_replace('[', '\\\\[', str_replace(']', '\\\\]', $field['name'])); ?>"]').mask('<?php echo $field['mask']?>');
 				});
 			</script>
-
-		<?php
+			<?php
+			
 		}
 	}
 
