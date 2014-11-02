@@ -147,13 +147,16 @@ class acf_field_validated_field extends acf_field {
 		// are we saving a field group?
 		$is_field_group = get_post_type() == 'acf-field-group';
 
+		// are we saving a field group?
+		$is_field = get_post_type() == 'acf-field';
+
 		// are we upgrading to ACF 5?
 		$is_5_upgrade = 
 			isset( $_POST['action'] ) && $_POST['action'] == 'acf/admin/data_upgrade' && 
 			isset( $_POST['version'] ) && $_POST['version'] == '5.0.0';
 
 		// if we are, we need to check the values for single, but not double, backslashes and make them double
-		if ( $is_field_group || $is_5_upgrade ){
+		if ( $is_field || $is_field_group || $is_5_upgrade ){
 			$content = $this->do_slash_fix( $content );
 		}
 
@@ -161,9 +164,13 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	function do_slash_fix( $string ){
-		return preg_match( '~(?<!\\\\)\\\\(?!\\\\)~', $string )?
-			str_replace('\\', '\\\\', $string ) :
-			$string;
+		if ( preg_match( '~(?<!\\\\)\\\\(?!\\\\)~', $string ) ){
+			$string = str_replace('\\', '\\\\', $string );
+		}
+		if ( preg_match( '~\\\\\\\\"~', $string ) ){
+			$string = str_replace('\\\\"', '\\"', $string );
+		}
+		return $string;
 	}
 
 	function do_recursive_slash_fix( $array ){
@@ -331,7 +338,7 @@ class acf_field_validated_field extends acf_field {
 
 		// update message
 		$i = count( $json['errors'] );
-		$json['message'] .= '. ' . sprintf( _n( '1 field below is invalid.', '%s fields below are invalid. Please check your values and submit again.', $i, 'acf_vf' ), $i );
+		$json['message'] .= '. ' . sprintf( _n( '1 field below is invalid.', '%s fields below are invalid.', $i, 'acf_vf' ), $i ) . ' ' . __( 'Please check your values and submit again.', 'acf_vf' );
 		
 		die( json_encode( $json ) );
 	}
@@ -413,7 +420,7 @@ class acf_field_validated_field extends acf_field {
 					$function_name = 'validate_' . $field['key'] . '_function';
 					
 					// it gets tricky but we are trying to account for an capture bad php code where possible
-					$pattern = addcslashes( trim( $pattern ), "'" );
+					$pattern = addcslashes( trim( $pattern ), '$' );
 					if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
 
 					$value = addslashes( $value );
@@ -424,8 +431,10 @@ if ( ! function_exists( '$function_name' ) ):
 function $function_name( \$args, &\$message ){
 	extract( \$args );
 	try {
-		\$code = '$pattern return true;';
-		return eval( \$code );
+		\$code = <<<INNERPHP
+		$pattern return true;
+INNERPHP;
+		return @eval( \$code );
 	} catch ( Exception \$e ){
 		\$message = "Error: ".\$e->getMessage(); return false;
 	}
@@ -442,6 +451,7 @@ PHP;
 							$valid = false;
 						} 
 					}
+					$message = stripslashes( $message );
 					break;
 			}
 		} elseif ( ! empty( $function ) && $function != 'none' ) {
@@ -1082,6 +1092,11 @@ PHP;
 		if ( $field['read_only'] && $field['read_only'] != 'false' && get_post_type() != 'acf-field-group' ){
 			$field['label'] .= ' <i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>';
 		}
+
+		// Just avoid using any type of quotes in the db values
+		$field['pattern'] = str_replace( "%%squot%%", "'", $field['pattern'] );
+		$field['pattern'] = str_replace( "%%dquot%%", '"', $field['pattern'] );
+
 		return $field;
 	}
 
@@ -1103,6 +1118,11 @@ PHP;
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
 		$sub_field = apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id );
 		$field['sub_field'] = $sub_field;
+
+		// Just avoid using any type of quotes in the db values
+		$field['pattern'] = str_replace( "'", "%%squot%%", $field['pattern'] );
+		$field['pattern'] = str_replace( '"', "%%dquot%%", $field['pattern'] );
+
 		return $field;
 	}
 }
