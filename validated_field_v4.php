@@ -280,7 +280,7 @@ class acf_field_validated_field extends acf_field {
 						break;
 					case 'php':									// this code is a little tricky, one bad eval() can break the lot. needs a nonce.
 						$this_key = $field['name'];
-						if ( $is_repeater ) $this_key .= '_' . $index . '_' . $sub_sub_field['name'];
+						if ( $is_repeater ) $this_key .= '_' . $index . '_' . $sub_field['name'];
 
 						// get the fields based on the keys and then index by the meta value for easy of use
 						$input_fields = array();
