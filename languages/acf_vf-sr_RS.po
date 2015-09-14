@@ -1,17 +1,18 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Validated Field for ACF\n"
-"POT-Creation-Date: 2015-06-23 12:03-0800\n"
-"PO-Revision-Date: 2015-06-23 12:12-0800\n"
+"POT-Creation-Date: 2015-06-23 00:36-0800\n"
+"PO-Revision-Date: 2015-06-25 00:39-0800\n"
 "Last-Translator: Justin Silver <jsilver@doublesharp.com>\n"
 "Language-Team: DoubleSharp <info@doublesharp.com>\n"
-"Language: es_ES\n"
+"Language: sr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.8.1\n"
 "X-Poedit-Basepath: .\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-KeywordsList: __;_e\n"
 "X-Poedit-SearchPath-0: .\n"
@@ -19,188 +20,188 @@ msgstr ""
 
 #: ../validated_field_v4.php:30 ../validated_field_v5.php:31
 msgid "Enable Debug"
-msgstr "Habilitar Depuración"
+msgstr "Aktiviraj otklanjanje grešaka"
 
 #: ../validated_field_v4.php:31 ../validated_field_v5.php:32
 msgid "Check this box to turn on debugging for Validated Fields."
-msgstr "Marque esta casilla para activar la depuración para Validado Fields."
+msgstr ""
+"Štiklirajte ovo polje da biste uključili otklanjanje grešaka za validirana "
+"polja."
 
 #: ../validated_field_v4.php:36 ../validated_field_v5.php:37
 msgid "Enable Draft Validation"
-msgstr "Habilitar Proyecto de Validación"
+msgstr "Aktiviraj validaciju skice"
 
 #: ../validated_field_v4.php:37 ../validated_field_v5.php:38
 msgid ""
 "Check this box to enable Draft validation globally, or uncheck to allow it "
 "to be set per field."
 msgstr ""
-"Marque esta casilla para activar el proyecto de validación a nivel mundial, "
-"o desmarque para permitir que sea configurada por campo."
+"Štiklirajte ovo polje da biste aktivirali globalno validiranje skica ili "
+"poništite štikliranje da biste omogućili podešavanje za svako polje posebno."
 
 #: ../validated_field_v4.php:42 ../validated_field_v5.php:43
 msgid "Enable Front-End Validation"
-msgstr "Habilitar Abolladuras Validación"
+msgstr "Aktiviraj front-end validaciju"
 
 #: ../validated_field_v4.php:43 ../validated_field_v5.php:44
 msgid "Check this box to turn on validation for front-end forms created with"
 msgstr ""
-"Marque esta casilla para activar la validación de formularios de "
-"aplicaciones para usuario creadas con"
+"Štiklirajte ovo polje da biste aktivirali validaciju za front-end obrasce "
+"kreirane sa"
 
 #: ../validated_field_v4.php:48 ../validated_field_v5.php:49
 msgid "Enqueue Admin CSS on Front-End"
-msgstr "Enqueue administración CSS en Front-End"
+msgstr "Stavi na čekanje CSS administratora na front-endu"
 
 #: ../validated_field_v4.php:49 ../validated_field_v5.php:50
 msgid "Uncheck this box to turn off \"colors-fresh\" admin theme enqueued by"
 msgstr ""
-"Desactive esta casilla para desactivar \"colors-fresh\" admin tema en cola "
-"por"
+"Poništite štikliranje ovog polja da biste isključili \"colors-fresh\" "
+"administratorsku temu iza koje sledi"
 
 #: ../validated_field_v4.php:53 ../validated_field_v4.php:540
 #: ../validated_field_v5.php:54 ../validated_field_v5.php:770
 msgid "Validated Field"
-msgstr "Validado Campo"
+msgstr "Validirano polje"
 
 #: ../validated_field_v4.php:54 ../validated_field_v4.php:494
 #: ../validated_field_v5.php:55 ../validated_field_v5.php:726
 msgid "Basic"
-msgstr "Básico"
+msgstr "Osnovno"
 
 #: ../validated_field_v4.php:67 ../validated_field_v4.php:444
 #: ../validated_field_v5.php:68
 msgid "Validation failed."
-msgstr "Error de validación."
+msgstr "Validacija neuspela"
 
 #: ../validated_field_v4.php:132 ../validated_field_v5.php:246
 msgid "Validated Field Settings"
-msgstr "Configuración de Validado Campo"
+msgstr "Podešavanja validiranog polja"
 
 #: ../validated_field_v4.php:338 ../validated_field_v5.php:474
 msgid "PHP Error"
-msgstr "PHP Error"
+msgstr "PHP greška"
 
 #: ../validated_field_v4.php:350 ../validated_field_v5.php:487
 msgid "This field's validation is not properly configured."
-msgstr "La validación de este campo no está configurado correctamente."
+msgstr "Validacija ovog polja nije ispravno konfigurisana."
 
 #: ../validated_field_v4.php:436 ../validated_field_v5.php:543
 #: ../validated_field_v5.php:673
 msgid "The value"
-msgstr "El valor"
+msgstr "Vrednost"
 
 #: ../validated_field_v4.php:436 ../validated_field_v5.php:673
 msgid "is already in use by"
-msgstr "ya está en uso por"
+msgstr "je već korišćena od strane"
 
 #: ../validated_field_v4.php:493 ../validated_field_v5.php:725
 msgid "Layout"
-msgstr "Disposición"
+msgstr "Raspored"
 
 #: ../validated_field_v4.php:498 ../validated_field_v5.php:733
 msgid "Read Only?"
-msgstr "¿Sólo Lectura?"
+msgstr "Samo za čitanje?"
 
 #: ../validated_field_v4.php:506 ../validated_field_v4.php:523
 #: ../validated_field_v5.php:741 ../validated_field_v5.php:753
 #: ../validated_field_v5.php:873
 msgid "Yes"
-msgstr "Sí"
+msgstr "Da"
 
 #: ../validated_field_v4.php:507 ../validated_field_v4.php:524
 #: ../validated_field_v5.php:740 ../validated_field_v5.php:754
 #: ../validated_field_v5.php:874
 msgid "No"
-msgstr "No"
+msgstr "Ne"
 
 #: ../validated_field_v4.php:515 ../validated_field_v5.php:747
 msgid "Validate Drafts/Preview?"
-msgstr "¿Validar Borradores/Vista Previa?"
+msgstr "Validirati skice/Pregled?"
 
 #: ../validated_field_v4.php:531 ../validated_field_v5.php:761
 msgid "Warning"
-msgstr "Advertencia"
+msgstr "Upozorenje"
 
 #: ../validated_field_v4.php:533 ../validated_field_v5.php:763
 msgid ""
 "has been set to <code>false</code> which overrides field level configurations"
 msgstr ""
-"se ha ajustado a <code>false</ code> que anula las configuraciones a nivel "
-"de campo"
+"je podešeno na <code>laž</code> čime se poništavaju konfiguracije na nivou "
+"polja "
 
 #: ../validated_field_v4.php:552 ../validated_field_v5.php:814
 msgid "Field Type"
-msgstr "Tipo de Campo"
+msgstr "Vrsta polja"
 
 #: ../validated_field_v4.php:584
 msgid "Input Mask"
-msgstr "Máscara de Entrada"
+msgstr "Maska unosa"
 
 #: ../validated_field_v4.php:585 ../validated_field_v5.php:849
 msgid ""
 "Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; "
 "to match any alphanumeric."
 msgstr ""
-"Utilice &#39;a&#39; para que coincida con &#39;A-Za-z&#39;, '&#39;9&#39; "
-"para que coincida con 0-9, y &#39;*&#39; para emparejar cualquier "
-"alfanumérico."
+"Koristi &#39;a&#39; za podudaranje A-Za-z, &#39;9&#39; za podudaranje 0-9 i "
+"&#39;*&#39; za bilo kakvo alfanumeričko podudaranje."
 
 #: ../validated_field_v4.php:586 ../validated_field_v5.php:851
 msgid "More info"
-msgstr "Más información"
+msgstr "Više informacija"
 
 #: ../validated_field_v4.php:624 ../validated_field_v5.php:853
 msgid "Input masking is not compatible with the \"number\" field type!"
-msgstr ""
-"Enmascaramiento de entrada no es compatible con el \"número\" tipo de campo!"
+msgstr "Unos maskiranja nije kompatibilan sa vrstom polja \"broj\"! "
 
 #: ../validated_field_v4.php:628 ../validated_field_v5.php:892
 msgid "Validation: Function"
-msgstr "Validación: Función"
+msgstr "Validacija: Funkcija"
 
 #: ../validated_field_v4.php:629 ../validated_field_v5.php:893
 msgid "How should the field be server side validated?"
-msgstr "¿Cómo debe el ámbito validada lado del servidor?"
+msgstr "Kako treba validirati polje na strani servera?"
 
 #: ../validated_field_v4.php:637 ../validated_field_v5.php:899
 msgid "None"
-msgstr "Ninguno"
+msgstr "Nijedan"
 
 #: ../validated_field_v4.php:638 ../validated_field_v5.php:900
 msgid "Regular Expression"
-msgstr "Expresión Regular"
+msgstr "Regularan izraz"
 
 #: ../validated_field_v4.php:640 ../validated_field_v5.php:902
 msgid "PHP Statement"
-msgstr "Declaración de PHP"
+msgstr "PHP izjava"
 
 #: ../validated_field_v4.php:651 ../validated_field_v5.php:913
 msgid "Validation: Pattern"
-msgstr "Validación: Forma"
+msgstr "Validacija: Šablon"
 
 #: ../validated_field_v4.php:656 ../validated_field_v5.php:918
 msgid "Pattern match the input using"
-msgstr "Patrón coincide con la entrada utilizando"
+msgstr "Šablon se podudara s unosom "
 
 #: ../validated_field_v4.php:661
 msgid ""
 "Use any PHP code and return true or false. If nothing is returned it will "
 "evaluate to true."
 msgstr ""
-"Utilice cualquier código PHP y devolver verdadero o falso. Si no se devuelve "
-"nada que se evaluará como true."
+"Koristite bilo koji PHP kod i vratite vrednost ‘istina’ ili ‘laž’. Ako se "
+"ništa ne vrati, biće procenjeno kao istina."
 
 #: ../validated_field_v4.php:662 ../validated_field_v5.php:924
 msgid "Available variables"
-msgstr "variables disponibles"
+msgstr "Raspoložive promenljive"
 
 #: ../validated_field_v4.php:662
 msgid "returned to UI"
-msgstr "regresado a la interfaz de usuario"
+msgstr "Vraćene na korisnički interfejs"
 
 #: ../validated_field_v4.php:663 ../validated_field_v5.php:935
 msgid "Example"
-msgstr "Ejemplo"
+msgstr "Primer"
 
 #: ../validated_field_v4.php:667 ../validated_field_v5.php:942
 msgid "SQL"
@@ -208,146 +209,121 @@ msgstr "SQL"
 
 #: ../validated_field_v4.php:684 ../validated_field_v5.php:972
 msgid "Validation: Error Message"
-msgstr "Validación: Mensaje de error"
+msgstr "Validacija: Poruka o grešci"
 
 #: ../validated_field_v4.php:698 ../validated_field_v5.php:984
 msgid "Unique Value?"
-msgstr "¿Valor único?"
+msgstr "Jedinstvena vrednost?"
 
 #: ../validated_field_v4.php:702 ../validated_field_v5.php:985
 msgid "Make sure this value is unique for..."
-msgstr "Asegúrese de que este valor es único para..."
+msgstr "Proverite da li je ova vrednost jedinstvena za..."
 
 #: ../validated_field_v4.php:711 ../validated_field_v5.php:991
 msgid "Non-Unique Value"
-msgstr "Valor no Unique"
+msgstr "Vrednost nije jedinstvena"
 
 #: ../validated_field_v4.php:712 ../validated_field_v5.php:992
 msgid "Unique Globally"
-msgstr "Único Globalmente"
+msgstr "Globalno jedinstvena"
 
 #: ../validated_field_v4.php:713 ../validated_field_v4.php:714
 #: ../validated_field_v5.php:993 ../validated_field_v5.php:994
 msgid "Unique For Post Type"
-msgstr "Unique Para Tipo Envío"
+msgstr "Jedinstvena za vrstu posta"
 
 #: ../validated_field_v4.php:714 ../validated_field_v5.php:994
 #: ../validated_field_v5.php:996
 msgid "Field/Meta Key"
-msgstr "Campo / Meta clave"
+msgstr "Field/Meta Key"
 
 #: ../validated_field_v4.php:724 ../validated_field_v5.php:1011
 msgid "Unique Value: Apply to...?"
-msgstr "Valor Único: Aplicar a ...?"
+msgstr "Jedinstvena vrijednost: Nanesite na ...?"
 
 #: ../validated_field_v4.php:1101 ../validated_field_v5.php:734
 #: ../validated_field_v5.php:1285
 msgid "Read only"
-msgstr "Sólo lectura"
+msgstr "Samo za čitanje"
 
 #: ../validated_field_v5.php:347
 msgid "Validation successful"
-msgstr "Validación exitosa"
+msgstr "validacija uspješna"
 
 #: ../validated_field_v5.php:357
 msgid "Validation failed"
-msgstr "Validación fracasó"
+msgstr "validacija nije"
 
 #: ../validated_field_v5.php:363
 msgid "Please check your values and submit again."
-msgstr "Se recomienda consultar los valores y presentar de nuevo."
+msgstr "Proverite svoje vrednosti i podnesite ponovo."
 
 #: ../validated_field_v5.php:543
 msgid "was submitted multiple times and should be unique for"
-msgstr "se presentó varias veces y debe ser único para"
+msgstr "podnet je više puta, a treba da bude jedinstven za "
 
 #: ../validated_field_v5.php:734
 msgid ""
 "When a field is marked read only, it will be visible but uneditable. Read "
 "only fields are marked with "
 msgstr ""
-"Cuando un campo está marcado de sólo lectura, será visible pero no editable. "
-"Leer únicos campos están marcados con"
+"Kad polje ima oznaku “samo za čitanje”, biće vidljivo, ali neće moći da se "
+"uređuje. Polja samo za čitanje označena su"
 
 #: ../validated_field_v5.php:815
 msgid "The underlying field type that you would like to validate."
-msgstr "El tipo de campo subyacente que desea validar."
+msgstr "Tip osnovi polje koje želite da potvrdi."
 
 #: ../validated_field_v5.php:848
 msgid "Input mask"
-msgstr "máscara de entrada"
+msgstr "Ulazna maska"
 
 #: ../validated_field_v5.php:865
 msgid "Input Mask: Autoclear"
-msgstr "Máscara de entrada: Autoclear"
+msgstr "Ulazna maska: Autoclear"
 
 #: ../validated_field_v5.php:866
 msgid "Clear values that do match the input mask, if provided."
-msgstr ""
-"Valores claros que hacen que coincida con la máscara de entrada, si se "
-"proporciona."
+msgstr "Obriši vrednosti koje se poklapaju sa maskom unosa, ako su unete."
 
 #: ../validated_field_v5.php:881
 msgid "Input Mask: Placeholder"
-msgstr "Máscara de entrada: Marcador de posición"
+msgstr "Ulazna maska: Placeholder"
 
 #: ../validated_field_v5.php:882
 msgid "Use this string or character as a placeholder for the input mask."
-msgstr ""
-"Utilice esta cadena o carácter como un marcador de posición para la máscara "
-"de entrada."
+msgstr "Koristi ovaj niz karaktera kao zamenski tekst za unos maske"
 
 #: ../validated_field_v5.php:923
 msgid ""
 "Use any PHP code and return true for success or false for failure. If "
 "nothing is returned it will evaluate to true."
 msgstr ""
-"Utilice cualquier código PHP y devolver true para el éxito o falso para el "
-"fracaso. Si no se devuelve nada que evaluará a true."
+"Koristite bilo PHP kod i vratiti vrijedi za uspjeh ili neuspjeh za lažne. "
+"Ako se ništa ne vratila će ocijeniti na true."
 
 #: ../validated_field_v5.php:954
 msgid "Pattern"
-msgstr "Forma"
+msgstr "obrazac"
 
 #: ../validated_field_v5.php:973
 msgid "The default error message that is returned to the client."
-msgstr "El mensaje de error predeterminado que se devuelve al cliente."
+msgstr "Podrazumevana poruka o grešci koja se vraća klijentu"
 
 #: ../validated_field_v5.php:995 ../validated_field_v5.php:996
 msgid "Unique For Post"
-msgstr "Unique Para Publicar"
+msgstr "Jedinstven za posta"
 
 #: ../validated_field_v5.php:1012
 msgid "Make sure this value is unique for the checked post statuses."
 msgstr ""
-"Asegúrese de que este valor es único para los estados de correos controladas."
-
-#~ msgid "Validation Function"
-#~ msgstr "Función de Validación"
-
-#~ msgid "Validation Pattern"
-#~ msgstr "Patrón de Validación"
-
-#~ msgid "Error Message"
-#~ msgstr "Mensaje de Error"
-
-#~ msgid "Apply to which post statuses?"
-#~ msgstr "¿Aplicar para que destinan los estados?"
-
-#~ msgid "Autoclear invalid values?"
-#~ msgstr "Autoclear valores no válidos?"
-
-#~ msgid "Input mask placeholder"
-#~ msgstr "Máscara de entrada de marcador de posición"
-
-#~ msgid "Apply to...?"
-#~ msgstr "Aplicar para ...?"
+"Proverite da li je ova vrednost jedinstvena za štiklirane statuse postova."
 
 #~ msgid "More info."
-#~ msgstr "Más info."
+#~ msgstr "Više informacija"
 
 #~ msgid "Key"
-#~ msgstr "Clave"
+#~ msgstr "Ključ"
 
 #~ msgid "Unique For Post Type -> Key"
 #~ msgstr "Unique Para Tipo Envío -> Clave"

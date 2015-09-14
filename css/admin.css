@@ -1,0 +1,7 @@
+
+ul.acf-checkbox-list.read_only li,
+ul.acf-checkbox-list.hidden li,
+ul.acf-checkbox-list.unique_statuses li {
+	float: left;
+	width: 150px;
+}

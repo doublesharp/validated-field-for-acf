@@ -38,7 +38,7 @@ class acf_field_validated_field extends acf_field {
 			),
 			'acf_vf_frontend' => array(
 				'type' 		=> 'checkbox',
-				'default' 	=> 'false',
+				'default' 	=> 'true',
 				'label'  	=> __( 'Enable Front-End Validation', 'acf_vf' ),
 				'help'		=> __( 'Check this box to turn on validation for front-end forms created with', 'acf_vf' ) . ' <code>acf_form()</code>.',
 			),
@@ -60,6 +60,8 @@ class acf_field_validated_field extends acf_field {
 		$this->defaults = array(
 			'read_only' => false,
 			'mask'		=> '',
+			'mask_autoclear' => true,
+			'mask_placeholder' => '_',
 			'function'	=> 'none',
 			'pattern'	=> '',
 			'message'	=>  __( 'Validation failed.', 'acf_vf' ),
@@ -110,6 +112,8 @@ class acf_field_validated_field extends acf_field {
 			if ( is_admin() ){
 				add_action( 'admin_init', array( $this, 'admin_register_settings' ) );
 				add_action( 'admin_menu', array( $this, 'admin_add_menu' ), 11 );
+
+				add_filter( 'acf/export/clean_fields', array( $this, 'prepare_field_for_export' ) );
 			}
 		}
 	}
@@ -168,10 +172,9 @@ class acf_field_validated_field extends acf_field {
 		// setup booleans, for compatibility
 		$field['read_only'] = ( false == $field['read_only'] || 'false' === $field['read_only'] )? false : true;
 		$field['drafts'] = ( false == $field['drafts'] || 'false' === $field['drafts'] )? false : true;
-		return array_merge( $this->defaults, $field );
-	}
+		$field =  array_merge( $this->defaults, $field );
 
-	function setup_sub_field( $field ){
+
 		$sub_field = isset( $field['sub_field'] )? 
 			$field['sub_field'] :	// already set up
 			array();				// create it
@@ -179,8 +182,31 @@ class acf_field_validated_field extends acf_field {
 		foreach( array( 'key', 'name', '_name', 'id', 'value', 'field_group' ) as $key ){
 			$sub_field[$key] = isset( $field[$key] )? $field[$key] : '';
 		}
-		// make sure all the defaults are set
-		return array_merge( $this->sub_defaults, $sub_field );
+
+		$field['sub_field'] = array_merge( $this->sub_defaults, $sub_field );
+
+		return $field;
+	}
+
+	function setup_sub_field( $field ){
+		return $field['sub_field'];
+	}
+
+	function prepare_field_for_export( $fields ){
+		if( $fields ){
+			foreach( $fields as $i => &$field ){
+				if ( isset( $field['sub_field'] ) ){
+					unset( 
+						$field['sub_field']['id'], 
+						$field['sub_field']['class'], 
+						$field['sub_field']['order_no'], 
+						$field['sub_field']['field_group'], 
+						$field['sub_field']['_name'] 
+					);
+				}
+			}
+		}			
+		return $fields;
 	}
 
 	/*
@@ -296,51 +322,47 @@ class acf_field_validated_field extends acf_field {
 						}
 
 						// it gets tricky but we are trying to account for an capture bad php code where possible
-						$pattern = addcslashes( trim( $pattern ), "'" );
+						$pattern = addcslashes( trim( $pattern ), '$' );
 						if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
 
 						$value = addslashes( $value );
 
-						$prev_value = addslashes( $prev_value );
+						// not yet saved to the database, so this is the previous value still
+						$prev_value = addslashes( get_post_meta( $post_id, $this_key, true ) );
 
 						$function_name = 'validate_' . preg_replace( '~[\\[\\]]+~', '_', $input['id'] ) . 'function';
 						
-					$php = <<<PHP
-if ( ! function_exists( '$function_name' ) ):
-function $function_name( \$args, &\$message ){
-	extract( \$args );
-	try {
-		\$code = '$pattern return true;';
-		return eval( \$code );
-	} catch ( Exception \$e ){
-		\$message = "Error: ".\$e->getMessage(); return false;
-	}
-}
-endif; // function_exists
-\$valid = $function_name( array( 'post_id'=>'$post_id', 'post_type'=>'$post_type', 'this_key'=>'$this_key', 'value'=>'$value', 'prev_value'=>'$prev_value', 'inputs'=>\$input_fields ), \$message );
+						$php = <<<PHP
+							if ( ! function_exists( '$function_name' ) ):
+							function $function_name( \$args, &\$message ){
+								extract( \$args );
+								try {
+									\$code = <<<INNERPHP
+									$pattern return true;
+INNERPHP;
+// ^^^ no whitespace to the left!
+									return @eval( \$code );
+								} catch ( Exception \$e ){
+									\$message = "Error: ".\$e->getMessage(); return false;
+								}
+							}
+							endif; // function_exists
+							\$valid = $function_name( array( 'post_id'=>'$post_id', 'post_type'=>'$post_type', 'this_key'=>'$this_key', 'value'=>'$value', 'prev_value'=>'$prev_value', 'inputs'=>\$input_fields ), \$message );
 PHP;
 
-						// it gets tricky but we are trying to account for an capture bad php code where possible
-						$pattern = trim( $pattern );
-						if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
-						$php = 'function '.$function_name.'( $post_id, $post_type, $name, $value, $prev_value, $inputs, &$message ) { '."\n";
-						$php.= '	try { '."\n";
-						$php.= '		$code = \'' . str_replace("'", "\'", $pattern . ' return true;' ) . '\';'."\n";
-						$php.= '		return eval( $code ); '."\n";
-						$php.= '	} catch ( Exception $e ){ '."\n";
-						$php.= '		$message = "Error: ".$e->getMessage(); return false; '."\n";
-						$php.= '	} '."\n";
-						$php.= '} '."\n";
-						$php.= '$valid = '.$function_name.'( "'.$post_id.'", "'.$post_type.'", "'.$this_key.'", "'.addslashes( $value ).'", "'.addslashes( $prev_value ).'", $inputs, $message );'."\n";
-						
 						if ( true !== eval( $php ) ){			// run the eval() in the eval()
 							$error = error_get_last();			// get the error from the eval() on failure
 							// check to see if this is our error or not.
-							if ( strpos( $error['file'], "validated_field_v4.php" ) && strpos( $error['file'], "eval()'d code" ) ){
+							if ( strpos( $error['file'], basename( __FILE__ ) ) && strpos( $error['file'], "eval()'d code" ) ){
 								preg_match( '/eval\\(\\)\'d code\\((\d+)\\)/', $error['file'], $matches );
 								$message = __( 'PHP Error', 'acf_vf' ) . ': ' . $error['message'] . ', line ' . $matches[1] . '.';
 								$valid = false;
 							} 
+						}
+						// if a string is returned, return it as the error.
+						if ( is_string( $valid ) ){
+							$message = $valid;
+							$valid = false;
 						}
 						break;
 				}
@@ -373,7 +395,7 @@ PHP;
 						$sql = $wpdb->prepare( 
 							"{$sql_prefix} AND post_id NOT IN ([NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )",
 							$value,
-							'%"' . like_escape( $value ) . '"%'
+							'%"' . $wpdb->esc_like( $value ) . '"%'
 						);
 						break;
 					case 'post_type':
@@ -382,7 +404,7 @@ PHP;
 							"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN ([NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )", 
 							$post_type,
 							$value,
-							'%"' . like_escape( $value ) . '"%'
+							'%"' . $wpdb->esc_like( $value ) . '"%'
 						);
 						break;
 					case 'post_key':
@@ -397,7 +419,7 @@ PHP;
 								$meta_key,
 								$meta_key,
 								$value,
-								'%"' . like_escape( $value ) . '"%'
+								'%"' . $wpdb->esc_like( $value ) . '"%'
 							);
 						} else {
 							$sql = $wpdb->prepare( 
@@ -405,7 +427,7 @@ PHP;
 								$post_type,
 								$field['name'],
 								$value,
-								'%"' . like_escape( $value ) . '"%'
+								'%"' . $wpdb->esc_like( $value ) . '"%'
 							);
 						}
 						break;
@@ -445,8 +467,9 @@ PHP;
 		}
 		
 		// Send the results back to the browser as JSON
-		echo json_encode( $return_fields, $this->debug? JSON_PRETTY_PRINT : 0 );
-		die();
+		die( version_compare( phpversion(), '5.3', '>=' )? 
+			json_encode( $return_fields, $this->debug? JSON_PRETTY_PRINT : 0 ) :
+			json_encode( $return_fields ) );
 	}
 
 	private function prepare_not_in( $sql, $post_ids ){
@@ -542,7 +565,7 @@ PHP;
 			<td>
 				<div class="sub-field">
 					<div class="fields">
-						<div class="field sub_field">
+						<div class="field sub_field acf-sub_field">
 							<div class="field_form">
 								<table class="acf_input widefat">
 									<tbody>
@@ -579,24 +602,51 @@ PHP;
 			</td>
 		</tr>
 		<tr class="field_option field_option_<?php echo $this->name; ?> non_read_only">
-			<td class="label"><label><?php _e( 'Input Mask', 'acf_vf' ); ?> </label>
-			</td>
+			<td class="label"><label><?php _e( 'Input Mask', 'acf_vf' ); ?></label></td>
 			<td><?php _e( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric.', 'acf_vf' ); ?> 
-				<a href="http://digitalbush.com/projects/masked-input-plugin/" target="_new"><?php _e( 'More info', 'acf_vf' ); ?></a>.<br />
+				<a href="http://digitalbush.com/projects/masked-input-plugin/" target="_new"><?php _e( 'More info', 'acf_vf' ); ?></a>.
 				<?php 
 				do_action( 'acf/create_field', 
 					array(
 						'type'	=> 'text',
 						'name'	=> 'fields[' . $key . '][mask]',
 						'value'	=> $field['mask'],
+						'class'	=> 'input-mask'
 					)
 				);
-				?>
+				?><br />
+				<label for="">Autoclear invalid values: </label>
+				<?php 
+				do_action( 'acf/create_field', 
+					array(
+						'type'	=> 'radio',
+						'name'	=> 'fields[' . $key . '][mask_autoclear]',
+						'value'	=> $field['mask_autoclear'],
+						'layout'	=>	'horizontal',
+						'choices' => array(
+							true => 'Yes',
+							false => 'No'
+						),
+						'class'	=> 'mask-settings'
+					)
+				);
+				?><br />
+				<label for="">Input mask placeholder: </label>
+				<?php 
+				do_action( 'acf/create_field', 
+					array(
+						'type'	=> 'text',
+						'name'	=> 'fields[' . $key . '][mask_placeholder]',
+						'value'	=> $field['mask_placeholder'],
+						'class'	=> 'mask-settings'
+					)
+				);
+				?><br />
+				<strong><em><?php _e( 'Input masking is not compatible with the "number" field type!', 'acf_vf' ); ?><em></strong>
 			</td>
 		</tr>
 		<tr class="field_option field_option_<?php echo $this->name; ?> non_read_only">
-			<td class="label"><label><?php _e( 'Validation Function', 'acf_vf' ); ?> </label>
-			</td>
+			<td class="label"><label><?php _e( 'Validation: Function', 'acf_vf' ); ?></label></td>
 			<td><?php _e( "How should the field be server side validated?", 'acf_vf' ); ?><br />
 				<?php 
 				do_action( 'acf/create_field', 
@@ -619,7 +669,7 @@ PHP;
 			</td>
 		</tr>
 		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_validation non_read_only" id="field_option_<?php echo $html_key; ?>_validation">
-			<td class="label"><label><?php _e( 'Validation Pattern', 'acf_vf' ); ?></label>
+			<td class="label"><label><?php _e( 'Validation: Pattern', 'acf_vf' ); ?></label>
 			</td>
 			<td>
 				<div id="validated-<?php echo $html_key; ?>-info">
@@ -631,7 +681,7 @@ PHP;
 						<ul>
 							<li><?php _e( "Use any PHP code and return true or false. If nothing is returned it will evaluate to true.", 'acf_vf' ); ?></li>
 							<li><?php _e( 'Available variables', 'acf_vf' ); ?> - <b>$post_id</b>, <b>$post_type</b>, <b>$name</b>, <b>$value</b>, <b>$prev_value</b>, <b>&amp;$message</b> (<?php _e('returned to UI', 'acf_vf' ); ?>).</li>
-							<li><?php _e( 'Example', 'acf_vf' ); ?>: <code>if ( empty( $value ) ){ $message = sprint_f( $message, get_current_user()->user_login ); return false; }</code></li>
+							<li><?php _e( 'Example', 'acf_vf' ); ?>: <code>if ( empty( $value ) || $value == "xxx" ){  return "{$value} is not allowed"; }</code></li>
 						</ul>
 					</div>
 					<div class='validation-type sql'>
@@ -652,7 +702,7 @@ PHP;
 			</td>
 		</tr>
 		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_message non_read_only" id="field_option_<?php echo $html_key; ?>_message">
-			<td class="label"><label><?php _e( 'Error Message', 'acf_vf' ); ?></label>
+			<td class="label"><label><?php _e( 'Validation: Error Message', 'acf_vf' ); ?></label>
 			</td>
 			<td><?php 
 			do_action( 'acf/create_field', 
@@ -682,7 +732,7 @@ PHP;
 						'non-unique'=> __( 'Non-Unique Value', 'acf_vf' ),
 						'global'	=> __( 'Unique Globally', 'acf_vf' ),
 						'post_type'	=> __( 'Unique For Post Type', 'acf_vf' ),
-						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' -&gt; ' . __( 'Key', 'acf_vf' ),
+						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
 					),
 					'optgroup'	=> false,
 					'multiple'	=> '0',
@@ -692,7 +742,7 @@ PHP;
 			?>
 			</p>
 			<div class="unique_statuses">
-			<p><?php _e( 'Apply to which post statuses?', 'acf_vf'); ?><br/>
+			<p><?php _e( 'Unique Value: Apply to...?', 'acf_vf'); ?><br/>
 			<?php
 			$statuses = $this->get_post_statuses();
 			$choices = array();
@@ -756,7 +806,7 @@ PHP;
 								editor.setValue(sPhp +'\n' + val);
 							}
 							editor.getSession().setMode("ace/mode/php");
-							jQuery("#acf-field-<?php echo $html_key; ?>_editor").css('height','200px');
+							jQuery("#acf-field-<?php echo $html_key; ?>_editor").css('height','420px');
 
 							editor.setOptions({
 								enableBasicAutocompletion: true,
@@ -786,6 +836,18 @@ PHP;
 					var val = jQuery(this).val();
 					if (val=='non-unique'||val=='') { unqa.hide(300); } else { unqa.show(300); }
 				});
+				
+				jQuery('#acf-field-<?php echo $html_key; ?>_sub_field_type').on('change', function(){
+					$el = jQuery(this).closest('.sub-field').closest('.field');
+					setValidatedFieldLabel( $el );
+				});
+
+				function setValidatedFieldLabel($el){
+					$types = $el.find('.field_type select option:selected');
+					if ($types.first().val() == 'validated_field'){
+						$el.find('.field_meta .field_type').text('Validated: ' + $types.last().text());
+					}
+				}
 
 				// update ui
 				jQuery('#acf-field-<?php echo $html_key; ?>_function').trigger('change');
@@ -814,34 +876,52 @@ PHP;
 		$is_new = $pagenow=='post-new.php';
 		$field = $this->setup_field( $field );
 		$sub_field = $this->setup_sub_field( $field );
-		?>
-		<div class="validated-field">
-			<?php
-			if ( $field['read_only'] ){
-				?>
-				<p><?php 
-				ob_start();
-				do_action( 'acf/create_field', $sub_field ); 
-				$contents = ob_get_contents();
-				$contents = preg_replace("~<(input|textarea|select)~", "<\${1} disabled=true readonly", $contents );
-				ob_end_clean();
-				echo $contents;
-				?></p>
+
+		// filter to determine if this field should be rendered or not
+		$render_field = apply_filters( 'acf_vf/render_field', true, $field, $is_new );
+
+		// if it is not rendered, hide the label with CSS
+		if ( ! $render_field ): ?>
+			<style>div[data-key="<?php echo $sub_field['key']; ?>"] { display: none; }</style>
+		<?php
+		// if it is shown either render it normally or as read-only
+		else : ?>
+			<div class="validated-field">
 				<?php
-			} else {
-				do_action( 'acf/create_field', $sub_field ); 
+				if ( $field['read_only'] ){
+					?>
+					<p><?php 
+					ob_start();
+					do_action( 'acf/create_field', $sub_field ); 
+					$contents = ob_get_contents();
+					$contents = preg_replace("~<(input|textarea|select)~", "<\${1} disabled=true readonly", $contents );
+					$contents = preg_replace("~acf-hidden~", "acf-hidden acf-vf-readonly", $contents );
+					ob_end_clean();
+					echo $contents;
+					?></p>
+					<?php
+				} else {
+					do_action( 'acf/create_field', $sub_field ); 
+				}
+				?>
+			</div>
+			<?php
+			if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ! $field['read_only'] ) ) ) { ?>
+				<script type="text/javascript">
+					jQuery(function($){
+						$(function(){
+							$('div[data-field_key="<?php echo $field['key']; ?>"] input').each( function(){
+								$(this).mask("<?php echo $field['mask']?>", {
+									autoclear: <?php echo isset( $field['mask_autoclear'] ) && empty( $field['mask_autoclear'] )? 'false' : 'true'; ?>,
+									placeholder: '<?php echo isset( $field['mask_placeholder'] )? $field['mask_placeholder'] : '_'; ?>'
+								});
+							});
+						});
+					});
+				</script>
+			<?php
 			}
-			?>
-		</div>
-		<?php
-		if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ! $field['read_only'] ) ) ) { ?>
-			<script type="text/javascript">
-				jQuery(function($){
-				   $('[name="<?php echo str_replace('[', '\\\\[', str_replace(']', '\\\\]', $field['name'])); ?>"]').mask('<?php echo $field['mask']?>');
-				});
-			</script>
-		<?php
-		}
+		endif;
 	}
 
 	/*
@@ -858,10 +938,11 @@ PHP;
 	function input_admin_enqueue_scripts(){
 		// register acf scripts
 		$min = ( ! $this->debug )? '.min' : '';
-		wp_register_script( 'acf-validated-field', $this->settings['dir'] . "js/input{$min}.js", array( 'jquery' ), $this->settings['version'] );
-		wp_register_script( 'jquery-masking', $this->settings['dir'] . "js/jquery.maskedinput{$min}.js", array( 'jquery' ), $this->settings['version']);
-		wp_register_script( 'sh-core', $this->settings['dir'] . 'js/shCore.js', array( 'acf-input' ), $this->settings['version'] );
-		wp_register_script( 'sh-autoloader', $this->settings['dir'] . 'js/shAutoloader.js', array( 'sh-core' ), $this->settings['version']);
+
+		wp_register_script( 'acf-validated-field', plugins_url( "js/input{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
+		wp_register_script( 'jquery-masking', plugins_url( "js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
+		wp_register_script( 'sh-core', plugins_url( 'js/shCore.js', __FILE__ ), array( 'acf-input' ), $this->settings['version'], true );
+		wp_register_script( 'sh-autoloader', plugins_url( 'js/shAutoloader.js', __FILE__ ), array( 'sh-core' ), $this->settings['version'], true );
 		
 		// enqueue scripts
 		wp_enqueue_script( array(
@@ -871,12 +952,15 @@ PHP;
 			'jquery-masking',
 			'acf-validated-field',
 		));
+
 		if ( $this->debug ){ 
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'debug_head' ), 20 );
 		}
+
 		if ( ! $this->drafts ){ 
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'drafts_head' ), 20 );
 		}
+		
 		if ( $this->frontend && ! is_admin() ){
 			add_action( 'wp_head', array( &$this, 'frontend_head' ), 20 );
 		}
@@ -1037,11 +1121,22 @@ PHP;
 	*/
 	function load_field( $field ){
 		global $currentpage;
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
+		$field = $this->setup_field( $field );
+		$sub_field = $this->setup_sub_field( $field );
 		$sub_field = apply_filters( 'acf/load_field/type='.$sub_field['type'], $sub_field );
+
+		// The relationship field gets settings from the sub_field so we need to return it since it effectively displays through this method.
+		if ( isset( $_POST['action'] ) && $_POST['action'] == 'acf/fields/relationship/query_posts' ){
+			// Bug fix, if the taxonomy is "all" just omit it from the filter.
+			if ( $sub_field['taxonomy'][0] == 'all' ){
+				unset( $sub_field['taxonomy']);
+			}
+			return $sub_field;
+		}
+
 		$field['sub_field'] = $sub_field;
 		if ( $field['read_only'] && $currentpage == 'edit.php' ){
-			$field['label'] = $field['label'].' <i class="fa fa-link" title="'. __('Read only', 'acf_vf' ) . '"></i>';
+			$field['label'] .= ' <i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>';
 		}
 		return $field;
 	}

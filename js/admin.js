@@ -3,14 +3,14 @@
 	Justin Silver, http://justin.ag
 	DoubleSharp, http://doublesharp.com
 */
-(function($){
+(function($){	
 	acf.add_action('ready append open_field', function( $el ){
 		if ($el.data('type') != 'validated_field' && $el.data('setting') != 'validated_field')
 			return;
 
 		var $field = ($el.data('type') == 'validated_field')? 
 			$el :
-			$el.closest('.field_type-validated_field');
+			$el.closest('.acf-field');
 
 		if ( $field.data('validation-setup') == 'true' )
 			return;
@@ -39,19 +39,20 @@
 		});
 		$field.find('.ace-editor').data('editor', editor);
 
-		$field.find('.validation-function').on('change',function(){
+		$field.find('.validation-function').on('change', function(){
 			$field.find('.validation-info div').hide(300);
 			$field.find('.validation-info div.'+$(this).val()).show(300);
-			if ($(this).val()!='none'){
-				$field.find('.validation-settings').show(300);
-			} else {
-				$field.find('.validation-settings').hide(300);
-			}
+
+			$display = $(this).val()!='none';
+			$field.find('.validation-settings').each(function(){
+				$setting = ($(this).hasClass('acf-field'))? $(this) : $(this).closest('.acf-field');
+				$toggle = ($display)? $setting.show(300) : $setting.hide(300);
+			});
 			var sPhp = '<'+'?'+'php';
 			var editor = $field.find('.ace-editor').data('editor');
 			var val = editor.getValue();
 			if ($(this).val()=='none'){
-				$field.find('[data-name="pattern"], [data-name="message"]').hide(300);
+				$field.filter('[data-name="pattern"], [data-name="message"]').hide(300);
 			} else {
 				if ($(this).val()=='php'){
 					if (val.indexOf(sPhp)!=0){
@@ -79,19 +80,53 @@
 				}
 				editor.resize();
 				editor.gotoLine(1, 1, false);
-				$field.find('[data-name="pattern"], [data-name="message"]').show(300);
+				$field.filter('[data-name="pattern"], [data-name="message"]').show(300);
 			}
 		});
 		$field.find('.validation-function').trigger('change');
 
+		$field.find('.input-mask').on('change keyup blur', function(){
+			$display = $(this).val()!='';
+			$field.find('.mask-settings').each(function(){
+				$setting = ($(this).hasClass('acf-field'))? $(this) : $(this).closest('.acf-field');
+				$toggle = ($display)? $setting.show(300) : $setting.hide(300);
+			});
+		});
+		$field.find('.input-mask').trigger('change');
+
 		$field.find('.validation-unique').on('change',function(){
-			var unqa = $(this).closest('.field_type-validated_field').find('tr[data-name="unique_statuses"]');
-			var val = $(this).val();
-			if (val=='non-unique'||val=='') { unqa.hide(300); } else { unqa.show(300); }
+			var $this = $(this);
+			var unqa = $this.closest('.acf-field').siblings('tr[data-name="unique_statuses"]');
+			if ($this.val()=='non-unique'||$this.val()=='') { unqa.hide(300); } else { unqa.show(300); }
 		});
 		$field.find('.validation-unique').trigger('change');
 
+		$field.filter('.acf-sub_field').find('.field').each(function(){
+			if ( $(this).attr('id') == 'acfcloneindex' ){
+				$(this).find('select').trigger('change');
+			}
+		});
+
 		$field.data('validation-setup', 'true');
 	});
+
+	acf.add_action('ready', function( $body ){
+		$body.find('.acf-field-object').each(function(){
+			setValidatedFieldLabel($(this));
+		});
+	});
+
+	acf.add_action('change_field_type', function( $el ){
+		if ($el.data('type') != 'validated_field')
+			return;
+		setValidatedFieldLabel( $el );
+	});
+
+	function setValidatedFieldLabel($el){
+		$types = $el.find('tr[data-name="type"] select option:selected');
+		if ($types.first().val() == 'validated_field'){
+			$el.find('.li-field-type').text('Validated: ' + $types.last().text());
+		}
+	}
 
 })(jQuery);
