@@ -1,7 +1,6 @@
 <?php
 if ( class_exists( 'acf_Field' ) && ! class_exists( 'acf_field_validated_field' ) ):
 class acf_field_validated_field extends acf_field {
-	//static final NL = "\n";
 	// vars
 	var $slug,
 		$config,
