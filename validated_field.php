@@ -8,28 +8,35 @@ Version: 2.0
 Author URI: http://doublesharp.com/
 */
 
-if ( ! defined( 'ACF_VF_VERSION' ) )
+if ( !defined( 'ACF_VF_VERSION' ) ){
 	define( 'ACF_VF_VERSION', '2.0' );
+}
 
-if ( !defined('ACF_VF_PLUGIN_FILE') )
+if ( !defined( 'ACF_VF_PLUGIN_FILE' ) ){
 	define( 'ACF_VF_PLUGIN_FILE', __FILE__ );
+}
 
 // Load the add-on field once the plugins have loaded, but before init (this is when ACF registers the fields)
-if ( ! function_exists( 'register_acf_validated_field' ) ):	
+if ( !function_exists( 'register_acf_validated_field' ) ){
+
+	// ACF 4
 	function register_acf_validated_field(){
 		// create field
 		include_once 'validated_field_v4.php';
 	}
+	add_action( 'acf/register_fields', 'register_acf_validated_field' );
+
+	// ACF 5
 	function include_acf_validated_field(){
 		// create field
 		include_once 'validated_field_v5.php';
 	}
-
 	add_action( 'acf/include_fields', 'include_acf_validated_field' );
-	add_action( 'acf/register_fields', 'register_acf_validated_field' );
 
+	// Translations
 	function load_textdomain_acf_vf() {
 		load_plugin_textdomain( 'acf_vf', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 	}
 	add_action( 'plugins_loaded', 'load_textdomain_acf_vf' );
-endif;
+
+}
