@@ -1,5 +1,5 @@
 <?php
-if ( class_exists( 'acf_Field' ) && ! class_exists( 'acf_field_validated_field' ) ):
+if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' ) ):
 class acf_field_validated_field extends acf_field {
 	// vars
 	var $slug,
@@ -84,9 +84,9 @@ class acf_field_validated_field extends acf_field {
 			// validate validated_fields
 			add_filter( "acf/validate_value/type=validated_field", array( $this, 'validate_field' ), 10, 4 );
 
-			if ( ! is_admin() && $this->frontend ){
+			if ( !is_admin() && $this->frontend ){
 				// prevent CSS from loading on the front-end
-				if ( ! $this->frontend_css ){
+				if ( !$this->frontend_css ){
 					add_action( 'acf/input/admin_enqueue_scripts',  array( $this, 'remove_acf_form_style' ) );
 				}
 
@@ -200,8 +200,8 @@ class acf_field_validated_field extends acf_field {
 
 		<script type="text/javascript">
 		jQuery(document).ready(function(){
-			jQuery('form.acf-form').append('<input type="hidden" name="acf[post_ID]" value="<?php echo $post->ID; ?>"/>');
-			jQuery('form.acf-form').append('<input type="hidden" name="acf[frontend]" value="true"/>');
+			jQuery('form.acf-form').append('<input type="hidden" name="acf[acf_vf][post_ID]" value="<?php echo $post->ID; ?>"/>');
+			jQuery('form.acf-form').append('<input type="hidden" name="acf[acf_vf][frontend]" value="true"/>');
 		});
 		</script>
 
@@ -209,11 +209,12 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	function edit_form_after_editor( $post ){
-		echo "<input type='hidden' name='acf[post_ID]' value='{$post->ID}'/>";
+		echo "<input type='hidden' name='acf[acf_vf][post_ID]' value='{$post->ID}'/>";
 	}
 
 	function personal_options( $user ){
-		echo "<input type='hidden' name='acf[post_ID]' value='user_{$user->ID}'/>";
+		// for users the ID is prepending with "user_"
+		echo "<input type='hidden' name='acf[acf_vf][post_ID]' value='user_{$user->ID}'/>";
 	}
 
 	function prepare_field_for_export( $field ){
@@ -232,7 +233,7 @@ class acf_field_validated_field extends acf_field {
 	function admin_head(){
 		global $typenow, $acf;
 
-		$min = ( ! $this->debug )? '.min' : '';
+		$min = ( !$this->debug )? '.min' : '';
 		if ( $this->is_edit_page() && "acf-field-group" == $typenow ){
 			wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );	
 			wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "css/admin.css", __FILE__ ), array(), ACF_VF_VERSION );	
@@ -273,6 +274,7 @@ class acf_field_validated_field extends acf_field {
 					});
 
 				<?php endif; ?>
+				// intercept click to add post_status to the form
 				$(document).off('click', 'input[type="submit"]');
 				$(document).on( 'click', 'input[type="submit"]', function(e){
 					e.$el = $(this);
@@ -295,9 +297,9 @@ class acf_field_validated_field extends acf_field {
 
 				function get_post_status(){
 					$form = $('form#post');
-					$post_status = $form.find('input[name="acf[post_status]"]');
+					$post_status = $form.find('input[name="acf[acf_vf][post_status]"]');
 					if ( !$post_status.length ){
-						$post_status = $('<input type="hidden" name="acf[post_status]"/>');
+						$post_status = $('<input type="hidden" name="acf[acf_vf][post_status]"/>');
 						$form.append($post_status);
 					}
 					return $post_status;
@@ -532,7 +534,7 @@ class acf_field_validated_field extends acf_field {
 	*/
 	function ajax_validate_save_post() {
 		// validate
-		if ( ! isset( $_POST['_acfnonce'] ) ) {
+		if ( !isset( $_POST['_acfnonce'] ) ) {
 			// ignore validation, this form $_POST was not correctly configured
 			die();
 		}
@@ -564,9 +566,17 @@ class acf_field_validated_field extends acf_field {
 
 	function validate_field( $valid, $value, $field, $input ) {
 
-		if ( ! $valid )
+		if ( !$valid )
 			return $valid;
 
+		// we need values in this array
+		if ( !isset( $_REQUEST['acf']['acf_vf'] ) ){
+			return $valid;
+		}
+
+		// Grab the keys we added and remove them from the $_REQUEST
+		$acf_vf = $_REQUEST['acf']['acf_vf'];
+		unset( $_REQUEST['acf']['acf_vf'] );
 		
 		// the wrapped field
 		$field = $this->setup_field( $field );
@@ -577,8 +587,8 @@ class acf_field_validated_field extends acf_field {
 		}
 
 		// The new post status we stuck into the ACF request
-		$post_status = isset( $_REQUEST['acf']['post_status'] )?
-			$_REQUEST['acf']['post_status'] :
+		$post_status = isset( $acf_vf['post_status'] )?
+			$acf_vf['post_status'] :
 			false;
 
 		// we aren't publishing and we don't want to validate drafts globally or for this field
@@ -587,13 +597,15 @@ class acf_field_validated_field extends acf_field {
 		}
 
 		// get ID of the submit post or cpt, allow null for options page
-		$post_id = isset( $_POST['acf']['post_ID'] )? $_POST['acf']['post_ID'] : null;
+		$post_id = isset( $acf_vf['post_ID'] )? 
+			$acf_vf['post_ID'] : 
+			null;
 
 		// the type of the submitted post
 		$post_type = get_post_type( $post_id );				
 
-		$frontend = isset( $_REQUEST['acf']['frontend'] )?
-			$_REQUEST['acf']['frontend'] :
+		$frontend = isset( $acf_vf['frontend'] )?
+			$acf_vf['frontend'] :
 			false;
 
 		if ( !empty( $field['parent'] ) ){
@@ -613,11 +625,11 @@ class acf_field_validated_field extends acf_field {
 		$function = $field['function'];						// what type of validation?
 		$pattern = $field['pattern'];						// string to use for validation
 		$message = $field['message'];						// failure message to return to the UI
-		if ( ! empty( $function ) && ! empty( $pattern ) ){
+		if ( !empty( $function ) && !empty( $pattern ) ){
 			switch ( $function ){							// only run these checks if we have a pattern
 				case 'regex':								// check for any matches to the regular expression
 					$pattern_fltr = '/' . str_replace( "/", "\/", $pattern ) . '/';
-					if ( ! preg_match( $pattern_fltr, $value ) ){
+					if ( !preg_match( $pattern_fltr, $value ) ){
 						$valid = false;						// return false if there are no matches
 					}
 					break;
@@ -656,7 +668,7 @@ class acf_field_validated_field extends acf_field {
 
 					// this must be left aligned as it contains an inner HEREDOC
 					$php = <<<PHP
-						if ( ! function_exists( '$function_name' ) ):
+						if ( !function_exists( '$function_name' ) ):
 						function $function_name( \$args, &\$message ){
 							extract( \$args );
 							try {
@@ -688,12 +700,12 @@ PHP;
 					}
 					break;
 			}
-		} elseif ( ! empty( $function ) && $function != 'none' ) {
+		} elseif ( !empty( $function ) && $function != 'none' ) {
 			return __( "This field's validation is not properly configured.", 'acf_vf' );
 		}
 			
 		$unique = $field['unique'];
-		$field_is_unique = ! empty( $value ) && ! empty( $unique ) && $unique != 'non-unique';
+		$field_is_unique = !empty( $value ) && !empty( $unique ) && $unique != 'non-unique';
 
 		// validate the submitted values since there might be dupes in the form submit that aren't yet in the database
 		if ( $field_is_unique ){
@@ -885,7 +897,7 @@ PHP;
 			}
 
 			// Only run if we hit a condition above
-			if ( ! empty( $sql ) ){
+			if ( !empty( $sql ) ){
 
 				// Update the [IN_NOT_IN] values
 				$sql = $this->prepare_in_and_not_in( $sql, $post_ids );
@@ -908,7 +920,7 @@ PHP;
 		}
 		
 		// ACF will use any message as an error
-		if ( ! $valid ) return $message;
+		if ( !$valid ) return $message;
 
 		return $valid;
 	}
@@ -1034,7 +1046,7 @@ PHP;
 							<tbody>
 							<?php 
 
-							if ( ! isset( $sub_field['function'] ) || empty( $sub_field['function'] ) ){
+							if ( !isset( $sub_field['function'] ) || empty( $sub_field['function'] ) ){
 								$sub_field['function'] = 'none';
 							}
 
@@ -1334,7 +1346,7 @@ PHP;
 			</div>
 			<?php
 			// check to see if we need to mask the input
-			if ( ! empty( $field['mask'] ) && ( $is_new || $this->check_value( 'no', $field['read_only'] ) ) ) {
+			if ( !empty( $field['mask'] ) && ( $is_new || $this->check_value( 'no', $field['read_only'] ) ) ) {
 				// we have to use $sub_field['key'] since new repeater fields don't have a unique ID
 				?>
 				<script type="text/javascript">
@@ -1344,7 +1356,6 @@ PHP;
 								$(this).mask("<?php echo $field['mask']?>", {
 									autoclear: <?php echo isset( $field['mask_autoclear'] ) && empty( $field['mask_autoclear'] )? 'false' : 'true'; ?>,
 									placeholder: '<?php echo isset( $field['mask_placeholder'] )? $field['mask_placeholder'] : '_'; ?>',
-									completed: function(){ console.log(jQuery(this)); }
 								});
 							});
 						});
@@ -1368,7 +1379,7 @@ PHP;
 	*/
 	function input_admin_enqueue_scripts(){
 		// register acf scripts
-		$min = ( ! $this->debug )? '.min' : '';
+		$min = ( !$this->debug )? '.min' : '';
 		wp_register_script( 'jquery-masking', plugins_url( "js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION, true );
 		
 		// enqueue scripts
