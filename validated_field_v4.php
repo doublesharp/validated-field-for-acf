@@ -449,7 +449,9 @@ PHP;
 						// We got some matches, but there might be more than one so we need to concatenate the collisions
 						$conflicts = "";
 						foreach ( $rows as $row ){
-							$permalink = ( $frontend )? get_permalink( $row->post_id ) : "/wp-admin/post.php?post={$row->post_id}&action=edit";
+							$permalink = $frontend ? 
+								get_permalink( $row->post_id ) : 
+								admin_url( "/wp-admin/post.php?post={$row->post_id}&action=edit" );
 							$conflicts.= "<a href='{$permalink}' style='color:inherit;text-decoration:underline;'>{$row->post_title}</a>";
 							if ( $row !== end( $rows ) ) $conflicts.= ', ';
 						}
