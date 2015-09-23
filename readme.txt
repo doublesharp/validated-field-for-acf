@@ -60,9 +60,10 @@ Global configurations for the Validated Field plugin can be found in the WordPre
 * Portuguese translations (pt_BR) courtesy of [DiegoRLima](https://github.com/DiegoRLima).
 * Bug fix: PHP validation of `Repeater` fields' `$prev_value` provided to the validation script.
 * Bug fix: Properly prepare validated fields for export.
+* Bug fix: use `admin_url()` so calculate correct path when `/wp-admin` is in a subdirectory, props [DiegoRLima](https://github.com/DiegoRLima).
 * ACF4
  * Clear field errors when a previously invalid field is selected/changed.
- * Add localization support to JavaScript strings.
+ * Add localization support to JavaScript strings, props [DiegoRLima](https://github.com/DiegoRLima).
 * ACF5
  * Improved support for `Option` pages.
  * Improved Admin `Custom Fields > Validated Field Settings` page using ACF.
