@@ -898,13 +898,22 @@ PHP;
 						}
 					} else {
 						if ( 'post_key' == $unique ){
-							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
-								$post_type,
-								$field['name'],
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
+							if ( $is_user ){
+								$sql = $wpdb->prepare( 
+									"{$sql_prefix} AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+									$field['name'],
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							} else {	
+								$sql = $wpdb->prepare( 
+									"{$sql_prefix} AND p.post_type = %s AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+									$post_type,
+									$field['name'],
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							}
 						} else {
 							$sql = $wpdb->prepare( 
 								"{$sql_prefix} AND {$table_key} IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
@@ -1272,10 +1281,10 @@ PHP;
 			'choices' 		=> array(
 				'non-unique'	=> __( 'Non-Unique Value', 'acf_vf' ),
 				'global'		=> __( 'Unique Globally', 'acf_vf' ),
-				'post_type'		=> __( 'Unique For Post Type', 'acf_vf' ),
-				'post_key'		=> __( 'Unique For Post Type', 'acf_vf' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
-				'this_post'		=> __( 'Unique For Post', 'acf_vf' ),
-				'this_post_key'	=> __( 'Unique For Post', 'acf_vf' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
+				'post_type'		=> __( 'Unique For Post Type', 'acf_vf' ) . ' \ ' . __( 'User' ),
+				'post_key'		=> __( 'Unique For Post Type', 'acf_vf' ) . ' \ ' . __( 'User' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
+				'this_post'		=> __( 'Unique For Post', 'acf_vf' ) . ' \ ' . __( 'User' ),
+				'this_post_key'	=> __( 'Unique For Post', 'acf_vf' ) . ' \ ' . __( 'User' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
 			),
 			'layout'		=> 'horizontal',
 			'optgroup' 		=> false,

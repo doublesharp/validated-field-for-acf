@@ -378,36 +378,59 @@ PHP;
 				global $wpdb;
 				$status_in = "'" . implode( "','", $field['unique_statuses'] ) . "'";
 
-				// WPML compatibility, get code list of active languages
-				if ( function_exists( 'icl_object_id' ) ){
-					$languages = $wpdb->get_results( "SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = 1", ARRAY_A );
-					$wpml_ids = array();
-					foreach( $languages as $lang ){
-						$wpml_ids[] = (int) icl_object_id( $post_id, $post_type, true, $lang['code'] );
-					}
-					$post_ids = array_unique( $wpml_ids );
+				// are we editting a user?
+				$is_user = strpos( $post_id, 'user_' ) === 0;
+
+				if ( $is_user ) {
+					// set up queries for the user table
+					$post_ids = array( (int) str_replace( 'user_', '', $post_id ) );
+					$table_key = 'user_id';
+					$sql_prefix = "SELECT m.umeta_id AS meta_id, m.{$table_key} AS {$table_key}, u.user_login AS title FROM {$wpdb->usermeta} m JOIN {$wpdb->users} u ON u.ID = m.{$table_key}";
 				} else {
-					$post_ids = array( (int) $post_id );
+					// set up queries for the posts table
+					if ( function_exists( 'icl_object_id' ) ){
+						// WPML compatibility, get code list of active languages
+						$languages = $wpdb->get_results( "SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = 1", ARRAY_A );
+						$wpml_ids = array();
+						foreach( $languages as $lang ){
+							$wpml_ids[] = (int) icl_object_id( $post_id, $post_type, true, $lang['code'] );
+						}
+						$post_ids = array_unique( $wpml_ids );
+					} else {
+						$post_ids = array( (int) $post_id );
+					}
+					$table_key = 'post_id';
+					$sql_prefix = "SELECT m.meta_id AS meta_id, m.{$table_key} AS {$table_key}, p.post_title AS title FROM {$wpdb->postmeta} m JOIN {$wpdb->posts} p ON p.ID = m.{$table_key} AND p.post_status IN ($status_in)";
 				}
 
-				$sql_prefix = "SELECT pm.meta_id AS meta_id, pm.post_id AS post_id, p.post_title AS post_title FROM {$wpdb->postmeta} pm JOIN {$wpdb->posts} p ON p.ID = pm.post_id AND p.post_status IN ($status_in)";
 				switch ( $unique ){
 					case 'global': 
 						// check to see if this value exists anywhere in the postmeta table
 						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND post_id NOT IN ([NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )",
+							"{$sql_prefix} AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )",
 							$value,
 							'%"' . $wpdb->esc_like( $value ) . '"%'
 						);
 						break;
 					case 'post_type':
 						// check to see if this value exists in the postmeta table with this $post_id
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN ([NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )", 
-							$post_type,
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
+						if ( $is_user ){
+							$sql = $wpdb->prepare( 
+								"{$sql_prefix} WHERE ( ( {$table_key} IN ([IN_NOT_IN]) AND meta_key != %s ) OR {$table_key} NOT IN ([IN_NOT_IN]) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
+								$field['name'],
+								$value,
+								'%"' . $wpdb->esc_like( $value ) . '"%'
+							);
+
+						} else {
+							$sql = $wpdb->prepare( 
+								"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_key} IN ([IN_NOT_IN]) AND meta_key != %s ) OR {$table_key} NOT IN ([IN_NOT_IN]) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
+								$post_type,
+								$field['name'],
+								$value,
+								'%"' . $wpdb->esc_like( $value ) . '"%'
+							);
+						}
 						break;
 					case 'post_key':
 						// check to see if this value exists in the postmeta table with both this $post_id and $meta_key
@@ -415,7 +438,7 @@ PHP;
 							$this_key = $parent_field['name'] . '_' . $index . '_' . $field['name'];
 							$meta_key = $parent_field['name'] . '_%_' . $field['name'];
 							$sql = $wpdb->prepare(
-								"{$sql_prefix} AND p.post_type = %s WHERE ( ( post_id NOT IN ([NOT_IN]) AND meta_key != %s AND meta_key LIKE %s ) OR ( post_id NOT IN ([NOT_IN]) AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
+								"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_key} NOT IN ([IN_NOT_IN]) AND meta_key != %s AND meta_key LIKE %s ) OR ( {$table_key} NOT IN ([IN_NOT_IN]) AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
 								$post_type,
 								$this_key,
 								$meta_key,
@@ -424,13 +447,22 @@ PHP;
 								'%"' . $wpdb->esc_like( $value ) . '"%'
 							);
 						} else {
-							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND p.post_type = %s AND post_id NOT IN ([NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
-								$post_type,
-								$field['name'],
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
+							if ( $is_user ){
+								$sql = $wpdb->prepare( 
+									"{$sql_prefix} AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+									$field['name'],
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							} else {	
+								$sql = $wpdb->prepare( 
+									"{$sql_prefix} AND p.post_type = %s AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+									$post_type,
+									$field['name'],
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							}
 						}
 						break;
 					default:
@@ -442,9 +474,9 @@ PHP;
 				// Only run if we hit a condition above
 				if ( ! empty( $sql ) ){
 
-					// Update the [NOT_IN] values
-					$sql = $this->prepare_not_in( $sql, $post_ids );
-
+					// Update the [IN_NOT_IN] values
+					$sql = $this->prepare_in_not_in( $sql, $post_ids );
+					
 					// Execute the SQL
 					$rows = $wpdb->get_results( $sql );
 					if ( count( $rows ) ){
@@ -453,8 +485,10 @@ PHP;
 						foreach ( $rows as $row ){
 							$permalink = $frontend ? 
 								get_permalink( $row->post_id ) : 
-								admin_url( "/wp-admin/post.php?post={$row->post_id}&action=edit" );
-							$conflicts.= "<a href='{$permalink}' style='color:inherit;text-decoration:underline;'>{$row->post_title}</a>";
+								$is_user ? 
+									admin_url( "/wp-admin/user-edit.php?user_id={$row->user_id}" ) :
+									admin_url( "/wp-admin/post.php?post={$row->post_id}&action=edit" );
+							$conflicts.= "<a href='{$permalink}' style='color:inherit;text-decoration:underline;'>{$row->title}</a>";
 							if ( $row !== end( $rows ) ) $conflicts.= ', ';
 						}
 						$message = __( 'The value', 'acf_vf' ) . " '$value' " . __( 'is already in use by', 'acf_vf' ) . " {$conflicts}.";
@@ -463,11 +497,15 @@ PHP;
 				}
 			}
 
-			$return_fields[] = array(
-				'id'		=> $input['id'],
-				'message'	=> true === $valid? '' : ! empty( $message )? htmlentities( $message, ENT_NOQUOTES, 'UTF-8' ) : __( 'Validation failed.', 'acf_vf' ),
-				'valid'		=> $valid,
+			$result = array(
+				'id' => $input['id'],
+				'valid' => $valid
 			);
+			if ( !$valid ){
+				$result['message'] = ( true === $valid ) ? '' : ! empty( $message )? htmlentities( $message, ENT_NOQUOTES, 'UTF-8' ) : __( 'Validation failed.', 'acf_vf' );
+			}
+
+			$return_fields[] = $result;
 		}
 		
 		// Send the results back to the browser as JSON
@@ -476,12 +514,12 @@ PHP;
 			json_encode( $return_fields ) );
 	}
 
-	private function prepare_not_in( $sql, $post_ids ){
+	private function prepare_in_not_in( $sql, $post_ids ){
 		global $wpdb;
-		$not_in_count = substr_count( $sql, '[NOT_IN]' );
+		$not_in_count = substr_count( $sql, '[IN_NOT_IN]' );
 		if ( $not_in_count > 0 ){
-			$args = array( str_replace( '[NOT_IN]', implode( ', ', array_fill( 0, count( $post_ids ), '%d' ) ), str_replace( '%', '%%', $sql ) ) );
-			for ( $i=0; $i < substr_count( $sql, '[NOT_IN]' ); $i++ ) { 
+			$args = array( str_replace( '[IN_NOT_IN]', implode( ', ', array_fill( 0, count( $post_ids ), '%d' ) ), str_replace( '%', '%%', $sql ) ) );
+			for ( $i=0; $i < substr_count( $sql, '[IN_NOT_IN]' ); $i++ ) { 
 				$args = array_merge( $args, $post_ids );
 			}
 			$sql = call_user_func_array( array( $wpdb, 'prepare' ), $args );
@@ -735,8 +773,8 @@ PHP;
 					'choices' => array(
 						'non-unique'=> __( 'Non-Unique Value', 'acf_vf' ),
 						'global'	=> __( 'Unique Globally', 'acf_vf' ),
-						'post_type'	=> __( 'Unique For Post Type', 'acf_vf' ),
-						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
+						'post_type'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' \ ' . __( 'User' ),
+						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' \ ' . __( 'User' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
 					),
 					'optgroup'	=> false,
 					'multiple'	=> '0',
@@ -962,7 +1000,7 @@ PHP;
 			'jquery-ui-tabs',
 			'jquery-masking',
 			'acf-validated-field',
-		));
+		) );
 
 		if ( $this->debug ){ 
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'debug_head' ), 20 );
