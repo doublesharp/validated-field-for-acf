@@ -53,14 +53,17 @@ Global configurations for the Validated Field plugin can be found in the WordPre
 
 == Changelog ==
 = 2.0 =
+* Added support for validating `User` meta fields.
 * Added support for Validated Field add-ons.
 * Load JavaScript files a the bottom of the page to prevent blocking, props @skarck.
-* Wrapped field type displayed in Field Group Editor without opening the field.
-* Bug fix for PHP validation of `Repeater` fields' `$prev_value` provided to the validation script.
-* Bug fix to properly prepare wrapped fields for export.
-* Code cleanup
+* The type field type displayed in Field Group Editor now visible without opening the field.
+* Portuguese translations (pt_BR) courtesy of [DiegoRLima](https://github.com/DiegoRLima).
+* Bug fix: PHP validation of `Repeater` fields' `$prev_value` provided to the validation script.
+* Bug fix: Properly prepare validated fields for export.
+* ACF4
+ * Clear field errors when a previously invalid field is selected/changed.
+ * Add localization support to JavaScript strings.
 * ACF5
- * Added support for validating `User` meta fields.
  * Improved support for `Option` pages.
  * Improved Admin `Custom Fields > Validated Field Settings` page using ACF.
  * Improved uniqueness validation of submitted fields for the current post.
