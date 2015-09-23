@@ -84,6 +84,8 @@ class acf_field_validated_field extends acf_field {
 			// validate validated_fields
 			add_filter( "acf/validate_value/type=validated_field", array( $this, 'validate_field' ), 10, 4 );
 
+			add_filter( "acf/update_value/type=validated_field", array( $this, 'validate_update_value' ), 10, 3 );
+
 			if ( !is_admin() && $this->frontend ){
 				// prevent CSS from loading on the front-end
 				if ( !$this->frontend_css ){
@@ -224,6 +226,15 @@ class acf_field_validated_field extends acf_field {
 			add_filter( 'acf/prepare_field_for_export', array( $this, 'prepare_field_for_export' ) );
 		}
 		return $field;
+	}
+
+	function validate_update_value( $value, $post_id, $field ){
+		if ( !acf_validate_value( $value, $field, '' ) ){
+			// if it's not value set the new value to the current value
+			$value = get_the_field( $field['name'], $post_id );
+			// acf_get_validation_errors() if we want to do something with it
+		}
+		return $value;
 	}
 
 	function option_value( $key ){
@@ -570,13 +581,27 @@ class acf_field_validated_field extends acf_field {
 			return $valid;
 
 		// we need values in this array
-		if ( !isset( $_REQUEST['acf']['acf_vf'] ) ){
-			return $valid;
+		if ( isset( $_REQUEST['acf']['acf_vf'] ) ){
+			// Grab the keys we added and remove them from the $_REQUEST
+			$acf_vf = $_REQUEST['acf']['acf_vf'];
+			unset( $_REQUEST['acf']['acf_vf'] );
+		} elseif ( null !== ( $post = get_post() ) ){
+			// This look slike a post, get the ID and current status
+			$acf_vf = array(
+				'post_ID' => $post->ID,
+				'post_status' = $post->post_status,
+			);
+		} else {
+			// This might be a user update
+			global $profileuser;
+			if ( !empty( $profileuser ) ){
+				$acf_vf = array(
+					'post_ID' => 'user_' . $profileuser->ID
+				);
+			} else {
+				return $valid;
+			}
 		}
-
-		// Grab the keys we added and remove them from the $_REQUEST
-		$acf_vf = $_REQUEST['acf']['acf_vf'];
-		unset( $_REQUEST['acf']['acf_vf'] );
 		
 		// the wrapped field
 		$field = $this->setup_field( $field );
