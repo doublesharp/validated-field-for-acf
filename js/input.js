@@ -66,7 +66,7 @@ var vf = {
 		var fields = [];
 
 		// inspect each of the validated fields
-		formObj.find('.field_type-validated_field').each( function(){
+		formObj.find('.field_type-validated_field').each(function(){
 			div = $(this);
 
 			// we want to show some of the hidden fields.
@@ -192,15 +192,15 @@ var vf = {
 			$('.submitbox .button').removeClass('button-primary-disabled').removeClass('disabled');
 			if ( !vf.valid ){
 				// if it wasn't valid, show all the errors
-				formObj.before('<div id="acfvf_message" class="error"><p>Validation Failed. See errors below.</p></div>');
+				formObj.before('<div id="acfvf_message" class="error"><p>'+vf_l10n.message+'</p></div>');
 				formObj.find('.field_type-validated_field .acf-error-message').show();
 			} else if ( vf.debug ){
 				// it was valid, but we have debugging on which will confirm the submit
-				vf.valid = confirm("The fields are valid, do you want to submit the form?");
+				vf.valid = confirm(vf_l10n.debug);
 			} 
 			// if everything is good, reclick which will now bypass the validation
 			if (vf.valid) {
-				clickObj.click();
+				clickObj.trigger('click');
 			}
 		}
 	}

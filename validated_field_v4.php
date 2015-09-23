@@ -100,6 +100,7 @@ class acf_field_validated_field extends acf_field {
 			add_action( 'wp_ajax_validate_fields', array( $this, 'ajax_validate_fields' ) );
 
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( $this, 'input_admin_head' ) );
+
 			if ( ! is_admin() && $this->frontend ){
 				if ( ! $this->frontend_css ){
 					add_action( 'acf/input/admin_enqueue_scripts',  array( $this, 'remove_acf_form_style' ) );
@@ -113,6 +114,7 @@ class acf_field_validated_field extends acf_field {
 				add_action( 'admin_init', array( $this, 'admin_register_settings' ) );
 				add_action( 'admin_menu', array( $this, 'admin_add_menu' ), 11 );
 
+				// remove uneeded properties from subfield
 				add_filter( 'acf/export/clean_fields', array( $this, 'prepare_field_for_export' ) );
 			}
 		}
@@ -946,6 +948,15 @@ PHP;
 		wp_register_script( 'sh-core', plugins_url( 'js/shCore.js', __FILE__ ), array( 'acf-input' ), $this->settings['version'], true );
 		wp_register_script( 'sh-autoloader', plugins_url( 'js/shAutoloader.js', __FILE__ ), array( 'sh-core' ), $this->settings['version'], true );
 		
+
+
+		// translations
+		wp_localize_script( 'acf-validated-field', 'vf_l10n', array(
+			'message' => __( 'Validation Failed. See errors below.', 'acf_vf' ),
+			'debug' => __( 'The fields are valid, do you want to submit the form?', 'acf_vf' ),
+
+		) );
+
 		// enqueue scripts
 		wp_enqueue_script( array(
 			'jquery',
