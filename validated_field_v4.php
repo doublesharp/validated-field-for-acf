@@ -948,8 +948,6 @@ PHP;
 		wp_register_script( 'sh-core', plugins_url( 'js/shCore.js', __FILE__ ), array( 'acf-input' ), $this->settings['version'], true );
 		wp_register_script( 'sh-autoloader', plugins_url( 'js/shAutoloader.js', __FILE__ ), array( 'sh-core' ), $this->settings['version'], true );
 		
-
-
 		// translations
 		wp_localize_script( 'acf-validated-field', 'vf_l10n', array(
 			'message' => __( 'Validation Failed. See errors below.', 'acf_vf' ),

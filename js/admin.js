@@ -193,13 +193,6 @@
 				}
 			});
 		});
-/*
-		$field.find('tr[data-name="type"]:last').siblings().each(function(i, el){
-			if ($(this).data('setting')!=sub_type){
-				$(this).hide();
-			}
-		})
-*/	
 	});
 
 })(jQuery);
