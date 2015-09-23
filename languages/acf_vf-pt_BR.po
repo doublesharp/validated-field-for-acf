@@ -1,0 +1,349 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Validated Field for ACF\n"
+"POT-Creation-Date: 2015-09-19 23:43-0300\n"
+"Language-Team: Diego R. Lima <contato@diego-rlima.com.br>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.4\n"
+"X-Poedit-Basepath: .\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPath-1: ..\n"
+
+#: ../validated_field_v4.php:30 ../validated_field_v5.php:31
+msgid "Enable Debug"
+msgstr "Habilitar Depuração"
+
+#: ../validated_field_v4.php:31 ../validated_field_v5.php:32
+msgid "Check this box to turn on debugging for Validated Fields."
+msgstr "Marque esta opção para ativar a depuração para Campos Validados."
+
+#: ../validated_field_v4.php:36 ../validated_field_v5.php:37
+msgid "Enable Draft Validation"
+msgstr "Habilitar Rascunho de Validação"
+
+#: ../validated_field_v4.php:37 ../validated_field_v5.php:38
+msgid ""
+"Check this box to enable Draft validation globally, or uncheck to allow it "
+"to be set per field."
+msgstr ""
+"Marque esta opção para ativar o rascunho de validação a nível global, o "
+"desmarque para permitir que seja configurado por campo."
+
+#: ../validated_field_v4.php:42 ../validated_field_v5.php:43
+msgid "Enable Front-End Validation"
+msgstr "Habilitar validação Front-End"
+
+#: ../validated_field_v4.php:43 ../validated_field_v5.php:44
+msgid "Check this box to turn on validation for front-end forms created with"
+msgstr "Marque esta opção para ativar a validação de formulários criados com"
+
+#: ../validated_field_v4.php:48 ../validated_field_v5.php:49
+msgid "Enqueue Admin CSS on Front-End"
+msgstr "Enqueue o CSS administrativo no Front-End"
+
+#: ../validated_field_v4.php:49 ../validated_field_v5.php:50
+msgid "Uncheck this box to turn off \"colors-fresh\" admin theme enqueued by"
+msgstr ""
+"Desmarque esta opção para desativar o tema administrativo \"colors-fresh\" "
+"enfileirado por"
+
+#: ../validated_field_v4.php:53 ../validated_field_v4.php:540
+#: ../validated_field_v5.php:54 ../validated_field_v5.php:770
+msgid "Validated Field"
+msgstr "Campo Validado"
+
+#: ../validated_field_v4.php:54 ../validated_field_v4.php:494
+#: ../validated_field_v5.php:55 ../validated_field_v5.php:726
+msgid "Basic"
+msgstr "Básico"
+
+#: ../validated_field_v4.php:67 ../validated_field_v4.php:444
+#: ../validated_field_v5.php:68
+msgid "Validation failed."
+msgstr "Erro de validação."
+
+#: ../validated_field_v4.php:132 ../validated_field_v5.php:246
+msgid "Validated Field Settings"
+msgstr "Configuração de Campo Validado"
+
+#: ../validated_field_v4.php:338 ../validated_field_v5.php:474
+msgid "PHP Error"
+msgstr "PHP Error"
+
+#: ../validated_field_v4.php:350 ../validated_field_v5.php:487
+msgid "This field's validation is not properly configured."
+msgstr "A validação deste campo não está configurada corretamente."
+
+#: ../validated_field_v4.php:436 ../validated_field_v5.php:543
+#: ../validated_field_v5.php:673
+msgid "The value"
+msgstr "O valor"
+
+#: ../validated_field_v4.php:436 ../validated_field_v5.php:673
+msgid "is already in use by"
+msgstr "já está sendo usado por"
+
+#: ../validated_field_v4.php:493 ../validated_field_v5.php:725
+msgid "Layout"
+msgstr "Layout"
+
+#: ../validated_field_v4.php:498 ../validated_field_v5.php:733
+msgid "Read Only?"
+msgstr "Somente leitura?"
+
+#: ../validated_field_v4.php:506 ../validated_field_v4.php:523
+#: ../validated_field_v5.php:741 ../validated_field_v5.php:753
+#: ../validated_field_v5.php:873
+msgid "Yes"
+msgstr "Sim"
+
+#: ../validated_field_v4.php:507 ../validated_field_v4.php:524
+#: ../validated_field_v5.php:740 ../validated_field_v5.php:754
+#: ../validated_field_v5.php:874
+msgid "No"
+msgstr "Não"
+
+#: ../validated_field_v4.php:515 ../validated_field_v5.php:747
+msgid "Validate Drafts/Preview?"
+msgstr "Validar Rascunhos/Visualizações?"
+
+#: ../validated_field_v4.php:531 ../validated_field_v5.php:761
+msgid "Warning"
+msgstr "Aviso"
+
+#: ../validated_field_v4.php:533 ../validated_field_v5.php:763
+msgid ""
+"has been set to <code>false</code> which overrides field level configurations"
+msgstr ""
+"foi definido para <code>false</code> que substitui configurações a nível de "
+"campo"
+
+#: ../validated_field_v4.php:552 ../validated_field_v5.php:814
+msgid "Field Type"
+msgstr "Tipo de Campo"
+
+#: ../validated_field_v4.php:584
+msgid "Input Mask"
+msgstr "Máscara de Entrada"
+
+#: ../validated_field_v4.php:585 ../validated_field_v5.php:849
+msgid ""
+"Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; "
+"to match any alphanumeric."
+msgstr ""
+"Use &#39;a&#39; para corresponder com  &#39;A-Za-z&#39;, '&#39;9&#39; para "
+"corresponder com 0-9, e &#39;*&#39; para corresponder a qualquer "
+"alfanumérico."
+
+#: ../validated_field_v4.php:586 ../validated_field_v5.php:851
+msgid "More info"
+msgstr "Mais informações"
+
+#: ../validated_field_v4.php:624 ../validated_field_v5.php:853
+msgid "Input masking is not compatible with the \"number\" field type!"
+msgstr ""
+"Máscaras de entrada não são compatíveis com o tipo de campo \"number\"!"
+
+#: ../validated_field_v4.php:628 ../validated_field_v5.php:892
+msgid "Validation: Function"
+msgstr "Validação: Função"
+
+#: ../validated_field_v4.php:629 ../validated_field_v5.php:893
+msgid "How should the field be server side validated?"
+msgstr "Como deve ser a validação do campo no servidor?"
+
+#: ../validated_field_v4.php:637 ../validated_field_v5.php:899
+msgid "None"
+msgstr "Nenhuma"
+
+#: ../validated_field_v4.php:638 ../validated_field_v5.php:900
+msgid "Regular Expression"
+msgstr "Expressão Regular"
+
+#: ../validated_field_v4.php:640 ../validated_field_v5.php:902
+msgid "PHP Statement"
+msgstr "Declaração de PHP"
+
+#: ../validated_field_v4.php:651 ../validated_field_v5.php:913
+msgid "Validation: Pattern"
+msgstr "Validação: Modelo"
+
+#: ../validated_field_v4.php:656 ../validated_field_v5.php:918
+msgid "Pattern match the input using"
+msgstr "O modelo deve coincidir com a entrada usando"
+
+#: ../validated_field_v4.php:661
+msgid ""
+"Use any PHP code and return true or false. If nothing is returned it will "
+"evaluate to true."
+msgstr ""
+"Usar qualquer código PHP e retornar verdadeiro ou falso. Se nada é "
+"retornado, a validação será verdadeira."
+
+#: ../validated_field_v4.php:662 ../validated_field_v5.php:924
+msgid "Available variables"
+msgstr "Variáveis disponíveis"
+
+#: ../validated_field_v4.php:662
+msgid "returned to UI"
+msgstr "retornado para a interface de usuário"
+
+#: ../validated_field_v4.php:663 ../validated_field_v5.php:935
+msgid "Example"
+msgstr "Exemplo"
+
+#: ../validated_field_v4.php:667 ../validated_field_v5.php:942
+msgid "SQL"
+msgstr "SQL"
+
+#: ../validated_field_v4.php:684 ../validated_field_v5.php:972
+msgid "Validation: Error Message"
+msgstr "Validação: Mensagem de erro"
+
+#: ../validated_field_v4.php:698 ../validated_field_v5.php:984
+msgid "Unique Value?"
+msgstr "Valor único?"
+
+#: ../validated_field_v4.php:702 ../validated_field_v5.php:985
+msgid "Make sure this value is unique for..."
+msgstr "Certifique-se de que este valor é único para..."
+
+#: ../validated_field_v4.php:711 ../validated_field_v5.php:991
+msgid "Non-Unique Value"
+msgstr "Valor não único"
+
+#: ../validated_field_v4.php:712 ../validated_field_v5.php:992
+msgid "Unique Globally"
+msgstr "Único Globalmente"
+
+#: ../validated_field_v4.php:713 ../validated_field_v4.php:714
+#: ../validated_field_v5.php:993 ../validated_field_v5.php:994
+msgid "Unique For Post Type"
+msgstr "Único para o tipo de post"
+
+#: ../validated_field_v4.php:714 ../validated_field_v5.php:994
+#: ../validated_field_v5.php:996
+msgid "Field/Meta Key"
+msgstr "Campo / Meta key"
+
+#: ../validated_field_v4.php:724 ../validated_field_v5.php:1011
+msgid "Unique Value: Apply to...?"
+msgstr "Valor Único: Aplicar a ...?"
+
+#: ../validated_field_v4.php:1101 ../validated_field_v5.php:734
+#: ../validated_field_v5.php:1285
+msgid "Read only"
+msgstr "Somente leitura"
+
+#: ../validated_field_v5.php:347
+msgid "Validation successful"
+msgstr "Validação bem sucedida"
+
+#: ../validated_field_v5.php:357
+msgid "Validation failed"
+msgstr "A validação falhou"
+
+#: ../validated_field_v5.php:363
+msgid "Please check your values and submit again."
+msgstr "Por favor, verifique seus valroes e tente novamente."
+
+#: ../validated_field_v5.php:543
+msgid "was submitted multiple times and should be unique for"
+msgstr "foi enviado várias vezes e deve ser único para"
+
+#: ../validated_field_v5.php:734
+msgid ""
+"When a field is marked read only, it will be visible but uneditable. Read "
+"only fields are marked with "
+msgstr ""
+"Quando um campo está marcado apenas para leitura, ele será visível, mas não "
+"editável. Campos \"somente leitura\" estão marcados com"
+
+#: ../validated_field_v5.php:815
+msgid "The underlying field type that you would like to validate."
+msgstr "O tipo de campo subjacente que vocÊ gostaria de validar."
+
+#: ../validated_field_v5.php:848
+msgid "Input mask"
+msgstr "Máscara de entrada"
+
+#: ../validated_field_v5.php:865
+msgid "Input Mask: Autoclear"
+msgstr "Máscara de entrada: Autoclear"
+
+#: ../validated_field_v5.php:866
+msgid "Clear values that do match the input mask, if provided."
+msgstr ""
+"Valores claros que fazem corresponder com a máscara de entrada, se fornecida."
+
+#: ../validated_field_v5.php:881
+msgid "Input Mask: Placeholder"
+msgstr "Máscara de entrada: Placeholder"
+
+#: ../validated_field_v5.php:882
+msgid "Use this string or character as a placeholder for the input mask."
+msgstr ""
+"Use esta string ou caractere como um placeholder para a máscara de entrada."
+
+#: ../validated_field_v5.php:923
+msgid ""
+"Use any PHP code and return true for success or false for failure. If "
+"nothing is returned it will evaluate to true."
+msgstr ""
+"Usar qualquer código PHP e retornar verdadeiro ou falso. Se nada é "
+"retornado, a validação será verdadeira."
+
+#: ../validated_field_v5.php:954
+msgid "Pattern"
+msgstr "Modelo"
+
+#: ../validated_field_v5.php:973
+msgid "The default error message that is returned to the client."
+msgstr "A mensagem de erro padrão que é retornada ao cliente."
+
+#: ../validated_field_v5.php:995 ../validated_field_v5.php:996
+msgid "Unique For Post"
+msgstr "Único para o post"
+
+#: ../validated_field_v5.php:1012
+msgid "Make sure this value is unique for the checked post statuses."
+msgstr ""
+"Certifique-se de que este valor é único para os status de post marcados."
+
+#~ msgid "Validation Function"
+#~ msgstr "Função de validação"
+
+#~ msgid "Validation Pattern"
+#~ msgstr "Modelo de validação"
+
+#~ msgid "Error Message"
+#~ msgstr "Mensagem de erro"
+
+#~ msgid "Apply to which post statuses?"
+#~ msgstr "Aplicar a quais estados de post?"
+
+#~ msgid "Autoclear invalid values?"
+#~ msgstr "Auto limpar valores inválidos?"
+
+#~ msgid "Input mask placeholder"
+#~ msgstr "Máscara de entrada de placeholder"
+
+#~ msgid "Apply to...?"
+#~ msgstr "Aplicar a...?"
+
+#~ msgid "More info."
+#~ msgstr "Mais informações."
+
+#~ msgid "Key"
+#~ msgstr "Key"
+
+#~ msgid "Unique For Post Type -> Key"
+#~ msgstr "Único para o tipo de post -> Key"
