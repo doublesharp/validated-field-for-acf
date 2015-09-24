@@ -5,16 +5,31 @@
 */
 var vf = {
 	valid 		: false,
-	$el 	: false,
+	$el 		: false,
 	reclick		: false,
 	debug 		: false,
 	drafts		: true,
 };
 
+if ( typeof acf.o == 'undefined' ){
+	acf.o = {};
+}
+
 (function($){
 	$(document).ready(function(){
 		// Make sure the errors are formatted by adding the acf_postbox class
 		$('#profile-page').addClass('acf_postbox');
+		$('form#validated-field input[type="submit"]').addClass('button button-primary button-large');
+
+		// Trigger a custom event when the tabs are refreshed		
+		var origRefresh = acf.fields.tab.refresh;
+		acf.fields.tab.refresh = function(){
+			result = origRefresh.apply(this, arguments);
+			for (i=0; i<arguments.length;i++){
+				$(arguments[i]).trigger('acf/fields/tab/refresh', [arguments]);
+			}
+		    return result;
+		};
 
 		// DOM elements we need to validate the value of
 		inputSelector = 'input[type="text"], input[type="hidden"], textarea, select, input[type="checkbox"]:checked';
@@ -30,7 +45,7 @@ var vf = {
 		});
 
 		// When a .button is clicked we need to track what was clicked
-		$(document).on('click', 'form#post .button, form#post input[type=submit], form#your-profile input[type=submit]', function(){
+		$(document).on('click', 'form#post .button, form#post input[type=submit], form#your-profile input[type=submit], form#validated-field input[type=submit]', function(){
 			vf.$el = $(this);
 			// The default 'click' runs first and then calls 'submit' so we need to retrigger after we have tracked the '$el'
 			if (vf.reclick){
@@ -40,7 +55,7 @@ var vf = {
 		});
 		
 		// Intercept the form submission
-		$(document).on('submit', 'form#post, form#your-profile', function(){
+		$(document).on('submit', 'form#post, form#your-profile, form#validated-field', function(){
 			// remove error messages since we are going to revalidate
 			$('.field_type-validated_field').find('.acf-error-message').remove();
 
@@ -151,17 +166,20 @@ var vf = {
 				return true;
 			} else {
 				// send everything to the server to validate
-				var postEl = vf.frontend? 'input[name=post_id]' : '#post_ID';
 				var prefix = '';
 				if ( $('#profile-page').length ){
-					postEl = '#user_id';
+					post_id = $('#user_id').val();
 					prefix = 'user_';
+				} else if ( acf.o.post_id == 'options' ){
+					post_id = 'options';
+				} else {
+					post_id = $(vf.frontend? 'input[name=post_id]' : '#post_ID').val();
 				}
 				$.ajax({
 					url: ajaxurl,
 					data: {
 						action: 'validate_fields',
-						post_id: prefix + formObj.find(postEl).val(),
+						post_id: prefix + post_id,
 						click_id: clickObj.attr('id'),
 						frontend: vf.frontend,
 						fields: fields
@@ -191,7 +209,7 @@ var vf = {
 							vf.valid = false;
 							msg = $('<div/>').html(fld.message).text();
 							input = $('[name="'+fld.id.replace('[', '\\[').replace(']', '\\]')+'"]');
-							input.parent().parent().append('<span class="acf-error-message"><i class="bit"></i>' + msg + '</span>');
+							input.closest('.validated-field').append('<span class="acf-error-message"><i class="bit"></i>' + msg + '</span>');
 							field = input.closest('.field');
 							field.addClass('error');
 							field.find('.widefat').css('width','100%');
