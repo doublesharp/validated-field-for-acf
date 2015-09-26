@@ -19,7 +19,7 @@ if ( typeof acf.o == 'undefined' ){
 	$(document).ready(function(){
 		// Make sure the errors are formatted by adding the acf_postbox class
 		$('#profile-page').addClass('acf_postbox');
-		$('form#validated-field input[type="submit"]').addClass('button button-primary button-large');
+		$('form.acf-form input[type="submit"]').addClass('button button-primary button-large');
 
 		// Trigger a custom event when the tabs are refreshed		
 		var origRefresh = acf.fields.tab.refresh;
