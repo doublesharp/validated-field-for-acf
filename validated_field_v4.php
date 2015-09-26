@@ -67,7 +67,7 @@ class acf_field_validated_field extends acf_field {
 			'message'	=>  __( 'Validation failed.', 'acf_vf' ),
 			'unique'	=> 'non-unique',
 			'unique_statuses' => apply_filters( 'acf_vf/unique_statuses', array( 'publish', 'future' ) ),
-			'drafts'	=> true,
+			'drafts'	=> true
 		);
 
 		$this->sub_defaults = array(
@@ -111,11 +111,241 @@ class acf_field_validated_field extends acf_field {
 				add_action( 'wp_head', array( $this, 'input_admin_enqueue_scripts' ), 1 );
 			}
 			if ( is_admin() ){
+				global $pagenow;
+				if ( in_array( $pagenow, array( 'edit.php', 'options.php' ) ) ){
+					add_action( 'admin_init', 'acf_form_head', 0 );
+				}
 				add_action( 'admin_init', array( $this, 'admin_register_settings' ) );
 				add_action( 'admin_menu', array( $this, 'admin_add_menu' ), 11 );
 
 				// remove uneeded properties from subfield
 				add_filter( 'acf/export/clean_fields', array( $this, 'prepare_field_for_export' ) );
+
+				add_action( 'admin_head', array( $this, 'admin_head' ), 0 );
+
+				register_field_group( apply_filters( 'acf_vf/options_field_group', array(
+					'key' => 'group_55d6baa806f00',
+					'title' => 'Validated Field Settings',
+					'fields' => array (
+						array (
+							'key' => 'field_55d6bd56d220f',
+							'label' => __( 'General', 'acf_vf' ),
+							'name' => '',
+							'type' => 'tab',
+							'instructions' => '',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'placement' => 'top',
+							'endpoint' => 0,
+						),
+						array (
+							'key' => 'field_55d6bc95a04d4',
+							'label' => __( 'Debugging', 'acf_vf' ),
+							'name' => 'acf_vf_debug',
+							'type' => 'true_false',
+							'instructions' => __( 'Check this box to turn on debugging for Validated Fields.', 'acf_vf' ),
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'Enable Debugging',
+							'default_value' => 0,
+						),
+						array (
+							'key' => 'field_55d6be22b0225',
+							'label' => 'Draft Validation',
+							'name' => 'acf_vf_drafts',
+							'type' => 'true_false',
+							'instructions' => 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'Enable Draft Validation',
+							'default_value' => 0,
+						),
+						array (
+							'key' => 'field_55d6c0d4b3ae0',
+							'label' => 'Frontend Validation',
+							'name' => 'acf_vf_frontend',
+							'type' => 'true_false',
+							'instructions' => 'Check this box to turn on validation for front-end forms created with <code>acf_form()</code>.',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'Enable Frontend Validation',
+							'default_value' => 0,
+						),
+						array (
+							'key' => 'field_5606d52b87541',
+							'label' => 'UI / UX',
+							'name' => '',
+							'type' => 'tab',
+							'instructions' => '',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'placement' => 'top',
+							'endpoint' => 0,
+						),
+						array (
+							'key' => 'field_5606d0fdddb99',
+							'label' => 'Link to Tab',
+							'name' => 'acf_vf_enable_link_to_tab',
+							'type' => 'true_false',
+							'instructions' => 'Uncheck this box to disable the "Link to Tab" functionality.',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'Enable Link to Tab',
+							'default_value' => 1,
+						),
+						array (
+							'key' => 'field_5606d206ddb9a',
+							'label' => 'Link to Field Group Editor',
+							'name' => 'acf_vf_enable_link_to_field_group_editor',
+							'type' => 'true_false',
+							'instructions' => 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named <code>another_text_field</code>, use the URL <code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>.',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'Enable Link to Field Group Editor',
+							'default_value' => 1,
+						),
+						array (
+							'key' => 'field_55d6c123b3ae1',
+							'label' => 'Admin CSS on Frontend',
+							'name' => 'acf_vf_frontend_css',
+							'type' => 'true_false',
+							'instructions' => 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by <code>acf_form_head()</code>.',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'Enqueue Admin CSS on Frontend',
+							'default_value' => 1,
+						),
+						array (
+							'key' => 'field_55d6bd84d2210',
+							'label' => 'Masked Input',
+							'name' => '',
+							'type' => 'tab',
+							'instructions' => '',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'placement' => 'top',
+							'endpoint' => 0,
+						),
+						array (
+							'key' => 'field_55f1d1ec2c61c',
+							'label' => 'Mask Patterns Upgrade',
+							'name' => '',
+							'type' => 'message',
+							'instructions' => '',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => 'This is a message about how you can upgrade to enable custom mask patterns.',
+							'esc_html' => 0,
+						), 
+						array (
+							'key' => 'field_5604667c31fea',
+							'label' => 'Field Level Security',
+							'name' => '',
+							'type' => 'tab',
+							'instructions' => '',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'placement' => 'top',
+							'endpoint' => 0,
+						),
+						array (
+							'key' => 'field_560466c231feb',
+							'label' => __( 'Field Level Security Upgrade', 'acf_vf' ),
+							'name' => '',
+							'type' => 'message',
+							'instructions' => '',
+							'required' => 0,
+							'conditional_logic' => 0,
+							'wrapper' => array (
+								'width' => '',
+								'class' => '',
+								'id' => '',
+							),
+							'message' => __( 'This is a message about how you can upgrade to enable field level security.' ),
+							'esc_html' => 0,
+						),
+					),
+					'location' => array (
+						array (
+							array (
+								'param' => 'options_page',
+								'operator' => '==',
+								'value' => 'acf-validated-field',
+								'order_no' => 0,
+								'group_no' => 0,
+							),
+						),
+					),
+					'options' => array (
+						'position' => 'normal',
+						'layout' => 'no_box',
+						'hide_on_screen' => array (
+						),
+					),
+					'menu_order' => 0,0,
+					'position' => 'normal',
+					'style' => 'seamless',
+					'label_placement' => 'top',
+					'instruction_placement' => 'label',
+					'hide_on_screen' => '',
+					'active' => 1,
+					'description' => '',
+				) ) );
 			}
 		}
 	}
@@ -133,7 +363,7 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	function admin_add_menu(){
-		$page = add_submenu_page( 'edit.php?post_type=acf', __( 'Validated Field Settings', 'acf_vf' ), __( 'Validated Field Settings', 'acf_vf' ), 'manage_options', $this->slug, array( &$this,'admin_settings_page' ) );
+		$page = add_submenu_page( 'edit.php?post_type=acf', sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 4 ), sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 4 ), 'manage_options', $this->slug, array( &$this,'admin_settings_page' ) );
 	}
 
 	function admin_register_settings(){
@@ -145,23 +375,8 @@ class acf_field_validated_field extends acf_field {
 	function admin_settings_page(){
 		?>
 		<div class="wrap">
-		<h2>Validated Field Settings</h2>
-		<form method="post" action="options.php">
-		    <?php settings_fields( $this->slug ); ?>
-		    <?php do_settings_sections( $this->slug ); ?>
-			<table class="form-table">
-			<?php foreach ( $this->config as $key => $value ) { ?>
-				<tr valign="top">
-					<th scope="row"><?php echo $value['label']; ?></th>
-					<td>
-						<input type="checkbox" id="<?php echo $key; ?>" name="<?php echo $key; ?>" value="<?php echo $value['default']; ?>" <?php if ( $this->option_value( $key ) ) echo 'checked'; ?>/>
-						<small><em><?php echo $value['help']; ?></em></small>
-					</td>
-				</tr>
-			<?php } ?>
-			</table>
-		    <?php submit_button(); ?>
-		</form>
+		<h2><?php printf( __( 'Validated Field Settings for ACF %1$d', 'acf_vf' ), 4 ); ?></h2>
+			<?php acf_form( array( 'post_id' => 'options' ) ); ?>
 		</div>
     	<?php
 	}
@@ -172,14 +387,12 @@ class acf_field_validated_field extends acf_field {
 
 	function setup_field( $field ){
 		// setup booleans, for compatibility
-		$field['read_only'] = ( false == $field['read_only'] || 'false' === $field['read_only'] )? false : true;
-		$field['drafts'] = ( false == $field['drafts'] || 'false' === $field['drafts'] )? false : true;
 		$field =  array_merge( $this->defaults, $field );
-
 
 		$sub_field = isset( $field['sub_field'] )? 
 			$field['sub_field'] :	// already set up
 			array();				// create it
+			
 		// mask the sub field as the parent by giving it the same key values
 		foreach( array( 'key', 'name', '_name', 'id', 'value', 'field_group' ) as $key ){
 			$sub_field[$key] = isset( $field[$key] )? $field[$key] : '';
@@ -327,13 +540,17 @@ class acf_field_validated_field extends acf_field {
 						$pattern = addcslashes( trim( $pattern ), '$' );
 						if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
 
-						$value = addslashes( $value );
+						if ( is_string( $value ) ){
+							$value = addslashes( $value );
+						}
 
 						// not yet saved to the database, so this is the previous value still
 						$prev_value = addslashes( get_post_meta( $post_id, $this_key, true ) );
 
 						$function_name = 'validate_' . preg_replace( '~[\\[\\]]+~', '_', $input['id'] ) . 'function';
 						
+						$_value = is_string( $value ) ? '"value"=>"$value"' : '$value';
+
 						$php = <<<PHP
 							if ( ! function_exists( '$function_name' ) ):
 							function $function_name( \$args, &\$message ){
@@ -349,7 +566,7 @@ INNERPHP;
 								}
 							}
 							endif; // function_exists
-							\$valid = $function_name( array( 'post_id'=>'$post_id', 'post_type'=>'$post_type', 'this_key'=>'$this_key', 'value'=>'$value', 'prev_value'=>'$prev_value', 'inputs'=>\$input_fields ), \$message );
+							\$valid = $function_name( array( 'post_id'=>'$post_id', 'post_type'=>'$post_type', 'this_key'=>'$this_key', $_value, 'prev_value'=>'$prev_value', 'inputs'=>\$input_fields ), \$message );
 PHP;
 
 						if ( true !== eval( $php ) ){			// run the eval() in the eval()
@@ -371,21 +588,102 @@ PHP;
 			} elseif ( ! empty( $function ) && $function != 'none' ) {
 				$message = __( 'This field\'s validation is not properly configured.', 'acf_vf' );
 				$valid = false;
+			}	
+
+			$unique = $field['unique'];
+			$value_instances = 0;
+			switch ( $unique ){
+				case 'global';
+				case 'post_type':
+				case 'this_post':
+					// no duplicates at all allowed, check the submitted values
+					foreach ( $_REQUEST['fields'] as $acf ){
+						if ( $acf['value'] == $value ){
+							// increment until we have a dupe
+							if ( $value_instances++ > 1 ){
+								break;
+							}
+						}
+					}
+					break;
+				case 'post_key':
+				case 'this_post_key':
+					// only check the key for a repeater for duplicate submissions
+					if ( $is_repeater ){
+						// submitted as "field[index][id/value]"
+						foreach ( $_REQUEST['fields'] as $acf ){
+							// extract field key
+							$arr = explode( '][', preg_replace( '~^\[|\]$~', '', $input['id'] ) );
+							$row_key = end( $arr );
+							$arr = explode( '][', preg_replace( '~^\[|\]$~', '', $acf['id'] ) );
+							$input_key = end( $arr );
+							// check if we have the same value more than once
+							if ( $row_key == $input_key && $acf['value'] == $value ){
+								// increment until we have a dupe
+								if ( $value_instances++ > 1 ){
+									break;
+								}
+							}
+						}
+					}
+					break;
 			}
-				
+
+			// this value came up more than once, so we need to mark it as an error
+			if ( $value_instances > 1 ){
+				$message = __( 'The value', 'acf_vf' ) . " '$value' " . __( 'was submitted multiple times and should be unique', 'acf_vf' ) . ' ';
+				switch ( $unique ){
+					case 'global';
+						$message .= __( 'globally for all custom fields.', 'acf_vf' );
+						break;
+					case 'post_type':
+						$message .= __( 'for all fields on this post type.', 'acf_vf' );
+						break;
+					case 'this_post':
+						$message .= __( 'for all fields on this post.', 'acf_vf' );
+						break;
+					case 'post_key':
+					case 'this_post_key':
+						$message .= __( 'for', 'acf_vf' ) . " {$field['label']}.";
+						break;
+				}
+				$valid = false;
+			}
+
+			// are we editting a user?
+			$is_user = strpos( $post_id, 'user_' ) === 0;
+			$is_options = $post_id == 'options';
+
 			$unique = $field['unique'];
 			if ( $valid && ! empty( $value ) && ! empty( $unique ) && $unique != 'non-unique' ){
 				global $wpdb;
-				$status_in = "'" . implode( "','", $field['unique_statuses'] ) . "'";
 
-				// are we editting a user?
-				$is_user = strpos( $post_id, 'user_' ) === 0;
+				// the db name is modded for repeaters
+				$this_key = $is_options ? 'options_' : '';
+				$this_key.= $is_repeater ? 
+					$parent_field['name'] . '_' . $index . '_' . $field['name'] : 
+					$field['name'];
+
+				$meta_key = $is_options ? 'options_' : '';
+				$meta_key.= $is_repeater ? 
+					$parent_field['name'] . '_%_' . $field['name']:
+					'';
+
+				$status_in = "'" . implode( "','", $field['unique_statuses'] ) . "'";
 
 				if ( $is_user ) {
 					// set up queries for the user table
 					$post_ids = array( (int) str_replace( 'user_', '', $post_id ) );
-					$table_key = 'user_id';
-					$sql_prefix = "SELECT m.umeta_id AS meta_id, m.{$table_key} AS {$table_key}, u.user_login AS title FROM {$wpdb->usermeta} m JOIN {$wpdb->users} u ON u.ID = m.{$table_key}";
+					$table_id = 'user_id';
+					$table_key = 'meta_key';
+					$table_value = 'meta_value';
+					$sql_prefix = "SELECT m.umeta_id AS {$table_key}, m.{$table_id} AS {$table_id}, u.user_login AS title FROM {$wpdb->usermeta} m JOIN {$wpdb->users} u ON u.ID = m.{$table_id}";
+				} elseif ( $is_options ) {
+					$table_id = 'option_id';
+					$table_key = 'option_name';
+					$table_value = 'option_value';
+					$post_ids = array( $post_id );
+					$sql_prefix = "SELECT o.option_id AS {$table_key}, o.{$table_id} AS {$table_id}, o.option_name AS title FROM {$wpdb->options} o";
 				} else {
 					// set up queries for the posts table
 					if ( function_exists( 'icl_object_id' ) ){
@@ -399,34 +697,46 @@ PHP;
 					} else {
 						$post_ids = array( (int) $post_id );
 					}
-					$table_key = 'post_id';
-					$sql_prefix = "SELECT m.meta_id AS meta_id, m.{$table_key} AS {$table_key}, p.post_title AS title FROM {$wpdb->postmeta} m JOIN {$wpdb->posts} p ON p.ID = m.{$table_key} AND p.post_status IN ($status_in)";
+					$table_id = 'post_id';
+					$table_key = 'meta_key';
+					$table_value = 'meta_value';
+					$sql_prefix = "SELECT m.meta_id AS {$table_key}, m.{$table_id} AS {$table_id}, p.post_title AS title FROM {$wpdb->postmeta} m JOIN {$wpdb->posts} p ON p.ID = m.{$table_id} AND p.post_status IN ($status_in)";
 				}
 
 				switch ( $unique ){
 					case 'global': 
-						// check to see if this value exists anywhere in the postmeta table
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE ( meta_value = %s OR meta_value LIKE %s )",
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
+						// check to see if this value exists anywhere in the postmeta/usermeta/options table
+						if ( $is_user || $is_options ){
+							$sql = false;
+						} else {
+							$sql = $wpdb->prepare( 
+								"{$sql_prefix} AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE ( {$table_value} = %s OR {$table_value} LIKE %s )",
+								$value,
+								'%"' . $wpdb->esc_like( $value ) . '"%'
+							);
+						}
 						break;
 					case 'post_type':
 						// check to see if this value exists in the postmeta table with this $post_id
 						if ( $is_user ){
 							$sql = $wpdb->prepare( 
-								"{$sql_prefix} WHERE ( ( {$table_key} IN ([IN_NOT_IN]) AND meta_key != %s ) OR {$table_key} NOT IN ([IN_NOT_IN]) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
-								$field['name'],
+								"{$sql_prefix} WHERE ( ( {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s ) OR {$table_id} NOT IN ([IN_NOT_IN]) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+								$this_key,
 								$value,
 								'%"' . $wpdb->esc_like( $value ) . '"%'
 							);
-
+						} elseif ( $is_options ){
+							$sql = $wpdb->prepare( 
+								"{$sql_prefix} WHERE {$table_key} != %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+								$this_key,
+								$value,
+								'%"' . $wpdb->esc_like( $value ) . '"%'
+							);
 						} else {
 							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_key} IN ([IN_NOT_IN]) AND meta_key != %s ) OR {$table_key} NOT IN ([IN_NOT_IN]) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
+								"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s ) OR {$table_id} NOT IN ([IN_NOT_IN]) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 								$post_type,
-								$field['name'],
+								$this_key,
 								$value,
 								'%"' . $wpdb->esc_like( $value ) . '"%'
 							);
@@ -434,31 +744,57 @@ PHP;
 						break;
 					case 'post_key':
 						// check to see if this value exists in the postmeta table with both this $post_id and $meta_key
-						if ( $is_repeater ){
-							$this_key = $parent_field['name'] . '_' . $index . '_' . $field['name'];
-							$meta_key = $parent_field['name'] . '_%_' . $field['name'];
-							$sql = $wpdb->prepare(
-								"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_key} NOT IN ([IN_NOT_IN]) AND meta_key != %s AND meta_key LIKE %s ) OR ( {$table_key} NOT IN ([IN_NOT_IN]) AND meta_key LIKE %s ) ) AND ( meta_value = %s OR meta_value LIKE %s )", 
-								$post_type,
-								$this_key,
-								$meta_key,
-								$meta_key,
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						} else {
-							if ( $is_user ){
+						if ( $is_user ){
+							if ( $is_repeater ){
+								$sql = $wpdb->prepare(
+									"{$sql_prefix} WHERE ( ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+									$this_key,
+									$meta_key,
+									$meta_key,
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							} else {			
 								$sql = $wpdb->prepare( 
-									"{$sql_prefix} AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+									"{$sql_prefix} AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 									$field['name'],
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							}
+						} elseif ( $is_options ){
+							if ( $is_repeater ){
+								$sql = $wpdb->prepare(
+									"{$sql_prefix} WHERE {$table_key} != %s AND {$table_key} LIKE %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+									$this_key,
+									$meta_key,
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							} else {			
+								$sql = $wpdb->prepare( 
+									"{$sql_prefix} WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+									$field['name'],
+									$value,
+									'%"' . $wpdb->esc_like( $value ) . '"%'
+								);
+							}
+						} else {
+							if ( $is_repeater ){
+								$sql = $wpdb->prepare(
+									"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+									$post_type,
+									$this_key,
+									$meta_key,
+									$meta_key,
 									$value,
 									'%"' . $wpdb->esc_like( $value ) . '"%'
 								);
 							} else {	
 								$sql = $wpdb->prepare( 
-									"{$sql_prefix} AND p.post_type = %s AND {$table_key} NOT IN ([IN_NOT_IN]) WHERE meta_key = %s AND ( meta_value = %s OR meta_value LIKE %s )", 
+									"{$sql_prefix} AND p.post_type = %s AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 									$post_type,
-									$field['name'],
+									$this_key,
 									$value,
 									'%"' . $wpdb->esc_like( $value ) . '"%'
 								);
@@ -472,7 +808,7 @@ PHP;
 				}
 
 				// Only run if we hit a condition above
-				if ( ! empty( $sql ) ){
+				if ( !empty( $sql ) ){
 
 					// Update the [IN_NOT_IN] values
 					$sql = $this->prepare_in_not_in( $sql, $post_ids );
@@ -483,11 +819,15 @@ PHP;
 						// We got some matches, but there might be more than one so we need to concatenate the collisions
 						$conflicts = "";
 						foreach ( $rows as $row ){
-							$permalink = $frontend ? 
-								get_permalink( $row->post_id ) : 
-								$is_user ? 
-									admin_url( "/wp-admin/user-edit.php?user_id={$row->user_id}" ) :
-									admin_url( "/wp-admin/post.php?post={$row->post_id}&action=edit" );
+							if ( $is_user ){
+								$permalink = admin_url( "user-edit.php?user_id={$row->user_id}" );
+							} elseif ( $is_options ){
+								$permalink = admin_url( "options.php#{$row->title}" );
+							} elseif ( $frontend ){
+								$permalink = get_permalink( $row->{$table_id} );
+							} else {
+								$permalink = admin_url( "post.php?post={$row->{$table_id}}&action=edit" );
+							}
 							$conflicts.= "<a href='{$permalink}' style='color:inherit;text-decoration:underline;'>{$row->title}</a>";
 							if ( $row !== end( $rows ) ) $conflicts.= ', ';
 						}
@@ -556,25 +896,27 @@ PHP;
 		unset( $fields_names[__( 'Layout', 'acf' )] );
 		unset( $fields_names[__( 'Basic', 'acf' )][ 'validated_field' ] );
 
+
+
 		?>
 		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_readonly" id="field_option_<?php echo $html_key; ?>_readonly">
 			<td class="label"><label><?php _e( 'Read Only?', 'acf_vf' ); ?> </label>
 			</td>
-			<td><?php 
+			<td><?php
 			do_action( 'acf/create_field', array(
-				'type'	=> 'radio',
+				'type'	=> apply_filters( 'acf_vf/create_field/read_only/type', 'radio' ),
 				'name'	=> 'fields['.$key.'][read_only]',
-				'value'	=> ( false == $field['read_only'] || 'false' === $field['read_only'] )? 'false' : 'true',
-				'choices' => array(
-					'true'	=> __( 'Yes', 'acf_vf' ),
-					'false' => __( 'No', 'acf_vf' ),
-				),
-				'class' => 'horizontal'
+				'value'	=> apply_filters( 'acf_vf/create_field/read_only/value', ( empty( $field['read_only'] ) || $field['read_only'] == 'false' )? 'no' : $field['read_only'] ),
+				'choices' => apply_filters( 'acf_vf/create_field/read_only/choices', array(
+					'no' 	=> __( 'No', 'acf_vf' ),
+					'yes'	=> __( 'Yes', 'acf_vf' ),
+				) ),
+				'class'			=> 'read_only horizontal'
 			));
 			?>
 			</td>
 		</tr>
-		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_readonly" id="field_option_<?php echo $html_key; ?>_drafts">
+		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_drafts" id="field_option_<?php echo $html_key; ?>_drafts">
 			<td class="label"><label><?php _e( 'Validate Drafts/Preview?', 'acf_vf' ); ?> </label>
 			</td>
 			<td><?php 
@@ -583,10 +925,10 @@ PHP;
 				'name'	=> 'fields['.$key.'][drafts]',
 				'value'	=> ( false == $field['drafts'] || 'false' === $field['drafts'] )? 'false' : 'true',
 				'choices' => array(
-					'true'	=> __( 'Yes', 'acf_vf' ),
-					'false' => __( 'No', 'acf_vf' ),
+					'yes'	=> __( 'Yes', 'acf_vf' ),
+					'no' => __( 'No', 'acf_vf' ),
 				),
-				'class' => 'horizontal'
+				'class' => 'drafts horizontal'
 			));
 
 			if ( ! $this->drafts ){
@@ -773,8 +1115,8 @@ PHP;
 					'choices' => array(
 						'non-unique'=> __( 'Non-Unique Value', 'acf_vf' ),
 						'global'	=> __( 'Unique Globally', 'acf_vf' ),
-						'post_type'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' \ ' . __( 'User' ),
-						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . ' \ ' . __( 'User' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
+						'post_type'	=> __( 'Unique For Post Type', 'acf_vf' ) . '/' . __( 'User' ),
+						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . '/' . __( 'User' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
 					),
 					'optgroup'	=> false,
 					'multiple'	=> '0',
@@ -915,22 +1257,29 @@ PHP;
 	*/
 	function create_field( $field ){
 		global $post, $pagenow;
+
+		// set up field properties
+		$field = $this->setup_field( $field );
+		$sub_field = $this->setup_sub_field( $field );
+
+		// determine if this is a new post or an edit
 		$is_new = $pagenow=='post-new.php';
+
 		$field = $this->setup_field( $field );
 		$sub_field = $this->setup_sub_field( $field );
 
 		// filter to determine if this field should be rendered or not
-		$render_field = apply_filters( 'acf_vf/render_field', true, $field, $is_new );
-
-		// if it is not rendered, hide the label with CSS
-		if ( ! $render_field ): ?>
+		if ( false === $field['render_field'] ): 
+			// if it is not rendered, hide the label with CSS
+		?>
 			<style>div[data-key="<?php echo $sub_field['key']; ?>"] { display: none; }</style>
 		<?php
 		// if it is shown either render it normally or as read-only
-		else : ?>
+		else : 
+			?>
 			<div class="validated-field">
 				<?php
-				if ( $field['read_only'] ){
+				if ( $this->check_value( 'yes', $field['read_only'] ) ){
 					?>
 					<p><?php 
 					ob_start();
@@ -948,7 +1297,7 @@ PHP;
 				?>
 			</div>
 			<?php
-			if ( ! empty( $field['mask'] ) && ( $is_new || ( isset( $field['read_only'] ) && ! $field['read_only'] ) ) ) { ?>
+			if ( !empty( $field['mask'] ) && ( $is_new || $this->check_value( 'no', $field['read_only'] ) ) ){ ?>
 				<script type="text/javascript">
 					jQuery(function($){
 						$(function(){
@@ -1013,6 +1362,26 @@ PHP;
 		if ( $this->frontend && ! is_admin() ){
 			add_action( 'wp_head', array( &$this, 'frontend_head' ), 20 );
 		}
+	}
+
+	function admin_head(){
+		$o = array(
+			'post_id'				=> 'options',
+			'nonce'					=> wp_create_nonce( 'acf_nonce' ),
+			'admin_url'				=> admin_url(),
+			'ajaxurl'				=> admin_url( 'admin-ajax.php' ),
+			'validation'			=> 0,
+		);
+		
+		?>
+		<script type="text/javascript">
+		(function($) {
+			if ( typeof acf == 'undefined' ) acf = {};
+			acf.o = <?php echo json_encode( $o ); ?>;
+			
+		})(jQuery);	
+		</script>
+		<?php
 	}
 
 	function debug_head(){
@@ -1169,7 +1538,12 @@ PHP;
 	*  @return	$field - the field array holding all the field options
 	*/
 	function load_field( $field ){
-		global $currentpage;
+		global $currentpage, $pagenow, $post;
+
+		// determine if this is a new post or an edit
+		$is_new = $pagenow=='post-new.php';
+		$post_type = get_post_type( $post );
+
 		$field = $this->setup_field( $field );
 		$sub_field = $this->setup_sub_field( $field );
 		$sub_field = apply_filters( 'acf/load_field/type='.$sub_field['type'], $sub_field );
@@ -1184,10 +1558,39 @@ PHP;
 		}
 
 		$field['sub_field'] = $sub_field;
-		if ( $field['read_only'] && $currentpage == 'edit.php' ){
-			$field['label'] .= ' <i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i>';
+
+		$field['render_field'] = apply_filters( 'acf_vf/render_field', true, $field, $is_new );
+		if ( !$is_new && $post_type != 'acf-field-group' && $field['render_field'] === 'readonly' ){
+			$field['read_only'] = 'yes';
 		}
+
+		// this can be off if the permissions plugin is disabled
+		$read_only_type = apply_filters( 'acf_vf/settings_read_only_type', 'radio' );
+		if ( $read_only_type == 'radio' && is_array( $field['read_only'] ) ){
+			// default to read only for everyone unless it's off (better security)
+			if ( $field['read_only'][0] == 'no' ){
+				$field['read_only'] = 'no';
+			} else {
+				$field['read_only'] = 'yes';
+			}
+		}
+
+		if ( get_post_type( $post ) != 'acf' ){
+			// Show icons for read-only fields
+			if ( $this->check_value( 'yes', $field['read_only'] ) && get_post_type() != 'acf-field-group' ){
+				$field['label'] .= ' (<i class="fa fa-ban" style="color:red;" title="'. __( 'Read only', 'acf_vf' ) . '"></i> <small><em>Read Only</em></small>)';
+			}
+		}
+
 		return $field;
+	}
+
+	function check_value( $value, $obj_or_array ){
+		if ( is_array( $obj_or_array ) ){
+			return in_array( $value, $obj_or_array );
+		} else {
+			return $value == $obj_or_array;
+		}
 	}
 
 	/*

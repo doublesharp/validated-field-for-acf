@@ -17,7 +17,7 @@ if ( !defined( 'ACF_VF_PLUGIN_FILE' ) ){
 }
 
 // Load the add-on field once the plugins have loaded, but before init (this is when ACF registers the fields)
-if ( !function_exists( 'register_acf_validated_field' ) ){
+if ( !function_exists( 'load_textdomain_acf_vf' ) ){
 
 	// ACF 4
 	function register_acf_validated_field(){
