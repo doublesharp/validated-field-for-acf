@@ -1331,9 +1331,7 @@ PHP;
 		$min = ( ! $this->debug )? '.min' : '';
 
 		wp_register_script( 'acf-validated-field', plugins_url( "js/input{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
-		wp_register_script( 'jquery-masking', plugins_url( "js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
-		wp_register_script( 'sh-core', plugins_url( 'js/shCore.js', __FILE__ ), array( 'acf-input' ), $this->settings['version'], true );
-		wp_register_script( 'sh-autoloader', plugins_url( 'js/shAutoloader.js', __FILE__ ), array( 'sh-core' ), $this->settings['version'], true );
+		wp_register_script( 'jquery-masking', plugins_url( "../common/js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
 		
 		// translations
 		wp_localize_script( 'acf-validated-field', 'vf_l10n', array(
@@ -1412,8 +1410,8 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function input_admin_head(){
-		wp_enqueue_style( 'font-awesome', plugins_url( 'css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
-		wp_enqueue_style( 'acf-validated_field', plugins_url( 'css/input.css', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( '../common/css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION ); 
 
 	}
 	/*
@@ -1427,9 +1425,9 @@ PHP;
 	*  @since	3.6
 	*  @date	23/01/13
 	*/
-	function field_group_admin_enqueue_scripts(){
-		wp_enqueue_script( 'ace-editor', plugins_url( 'js/ace/ace.js', __FILE__ ), array(), '1.1.7' );
-		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( 'js/ace/ext-language_tools.js', __FILE__ ), array(), '1.1.7' );
+	function field_group_admin_enqueue_scripts(){		
+		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
+		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
 	}
 
 	/*

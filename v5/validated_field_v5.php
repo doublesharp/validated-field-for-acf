@@ -251,15 +251,15 @@ class acf_field_validated_field extends acf_field {
 
 		$min = ( !$this->debug )? '.min' : '';
 		if ( $this->is_edit_page() && "acf-field-group" == $typenow ){
-			wp_register_script( 'acf-validated-field-admin', plugins_url( "js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );	
-			wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "css/admin.css", __FILE__ ), array(), ACF_VF_VERSION );	
+			wp_register_script( 'acf-validated-field-admin', plugins_url( "../common/js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );	
+			wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "../common/css/admin.css", __FILE__ ), array(), ACF_VF_VERSION );	
 		}
 		wp_enqueue_script( array(
 			'jquery',
 			'acf-validated-field-admin',
 		));	
 		if ( version_compare( $acf->settings['version'], '5.2.6', '<' ) ){
-			wp_enqueue_script( 'acf-validated-field-group', plugins_url( "js/field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+			wp_enqueue_script( 'acf-validated-field-group', plugins_url( "../common/js/field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
 		}
 
 		global $field_level_drafts;
@@ -1550,7 +1550,7 @@ PHP;
 	function input_admin_enqueue_scripts(){
 		// register acf scripts
 		$min = ( !$this->debug )? '.min' : '';
-		wp_register_script( 'jquery-masking', plugins_url( "js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION, true );
+		wp_register_script( 'jquery-masking', plugins_url( "../common/js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION, true );
 		
 		// enqueue scripts
 		wp_enqueue_script( array(
@@ -1576,8 +1576,8 @@ PHP;
 	*/
 	function input_admin_footer(){
 		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( 'css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
-		wp_enqueue_style( 'acf-validated_field', plugins_url( 'css/input.css', __FILE__ ), array(), ACF_VF_VERSION ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( '../common/css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array(), ACF_VF_VERSION ); 
 	}
 
 	/*
@@ -1592,11 +1592,12 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function field_group_admin_enqueue_scripts(){
+		$min = ( !$this->debug )? '.min' : '';
 		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( 'css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( '../common/css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
 		
-		wp_enqueue_script( 'ace-editor', plugins_url( 'js/ace/ace.js', __FILE__ ), array(), '1.1.7' );
-		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( 'js/ace/ext-language_tools.js', __FILE__ ), array(), '1.1.7' );
+		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
+		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
 	}
 
 	/*

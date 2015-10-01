@@ -22,14 +22,14 @@ if ( !function_exists( 'load_textdomain_acf_vf' ) ){
 	// ACF 4
 	function register_acf_validated_field(){
 		// create field
-		include_once 'validated_field_v4.php';
+		include_once 'v4/validated_field_v4.php';
 	}
 	add_action( 'acf/register_fields', 'register_acf_validated_field' );
 
 	// ACF 5
 	function include_acf_validated_field(){
 		// create field
-		include_once 'validated_field_v5.php';
+		include_once 'v5/validated_field_v5.php';
 	}
 	add_action( 'acf/include_fields', 'include_acf_validated_field' );
 

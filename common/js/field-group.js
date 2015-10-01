@@ -8,34 +8,50 @@
 acf.field_group.submit = function(){
 	// reference
 	var _this = acf.field_group;
-
+	
 	// close / delete fields
-	_this.$fields.find('.field').each(function(){	
+	self.$fields.find('.acf-field-object').each(function(){
+		
 		// vars
-		var save = _this.get_field_meta( $(this), 'save'),
-			ID = _this.get_field_meta( $(this), 'ID'),
+		var save = self.get_field_meta( $(this), 'save'),
+			ID = self.get_field_meta( $(this), 'ID'),
 			open = $(this).hasClass('open');
-
+		
+		
 		// clone
 		if( ID == 'acfcloneindex' ) {
+			
 			$(this).remove();
 			return;
+			
 		}
+		
 		
 		// close
 		if( open ) {
-			_this.close_field( $(this) );
+			
+			self.close_field( $(this) );
+			
 		}
+		
 		
 		// remove unnecessary inputs
 		if( save == 'settings' ) {
-			// do nothing
+			
+			// allow all settings to save (new field, changed field)
+			
 		} else if( save == 'meta' ) {
-			$(this).children('.field-settings').find('[name^="acf_fields[' + ID + ']"]').remove();
+			
+			$(this).children('.settings').find('[name^="acf_fields[' + ID + ']"]').remove();
+			
 		} else {
+			
 			$(this).find('[name^="acf_fields[' + ID + ']"]').remove();
+			
 		}
+		
 	});
+	
 	
 	// return
 	return true;
