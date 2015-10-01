@@ -9,7 +9,8 @@ class acf_field_validated_field extends acf_field {
 		$sub_defaults,				// will hold default sub field options
 		$debug,						// if true, don't use minified and confirm form submit					
 		$drafts,
-		$frontend;
+		$frontend,
+		$link_to_tab;
 
 	/*
 	*  __construct
@@ -56,6 +57,7 @@ class acf_field_validated_field extends acf_field {
 		$this->frontend = $this->option_value( 'acf_vf_frontend' );
 		$this->frontend_css = $this->option_value( 'acf_vf_frontend_css' );
 		$this->debug 	= $this->option_value( 'acf_vf_debug' );
+		$this->link_to_tab = $this->option_value( 'acf_vf_debug' );
 
 		$this->defaults = array(
 			'read_only' => false,
@@ -210,7 +212,7 @@ class acf_field_validated_field extends acf_field {
 						array (
 							'key' => 'field_5606d0fdddb99',
 							'label' => 'Link to Tab',
-							'name' => 'acf_vf_enable_link_to_tab',
+							'name' => 'acf_vf_link_to_tab',
 							'type' => 'true_false',
 							'instructions' => 'Uncheck this box to disable the "Link to Tab" functionality.',
 							'required' => 0,
@@ -226,7 +228,7 @@ class acf_field_validated_field extends acf_field {
 						array (
 							'key' => 'field_5606d206ddb9a',
 							'label' => 'Link to Field Group Editor',
-							'name' => 'acf_vf_enable_link_to_field_group_editor',
+							'name' => 'acf_vf_link_to_field_group_editor',
 							'type' => 'true_false',
 							'instructions' => 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named <code>another_text_field</code>, use the URL <code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>.',
 							'required' => 0,
@@ -1337,7 +1339,6 @@ PHP;
 		wp_localize_script( 'acf-validated-field', 'vf_l10n', array(
 			'message' => __( 'Validation Failed. See errors below.', 'acf_vf' ),
 			'debug' => __( 'The fields are valid, do you want to submit the form?', 'acf_vf' ),
-
 		) );
 
 		// enqueue scripts
@@ -1360,6 +1361,10 @@ PHP;
 		if ( $this->frontend && ! is_admin() ){
 			add_action( 'wp_head', array( &$this, 'frontend_head' ), 20 );
 		}
+
+		if ( $this->link_to_tab ){
+			wp_enqueue_script( 'acf-validated-field-link-to-tab', plugins_url( "../common/js/link-to-tab{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION );
+		}
 	}
 
 	function admin_head(){
@@ -1374,10 +1379,8 @@ PHP;
 		?>
 		<script type="text/javascript">
 		(function($) {
-			$(document).ready(function(){
-				if ( typeof acf == 'undefined' ) acf = {};
-				acf.o = <?php echo json_encode( $o ); ?>;
-			}
+			if ( typeof acf == 'undefined' ) acf = {};
+			acf.o = <?php echo json_encode( $o ); ?>;
 		})(jQuery);	
 		</script>
 		<?php

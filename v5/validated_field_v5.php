@@ -9,7 +9,8 @@ class acf_field_validated_field extends acf_field {
 		$sub_defaults,				// will hold default sub field options
 		$debug,						// if true, don't use minified and confirm form submit					
 		$drafts,
-		$frontend;
+		$frontend,
+		$link_to_tab;
 
 	/*
 	*  __construct
@@ -29,6 +30,7 @@ class acf_field_validated_field extends acf_field {
 		$this->frontend = $this->option_value( 'acf_vf_frontend' );
 		$this->frontend_css = $this->option_value( 'acf_vf_frontend_css' );
 		$this->debug 	= $this->option_value( 'acf_vf_debug' );
+		$this->link_to_tab = $this->option_value( 'acf_vf_debug' );
 
 		$this->defaults = array(
 			'read_only' => 'no',
@@ -249,7 +251,9 @@ class acf_field_validated_field extends acf_field {
 	function admin_head(){
 		global $typenow, $acf;
 
+		// Use minified unless debug is on
 		$min = ( !$this->debug )? '.min' : '';
+
 		if ( $this->is_edit_page() && "acf-field-group" == $typenow ){
 			wp_register_script( 'acf-validated-field-admin', plugins_url( "../common/js/admin{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );	
 			wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "../common/css/admin.css", __FILE__ ), array(), ACF_VF_VERSION );	
@@ -260,6 +264,10 @@ class acf_field_validated_field extends acf_field {
 		));	
 		if ( version_compare( $acf->settings['version'], '5.2.6', '<' ) ){
 			wp_enqueue_script( 'acf-validated-field-group', plugins_url( "../common/js/field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+		}
+
+		if ( $this->link_to_tab ){
+			wp_enqueue_script( 'acf-validated-field-link-to-tab', plugins_url( "../common/js/link-to-tab{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION );
 		}
 
 		global $field_level_drafts;
@@ -430,7 +438,7 @@ class acf_field_validated_field extends acf_field {
 				array (
 					'key' => 'field_5606d0fdddb99',
 					'label' => 'Link to Tab',
-					'name' => 'acf_vf_enable_link_to_tab',
+					'name' => 'acf_vf_link_to_tab',
 					'type' => 'true_false',
 					'instructions' => 'Uncheck this box to disable the "Link to Tab" functionality.',
 					'required' => 0,
@@ -446,7 +454,7 @@ class acf_field_validated_field extends acf_field {
 				array (
 					'key' => 'field_5606d206ddb9a',
 					'label' => 'Link to Field Group Editor',
-					'name' => 'acf_vf_enable_link_to_field_group_editor',
+					'name' => 'acf_vf_link_to_field_group_editor',
 					'type' => 'true_false',
 					'instructions' => 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named <code>another_text_field</code>, use the URL <code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>.',
 					'required' => 0,
