@@ -202,10 +202,14 @@ class acf_field_validated_field extends acf_field {
 		?>
 
 		<script type="text/javascript">
-		jQuery(document).ready(function(){
-			jQuery('form.acf-form').append('<input type="hidden" name="acf[acf_vf][post_ID]" value="<?php echo $post->ID; ?>"/>');
-			jQuery('form.acf-form').append('<input type="hidden" name="acf[acf_vf][frontend]" value="true"/>');
-		});
+		(function($){
+			$(document).ready(function(){
+				if ( $form = $('form.acf-form') && $form.length ){
+					$form.append('<input type="hidden" name="acf[acf_vf][post_ID]" value="' + acf.o.post_id + '"/>');
+					$form.append('<input type="hidden" name="acf[acf_vf][frontend]" value="true"/>');
+				}
+			});
+		})(jQuery);
 		</script>
 
 		<?php
