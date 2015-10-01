@@ -1376,9 +1376,10 @@ PHP;
 		?>
 		<script type="text/javascript">
 		(function($) {
-			if ( typeof acf == 'undefined' ) acf = {};
-			acf.o = <?php echo json_encode( $o ); ?>;
-			
+			$(document).ready(function(){
+				if ( typeof acf == 'undefined' ) acf = {};
+				acf.o = <?php echo json_encode( $o ); ?>;
+			}
 		})(jQuery);	
 		</script>
 		<?php
