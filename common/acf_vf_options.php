@@ -4,7 +4,7 @@ class acf_vf_options {
 	static function get_field_group(){
 		return apply_filters( 'acf_vf/options_field_group', array(
 			'key' => 'group_55d6baa806f00',
-			'title' => 'Validated Field Settings',
+			'title' => __( 'Validated Field Settings', 'acf_vf' ),
 			'fields' => array (
 				array (
 					'key' => 'field_55d6bd56d220f',
@@ -36,15 +36,15 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'Enable Debugging',
+					'message' => __( 'Enable Debugging', 'acf_vf' ),
 					'default_value' => 0,
 				),
 				array (
 					'key' => 'field_55d6be22b0225',
-					'label' => 'Draft Validation',
+					'label' => __( 'Draft Validation', 'acf_vf' ),
 					'name' => 'acf_vf_drafts',
 					'type' => 'true_false',
-					'instructions' => 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.',
+					'instructions' => __( 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.', 'acf_vf' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
@@ -52,7 +52,7 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'Enable Draft Validation',
+					'message' => __( 'Enable Draft Validation', 'acf_vf' ),
 					'default_value' => 0,
 				),
 				array (
@@ -60,7 +60,7 @@ class acf_vf_options {
 					'label' => 'Frontend Validation',
 					'name' => 'acf_vf_frontend',
 					'type' => 'true_false',
-					'instructions' => 'Check this box to turn on validation for front-end forms created with <code>acf_form()</code>.',
+					'instructions' => sprintf( __( 'Check this box to turn on validation for front-end forms created with $s%1.', 'acf_vf' ), '<code>acf_form()</code>' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
@@ -68,7 +68,7 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'Enable Frontend Validation',
+					'message' => __( 'Enable Frontend Validation', 'acf_vf' ),
 					'default_value' => 0,
 				),
 				array (
@@ -89,10 +89,10 @@ class acf_vf_options {
 				),
 				array (
 					'key' => 'field_5606d0fdddb99',
-					'label' => 'Link to Tab',
+					'label' => __( 'Link to Tab', 'acf_vf' ),
 					'name' => 'acf_vf_link_to_tab',
 					'type' => 'true_false',
-					'instructions' => 'Uncheck this box to disable the "Link to Tab" functionality.',
+					'instructions' => __( 'Uncheck this box to disable the "Link to Tab" functionality.', 'acf_vf' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
@@ -100,15 +100,15 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'Enable Link to Tab',
+					'message' => __( 'Enable Link to Tab', 'acf_vf' ),
 					'default_value' => 1,
 				),
 				array (
 					'key' => 'field_5606d206ddb9a',
-					'label' => 'Link to Field Group Editor',
+					'label' => __( 'Link to Field Group Editor', 'acf_vf' ),
 					'name' => 'acf_vf_link_to_field_group_editor',
 					'type' => 'true_false',
-					'instructions' => 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named <code>another_text_field</code>, use the URL <code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>.',
+					'instructions' => sprintf( __( 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named $s%1, use the URL $s%2.', 'acf_vf' ), '<code>another_text_field</code>', '<code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
@@ -116,15 +116,15 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'Enable Link to Field Group Editor',
+					'message' => __( 'Enable Link to Field Group Editor', 'acf_vf' ),
 					'default_value' => 1,
 				),
 				array (
 					'key' => 'field_55d6c123b3ae1',
-					'label' => 'Admin CSS on Frontend',
+					'label' => __( 'Admin CSS on Frontend', 'acf_vf' ),
 					'name' => 'acf_vf_frontend_css',
 					'type' => 'true_false',
-					'instructions' => 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by <code>acf_form_head()</code>.',
+					'instructions' => sprintf( __( 'Uncheck this box to turn off "$s%1" admin theme enqueued by $s%2.', 'acf_vf' ), 'colors-fresh', '<code>acf_form_head()</code>' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
@@ -132,12 +132,12 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'Enqueue Admin CSS on Frontend',
+					'message' => __( 'Enqueue Admin CSS on Frontend', 'acf_vf' ),
 					'default_value' => 1,
 				),
 				array (
 					'key' => 'field_55d6bd84d2210',
-					'label' => 'Masked Input',
+					'label' => __( 'Masked Input', 'acf_vf' ),
 					'name' => '',
 					'type' => 'tab',
 					'instructions' => '',
@@ -153,7 +153,7 @@ class acf_vf_options {
 				),
 				array (
 					'key' => 'field_55f1d1ec2c61c',
-					'label' => 'Mask Patterns Upgrade',
+					'label' => __( 'Mask Patterns Upgrade', 'acf_vf' ),
 					'name' => '',
 					'type' => 'message',
 					'instructions' => '',
@@ -164,12 +164,12 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => 'This is a message about how you can upgrade to enable custom mask patterns.',
+					'message' => __( 'This is a message about how you can upgrade to enable custom mask patterns.', 'acf_vf' ),
 					'esc_html' => 0,
 				), 
 				array (
 					'key' => 'field_5604667c31fea',
-					'label' => 'Field Level Security',
+					'label' => __( 'Field Level Security', 'acf_vf' ),
 					'name' => '',
 					'type' => 'tab',
 					'instructions' => '',
@@ -196,7 +196,7 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => __( 'This is a message about how you can upgrade to enable field level security.' ),
+					'message' => __( 'This is a message about how you can upgrade to enable field level security.', 'acf_vf' ),
 					'esc_html' => 0,
 				),
 			),
