@@ -125,231 +125,25 @@ class acf_field_validated_field extends acf_field {
 
 				add_action( 'admin_head', array( $this, 'admin_head' ), 0 );
 
-				register_field_group( apply_filters( 'acf_vf/options_field_group', array(
-					'key' => 'group_55d6baa806f00',
-					'title' => 'Validated Field Settings',
-					'fields' => array (
-						array (
-							'key' => 'field_55d6bd56d220f',
-							'label' => __( 'General', 'acf_vf' ),
-							'name' => '',
-							'type' => 'tab',
-							'instructions' => '',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'placement' => 'top',
-							'endpoint' => 0,
-						),
-						array (
-							'key' => 'field_55d6bc95a04d4',
-							'label' => __( 'Debugging', 'acf_vf' ),
-							'name' => 'acf_vf_debug',
-							'type' => 'true_false',
-							'instructions' => __( 'Check this box to turn on debugging for Validated Fields.', 'acf_vf' ),
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'Enable Debugging',
-							'default_value' => 0,
-						),
-						array (
-							'key' => 'field_55d6be22b0225',
-							'label' => 'Draft Validation',
-							'name' => 'acf_vf_drafts',
-							'type' => 'true_false',
-							'instructions' => 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'Enable Draft Validation',
-							'default_value' => 0,
-						),
-						array (
-							'key' => 'field_55d6c0d4b3ae0',
-							'label' => 'Frontend Validation',
-							'name' => 'acf_vf_frontend',
-							'type' => 'true_false',
-							'instructions' => 'Check this box to turn on validation for front-end forms created with <code>acf_form()</code>.',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'Enable Frontend Validation',
-							'default_value' => 0,
-						),
-						array (
-							'key' => 'field_5606d52b87541',
-							'label' => 'UI / UX',
-							'name' => '',
-							'type' => 'tab',
-							'instructions' => '',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'placement' => 'top',
-							'endpoint' => 0,
-						),
-						array (
-							'key' => 'field_5606d0fdddb99',
-							'label' => 'Link to Tab',
-							'name' => 'acf_vf_link_to_tab',
-							'type' => 'true_false',
-							'instructions' => 'Uncheck this box to disable the "Link to Tab" functionality.',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'Enable Link to Tab',
-							'default_value' => 1,
-						),
-						array (
-							'key' => 'field_5606d206ddb9a',
-							'label' => 'Link to Field Group Editor',
-							'name' => 'acf_vf_link_to_field_group_editor',
-							'type' => 'true_false',
-							'instructions' => 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named <code>another_text_field</code>, use the URL <code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>.',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'Enable Link to Field Group Editor',
-							'default_value' => 1,
-						),
-						array (
-							'key' => 'field_55d6c123b3ae1',
-							'label' => 'Admin CSS on Frontend',
-							'name' => 'acf_vf_frontend_css',
-							'type' => 'true_false',
-							'instructions' => 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by <code>acf_form_head()</code>.',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'Enqueue Admin CSS on Frontend',
-							'default_value' => 1,
-						),
-						array (
-							'key' => 'field_55d6bd84d2210',
-							'label' => 'Masked Input',
-							'name' => '',
-							'type' => 'tab',
-							'instructions' => '',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'placement' => 'top',
-							'endpoint' => 0,
-						),
-						array (
-							'key' => 'field_55f1d1ec2c61c',
-							'label' => 'Mask Patterns Upgrade',
-							'name' => '',
-							'type' => 'message',
-							'instructions' => '',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => 'This is a message about how you can upgrade to enable custom mask patterns.',
-							'esc_html' => 0,
-						), 
-						array (
-							'key' => 'field_5604667c31fea',
-							'label' => 'Field Level Security',
-							'name' => '',
-							'type' => 'tab',
-							'instructions' => '',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'placement' => 'top',
-							'endpoint' => 0,
-						),
-						array (
-							'key' => 'field_560466c231feb',
-							'label' => __( 'Field Level Security Upgrade', 'acf_vf' ),
-							'name' => '',
-							'type' => 'message',
-							'instructions' => '',
-							'required' => 0,
-							'conditional_logic' => 0,
-							'wrapper' => array (
-								'width' => '',
-								'class' => '',
-								'id' => '',
-							),
-							'message' => __( 'This is a message about how you can upgrade to enable field level security.' ),
-							'esc_html' => 0,
-						),
-					),
-					'location' => array (
-						array (
-							array (
-								'param' => 'options_page',
-								'operator' => '==',
-								'value' => 'acf-validated-field',
-								'order_no' => 0,
-								'group_no' => 0,
-							),
-						),
-					),
-					'options' => array (
-						'position' => 'normal',
-						'layout' => 'no_box',
-						'hide_on_screen' => array (
-						),
-					),
-					'menu_order' => 0,0,
-					'position' => 'normal',
-					'style' => 'seamless',
-					'label_placement' => 'top',
-					'instruction_placement' => 'label',
-					'hide_on_screen' => '',
-					'active' => 1,
-					'description' => '',
-				) ) );
+				add_filter( 'acf_vf/options_field_group', array( $this, 'field_group_location' ) );
+				register_field_group( acf_vf_options::get_field_group() );
 			}
 		}
+	}
+
+	function field_group_location( $field_group ){
+		$field_group['location'] = array(
+			array(
+				array(
+					'param' => 'options_page',
+					'operator' => '==',
+					'value' => 'acf-validated-field',
+					'order_no' => 0,
+					'group_no' => 0,
+				),
+			),
+		);
+		return $field_group;
 	}
 
 	function option_value( $key ){
