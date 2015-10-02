@@ -62,6 +62,10 @@ if ( typeof acf.o == 'undefined' ){
 
 			$(this).siblings('#acfvf_message, #message').remove();
 
+			if ( ! acf.validation.status ){
+				return false;
+			}
+
 			// If we don't have a '$el' this is probably a preview where WordPress calls 'click' first
 			if (!vf.$el){
 				// We need to let our click handler run, then start the whole thing over in our handler
