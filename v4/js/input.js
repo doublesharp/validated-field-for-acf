@@ -45,7 +45,8 @@ if ( typeof acf.o == 'undefined' ){
 		});
 
 		// When a .button is clicked we need to track what was clicked
-		$(document).on('click', 'form#post .button, form#post input[type=submit], form#your-profile input[type=submit], form#validated-field input[type=submit]', function(){
+		$(document).on('click', 'form#post .button, form#post input[type=submit], form#your-profile input[type=submit], form.acf-form input[type=submit]', function(e){
+			//e.preventDefault();
 			vf.$el = $(this);
 			// The default 'click' runs first and then calls 'submit' so we need to retrigger after we have tracked the '$el'
 			if (vf.reclick){
@@ -55,16 +56,11 @@ if ( typeof acf.o == 'undefined' ){
 		});
 		
 		// Intercept the form submission
-		$(document).on('submit', 'form#post, form#your-profile, form#validated-field', function(){
+		$(document).on('submit', 'form#post, form#your-profile, form.acf-form', function(){
 			// remove error messages since we are going to revalidate
 			$('.field_type-validated_field').find('.acf-error-message').remove();
 
-			if ( ! acf.validation.status ){
-				$(this).siblings('#acfvf_message').remove();
-				return false;
-			} else {
-				$(this).siblings('#acfvf_message, #message').remove();
-			}
+			$(this).siblings('#acfvf_message, #message').remove();
 
 			// If we don't have a '$el' this is probably a preview where WordPress calls 'click' first
 			if (!vf.$el){
@@ -84,7 +80,7 @@ if ( typeof acf.o == 'undefined' ){
 			// we have to know what was clicked to retrigger
 			if (!clickObj) return false;
 			// validate non-"publish" clicks unless vf.drafts is set to false
-			if (!vf.drafts&&clickObj.attr('id')!='publish') return true;
+			if (acf.o.post_id!='options'&&!vf.drafts&&clickObj.attr('id')!='publish') return true;
 			// gather form fields and values to submit to the server
 			var fields = [];
 

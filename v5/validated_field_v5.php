@@ -10,7 +10,8 @@ class acf_field_validated_field extends acf_field {
 		$debug,						// if true, don't use minified and confirm form submit					
 		$drafts,
 		$frontend,
-		$link_to_tab;
+		$link_to_tab,
+		$link_to_field_group;
 
 	/*
 	*  __construct
@@ -30,7 +31,8 @@ class acf_field_validated_field extends acf_field {
 		$this->frontend = $this->option_value( 'acf_vf_frontend' );
 		$this->frontend_css = $this->option_value( 'acf_vf_frontend_css' );
 		$this->debug 	= $this->option_value( 'acf_vf_debug' );
-		$this->link_to_tab = $this->option_value( 'acf_vf_debug' );
+		$this->link_to_tab = $this->option_value( 'acf_vf_link_to_tab' );
+		$this->link_to_field_group = $this->option_value( 'acf_vf_link_to_field_group_editor' );
 
 		$this->defaults = array(
 			'read_only' => 'no',
@@ -290,6 +292,7 @@ class acf_field_validated_field extends acf_field {
 		<script>
 		(function($){
 			if ( typeof acf != 'undefined' ){
+				acf.version = '<?php echo acf()->settings['version']; ?>';
 				acf.add_action('ready', function(){
 					<?php if ( $this->drafts || $field_level_drafts ): ?>
 						$(document).off('click', '#save-post');
@@ -516,15 +519,18 @@ class acf_field_validated_field extends acf_field {
 			$acf_vf['frontend'] :
 			false;
 
-		if ( !empty( $field['parent'] ) ){
-			$parent_field = acf_get_field( $field['parent'] );	
-		}
+		$parent_field = !empty( $field['parent'] ) ? 
+			acf_get_field( $field['parent'] ) :
+			false;
 
-		// if it's a repeater field, get the validated field so we can do meta queries...
-		if ( true == ( $is_repeater = ( isset( $parent_field ) && 'repeater' == $parent_field['type'] ) ) ){
-			$index = isset( $index[1] ) ? $index[1] : 0;
-		}
-		
+		$is_repeater = isset( $parent_field ) && 'repeater' == $parent_field['type'];
+
+		// extract the field key
+		preg_match( '/\\[([^\\]]*?)\\](\\[(\d*?)\\]\\[([^\\]]*?)\\])?/', $field['key'], $matches );
+		$key = isset( $matches[1] )? $matches[1] : false;	// the key for this ACF
+		$index = isset( $matches[3] )? $matches[3] : false;	// the field index, if it is a repeater
+		$sub_key = isset( $matches[4] )? $matches[4] : false; // the key for the sub field, if it is a repeater
+
 		if ( is_array( $value ) ){
 			$value = implode( ',', $value );
 		}
@@ -598,7 +604,7 @@ PHP;
 						// check to see if this is our error or not.
 						if ( strpos( $error['file'], basename( __FILE__ ) ) && strpos( $error['file'], "eval()'d code" ) ){
 							preg_match( '/eval\\(\\)\'d code\\((\d+)\\)/', $error['file'], $matches );
-							return $message = __( 'PHP Error', 'acf_vf' ) . ': ' . $error['message'] . ', line ' . $matches[1] . '.';
+							return sprintf( __( 'PHP Error: $s%1, line $d%2.', 'acf_vf' ), $error['message'], $matches[1] );
 						} 
 					}
 					// if a string is returned, return it as the error.
@@ -626,13 +632,11 @@ PHP;
 						if ( is_array( $submitted ) ){	
 							foreach( $submitted as $row ){
 								foreach( $row as $row_key => $row_value ){
-									if ( $row_value == $value ){
-										$value_instances++;
+									if ( $row_value == $value && ++$value_instances > 1 ){
+										return acf_vf_utils::get_unique_form_error( $unique, $field, $value );
 									}
 								}
-								if ( $value_instances>1 ){
-									break;
-								}
+								
 							}
 						}
 					}
@@ -646,12 +650,10 @@ PHP;
 								foreach( $acf as $row ){
 									foreach( $row as $row_key => $row_value ){
 										if ( $row_key == $field['key'] && $row_value == $value ){
-											$value_instances++;
-											break;
+											if ( ++$value_instances > 1 ){
+												return acf_vf_utils::get_unique_form_error( $unique, $field, $value );
+											}
 										}
-									}
-									if ( $value_instances>1 ){
-										break;
 									}
 								}
 							}
@@ -660,264 +662,13 @@ PHP;
 					break;
 			}
 
-			// this value came up more than once, so we need to mark it as an error
-			if ( $value_instances > 1 ){
-				switch ( $unique ){
-					case 'global';
-						return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on all posts.', 'acf_vf' ), $value );
-						break;
-					case 'post_type':
-						return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post type.', 'acf_vf' ), $value );
-						break;
-					case 'this_post':
-						return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post.', 'acf_vf' ), $value );
-						break;
-					case 'post_key':
-					case 'this_post_key':
-						return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for %2$s.', 'acf_vf' ), $value, $field['label'] );
-						break;
-				}
+			// Run the SQL queries to see if there are duplicate values
+			if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, $value ) ) ){
+				return $message;
 			}
 		}
-
-		// are we editting a user?
-		$is_user = strpos( $post_id, 'user_' ) === 0;
-		$is_options = $post_id == 'options';
-
-		// Unless we have a previous validation error, run the SQL queries to see if there are duplicate values
-		if ( $field_is_unique ){
-			global $wpdb;
-
-			// the db name is modded for repeaters
-			$this_key = $is_options ? 'options_' : '';
-			$this_key.= $is_repeater ? 
-				$parent_field['name'] . '_' . $index . '_' . $field['name'] : 
-				$field['name'];
-
-			$meta_key = $is_options ? 'options_' : '';
-			$meta_key.= $is_repeater ? 
-				$parent_field['name'] . '_%_' . $field['name']:
-				'';
-
-			$status_in = "'" . implode( "','", $field['unique_statuses'] ) . "'";
-
-			if ( $is_user ) {
-				// set up queries for the user table
-				$post_ids = array( (int) str_replace( 'user_', '', $post_id ) );
-				$table_id = 'user_id';
-				$table_key = 'meta_key';
-				$table_value = 'meta_value';
-				$sql_prefix = "SELECT m.umeta_id AS {$table_id}, m.{$table_id} AS {$table_id}, u.user_login AS title FROM {$wpdb->usermeta} m JOIN {$wpdb->users} u ON u.ID = m.{$table_id}";
-			} elseif ( $is_options ) {
-				$table_id = 'option_id';
-				$table_key = 'option_name';
-				$table_value = 'option_value';
-				$post_ids = array( $post_id );
-				$sql_prefix = "SELECT o.option_id AS {$table_id}, o.{$table_id} AS {$table_id}, o.option_name AS title FROM {$wpdb->options} o";
-			} else {
-				// set up queries for the posts table
-				if ( function_exists( 'icl_object_id' ) ){
-					// WPML compatibility, get code list of active languages
-					$languages = $wpdb->get_results( "SELECT code FROM {$wpdb->prefix}icl_languages WHERE active = 1", ARRAY_A );
-					$wpml_ids = array();
-					foreach( $languages as $lang ){
-						$wpml_ids[] = (int) icl_object_id( $post_id, $post_type, true, $lang['code'] );
-					}
-					$post_ids = array_unique( $wpml_ids );
-				} else {
-					$post_ids = array( (int) $post_id );
-				}
-				$table_id = 'post_id';
-				$table_key = 'meta_key';
-				$table_value = 'meta_value';
-				$sql_prefix = "SELECT m.meta_id AS {$table_id}, m.{$table_id} AS {$table_id}, p.post_title AS title FROM {$wpdb->postmeta} m JOIN {$wpdb->posts} p ON p.ID = m.{$table_id} AND p.post_status IN ($status_in)";
-			}
-
-			switch ( $unique ){
-				case 'global': 
-					// check to see if this value exists anywhere in the postmeta table
-					if ( $is_user || $is_options ){
-						$sql = false;
-					} else {
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE ( {$table_value} = %s OR {$table_value} LIKE %s )",
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					}
-					break;
-				case 'post_type':
-					// check to see if this value exists in the postmeta table with this $post_id
-					if ( $is_user ){
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} WHERE ( ( {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s ) OR {$table_id} NOT IN ([IN_NOT_IN]) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-							$this_key,
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					} elseif ( $is_options ){
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} WHERE {$table_key} != %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-							$this_key,
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					} else {
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s ) OR {$table_id} NOT IN ([IN_NOT_IN]) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-							$post_type,
-							$this_key,
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					}
-					break;
-				case 'post_key':
-					// check to see if this value exists in the postmeta table with both this $post_id and $meta_key
-					if ( $is_user ){
-						if ( $is_repeater ){
-							$sql = $wpdb->prepare(
-								"{$sql_prefix} WHERE ( ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-								$this_key,
-								$meta_key,
-								$meta_key,
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						} else {			
-							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-								$field['name'],
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						}
-					} elseif ( $is_options ){
-						if ( $is_repeater ){
-							$sql = $wpdb->prepare(
-								"{$sql_prefix} WHERE {$table_key} != %s AND {$table_key} LIKE %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-								$this_key,
-								$meta_key,
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						} else {			
-							$sql = $wpdb->prepare( 
-								"{$sql_prefix} WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-								$field['name'],
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						}
-					} else {
-						if ( $is_repeater ){
-							$sql = $wpdb->prepare(
-								"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-								$post_type,
-								$this_key,
-								$meta_key,
-								$meta_key,
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						} else {	
-							$sql = $wpdb->prepare( 
-								"{$sql_prefix} AND p.post_type = %s AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-								$post_type,
-								$this_key,
-								$value,
-								'%"' . $wpdb->esc_like( $value ) . '"%'
-							);
-						}
-					}
-					break;
-				case 'this_post':
-					// check to see if this value exists in the postmeta table with this $post_id
-					if ( $is_user || $is_options ){
-						$sql = false;
-					} else {
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )",
-							$this_key,
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					}
-					break;
-				case 'this_post_key':
-					// check to see if this value exists in the postmeta table with both this $post_id and $meta_key
-					if ( $is_user || $is_options ){
-						$sql = false;
-					} elseif ( $is_repeater ){
-						$sql = $wpdb->prepare(
-							"{$sql_prefix} WHERE {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-							$this_key,
-							$meta_key,
-							$meta_key,
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					} else {
-						$sql = $wpdb->prepare( 
-							"{$sql_prefix} AND {$table_id} IN ([IN_NOT_IN]) WHERE {$table_key} = %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
-							$field['name'],
-							$value,
-							'%"' . $wpdb->esc_like( $value ) . '"%'
-						);
-					}
-					break;
-				default:
-					// no dice, set $sql to null
-					$sql = null;
-					break;
-			}
-
-			// Only run if we hit a condition above
-			if ( !empty( $sql ) ){
-
-				// Update the [IN_NOT_IN] values
-				$sql = $this->prepare_in_and_not_in( $sql, $post_ids );
-
-				// Execute the SQL
-				$rows = $wpdb->get_results( $sql );
-				if ( count( $rows ) ){
-					// We got some matches, but there might be more than one so we need to concatenate the collisions
-					$conflicts = "";
-					foreach ( $rows as $row ){
-						if ( $is_user ){
-							$permalink = admin_url( "user-edit.php?user_id={$row->user_id}" );
-						} elseif ( $is_options ){
-							$permalink = admin_url( "options.php#{$row->title}" );
-						} elseif ( $frontend ){
-							$permalink = get_permalink( $row->{$table_id} );
-						} else {
-							$permalink = admin_url( "post.php?post={$row->{$table_id}}&action=edit" );
-						}
-						$conflicts.= "<a href='{$permalink}' style='color:inherit;text-decoration:underline;'>{$row->title}</a>";
-						if ( $row !== end( $rows ) ) $conflicts.= ', ';
-					}
-					return sprintf( __( 'The value "%1$s" is already in use by %2$s.', 'acf_vf' ), $value, $conflicts );
-				}
-			}
-		}
-		
-		// ACF will use any message as an error
-		if ( !$valid ) return $message;
 
 		return $valid;
-	}
-
-	private function prepare_in_and_not_in( $sql, $post_ids ){
-		global $wpdb;
-		$not_in_count = substr_count( $sql, '[IN_NOT_IN]' );
-		if ( $not_in_count > 0 ){
-			$args = array( str_replace( '[IN_NOT_IN]', implode( ', ', array_fill( 0, count( $post_ids ), '%d' ) ), str_replace( '%', '%%', $sql ) ) );
-			for ( $i=0; $i < substr_count( $sql, '[IN_NOT_IN]' ); $i++ ) { 
-				$args = array_merge( $args, $post_ids );
-			}
-			$sql = call_user_func_array( array( $wpdb, 'prepare' ), $args );
-		}
-		return $sql;
 	}
 
 	/*
@@ -1359,7 +1110,7 @@ PHP;
 		// register acf scripts
 		$min = ( !$this->debug )? '.min' : '';
 		wp_register_script( 'jquery-masking', plugins_url( "../common/js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION, true );
-		
+
 		// enqueue scripts
 		wp_enqueue_script( array(
 			'jquery',
@@ -1383,8 +1134,9 @@ PHP;
 	*  @return	n/a
 	*/
 	function input_admin_footer(){
+		$min = ( !$this->debug )? '.min' : '';
 		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( '../common/css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0' ); 
 		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array(), ACF_VF_VERSION ); 
 	}
 
@@ -1402,10 +1154,14 @@ PHP;
 	function field_group_admin_enqueue_scripts(){
 		$min = ( !$this->debug )? '.min' : '';
 		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( '../common/css/font-awesome/css/font-awesome.min.css', __FILE__ ), array(), '4.2.0' ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0' ); 
 		
 		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
 		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
+
+		if ( $this->link_to_field_group ){
+			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+		}
 	}
 
 	/*
@@ -1539,7 +1295,7 @@ PHP;
 
 		// Show icons for read-only fields
 		if ( $this->check_value( 'yes', $field['read_only'] ) && get_post_type() != 'acf-field-group' ){
-			$field['label'] .= sprintf( ' (<i class="fa fa-ban" style="color:red;" title="%1$s"></i> <small><em>%1$s</em></small>)', __( 'Read only', 'acf_vf' ) );
+			$field['label'] .= sprintf( ' (<i class="fa fa-ban" style="color:red;" title="%1$s"><small><em> %1$s</em></small></i>)', __( 'Read only', 'acf_vf' ) );
 		}
 
 		// Just avoid using any type of quotes in the db values
