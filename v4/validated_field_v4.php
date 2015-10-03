@@ -25,32 +25,6 @@ class acf_field_validated_field extends acf_field {
 		// vars
 		$this->slug 	= 'acf-validated-field';
 		$this->strbool 	= array( 'true' => true, 'false' => false );
-		$this->config 	= array(
-			'acf_vf_debug' => array(
-				'type' 		=> 'checkbox',
-				'default' 	=> 'false',
-				'label'  	=> __( 'Enable Debug', 'acf_vf' ),
-				'help' 		=> __( 'Check this box to turn on debugging for Validated Fields.', 'acf_vf' ),
-			),
-			'acf_vf_drafts' => array(
-				'type' 		=> 'checkbox',
-				'default' 	=> 'true',
-				'label'  	=> __( 'Enable Draft Validation', 'acf_vf' ),
-				'help' 		=> __( 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.', 'acf_vf' ),
-			),
-			'acf_vf_frontend' => array(
-				'type' 		=> 'checkbox',
-				'default' 	=> 'true',
-				'label'  	=> __( 'Enable Front-End Validation', 'acf_vf' ),
-				'help'		=> __( 'Check this box to turn on validation for front-end forms created with', 'acf_vf' ) . ' <code>acf_form()</code>.',
-			),
-			'acf_vf_frontend_css' => array(
-				'type' 		=> 'checkbox',
-				'default' 	=> 'true',
-				'label'  	=> __( 'Enqueue Admin CSS on Front-End', 'acf_vf' ),
-				'help' 		=> __( 'Uncheck this box to turn off "colors-fresh" admin theme enqueued by', 'acf_vf' ) . ' <code>acf_form_head()</code>.',
-			),
-		);
 		$this->name		= 'validated_field';
 		$this->label 	= __( 'Validated Field', 'acf_vf' );
 		$this->category	= __( 'Basic', 'acf' );
@@ -122,7 +96,6 @@ class acf_field_validated_field extends acf_field {
 				if ( in_array( $pagenow, array( 'edit.php', 'options.php' ) ) ){
 					add_action( 'admin_init', 'acf_form_head', 0 );
 				}
-				add_action( 'admin_init', array( $this, 'admin_register_settings' ) );
 				add_action( 'admin_menu', array( $this, 'admin_add_menu' ), 11 );
 
 				// remove uneeded properties from subfield
@@ -163,12 +136,6 @@ class acf_field_validated_field extends acf_field {
 
 	function admin_add_menu(){
 		$page = add_submenu_page( 'edit.php?post_type=acf', sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 4 ), sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 4 ), 'manage_options', $this->slug, array( &$this,'admin_settings_page' ) );
-	}
-
-	function admin_register_settings(){
-		foreach ( $this->config as $key => $value ) {
-			register_setting( $this->slug, $key );
-		}
 	}
 
 	function admin_settings_page(){
@@ -540,6 +507,10 @@ PHP;
 			?>
 			</td>
 		</tr>
+		<?php
+			// 3rd party read only settings
+			do_action( 'acf_vf/settings_readonly', $field );
+		?>
 		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_drafts" id="field_option_<?php echo $html_key; ?>_drafts">
 			<td class="label"><label><?php _e( 'Validate Drafts/Preview?', 'acf_vf' ); ?> </label>
 			</td>
@@ -555,12 +526,8 @@ PHP;
 				'class' => 'drafts horizontal'
 			));
 
-			if ( ! $this->drafts ){
-				echo '<em>';
-				_e( 'Warning', 'acf_vf' );
-				echo ': <code>ACF_VF_DRAFTS</code> ';
-				_e( 'has been set to <code>false</code> which overrides field level configurations', 'acf_vf' );
-				echo '.</em>';
+			if ( $this->drafts ){
+				printf( __( '<em>Warning <code>Draft Validation</code>has been set to <code>true</code> which overrides field level configurations. <a href="%1$s">Click here</a> to update the Validated Field settings.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf&page=acf-validated-field')."#general" );
 			}
 			?>
 			</td>
@@ -1067,8 +1034,16 @@ PHP;
 	function field_group_admin_enqueue_scripts(){
 		// register acf scripts
 		$min = ( ! $this->debug )? '.min' : '';	
+		
+		wp_deregister_style( 'font-awesome' );
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0' ); 
+		
 		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
 		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
+
+		if ( $this->link_to_field_group ){
+			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+		}
 	}
 
 	/*

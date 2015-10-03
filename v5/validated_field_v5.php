@@ -707,7 +707,10 @@ PHP;
 		// Validate Drafts
 		acf_render_field_setting( $field, array(
 			'label'			=> __( 'Validate Drafts/Preview?', 'acf_vf' ),
-			'instructions'	=> '',
+			// Show a message if drafts will always be validated
+			'instructions'	=> $this->drafts ?
+				sprintf( __( '<em>Warning: <code>Draft Validation</code>has been set to <code>true</code> which overrides field level configurations. <a href="%1$s">Click here</a> to update the Validated Field settings.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf&page=acf-validated-field')."#general" ) :
+				'',
 			'type'			=> 'radio',
 			'name'			=> 'drafts',
 			'prefix'		=> $field['prefix'],
@@ -718,26 +721,6 @@ PHP;
 			'layout'		=> 'horizontal',
 			'class'			=> 'drafts'
 		));
-
-		// Show a message if drafts will always be validated
-		if ( $this->drafts ){
-			acf_render_field_setting( $field, array(
-				'label'			=> '',
-				'instructions'	=> '',
-				'type'			=> 'message',
-				'message'		=> '<em>'.
-					__( 'Warning', 'acf_vf' ).
-					': <code>Draft Validation</code> '.
-					__( 'has been set to <code>true</code> which overrides field level configurations.', 'acf_vf' ).
-					' <a href="'.admin_url('edit.php?post_type=acf-field-group&page=validated-field-settings').'#general" target="validated_field_settings">'.
-					__( 'Click here', 'acf_vf' ).
-					'</a> '.
-					__( 'to update the Validated Field settings.', 'acf_vf' ).
-					'</em>',
-				'layout'		=> 'horizontal',
-			));
-		}
-
 		?>
 		</td></tr>
 		<tr class="acf-field acf-sub_field" data-setting="validated_field" data-name="sub_field">

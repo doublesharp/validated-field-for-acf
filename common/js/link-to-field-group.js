@@ -47,18 +47,20 @@
 	$(document).ready(function(){
 
 		// Functionality is the same, selectors are different between ACF versions
-		selectors = ( versionCompare('5.0.0', acf.version)>0 ) ? 
+		selectors = ( versionCompare('5.0.0', acf.version)>=0 ) ? 
 			{ // ACF 4
 				'row_options_edit_field': '.row_options .acf_edit_field',
 				'field': '.field',
 				'open': 'form_open',
-				'edit_field': '.acf_edit_field'
+				'edit_field': '.acf_edit_field',
+				'key': 'id'
 			} :
 			{ // ACF 5
 				'row_options_edit_field': '.row-options .edit-field',
 				'field': '.acf-field-object',
 				'open': 'open',
-				'edit_field': '.edit-field'
+				'edit_field': '.edit-field',
+				'key' : 'key'
 			};
 
 		// Check for the location hash and process if present
@@ -70,12 +72,14 @@
 			if (arr.length){
 				$(selectors['row_options_edit_field']).each(function(i, button){
 					var $field = $(this).closest(selectors['field']);
-					var field_hash = $field.data('key');
+					var field_hash = $field.data(selectors['key']);
 					if ($.inArray(field_hash, arr)>=0){
 						$(button).trigger('click');
 					}
 				});
-				acf.unload.changed = 0;
+				if ( typeof acf.unload != 'undefined' ){
+					acf.unload.changed = 0;
+				}
 				$(window).off('beforeunload');
 			}
 		}
@@ -83,7 +87,7 @@
 		$(document).on('click', selectors['edit_field'], function($el){
 			var hash = (location.hash.length>1? location.hash.substring(1) : '').split(';');
 			var $field = $(this).closest(selectors['field']);
-			var field_hash = $field.data('key');
+			var field_hash = $field.data(selectors['key']);
 			// make sure the hash is clean
 			for (i=0; i<hash.length; i++){
 				if (hash[i]==field_hash){
@@ -94,7 +98,7 @@
 				hash.push(field_hash);
 			}
 			hash = jQuery.grep(hash, function(a){
-				return a.trim() != "";
+				return typeof a != 'undefined' && a.trim() != "";
 			});
 			location.hash='#'+hash.join(';');
 		});
