@@ -245,6 +245,10 @@ class acf_field_validated_field extends acf_field {
 
 			// load the field config, set defaults
 			$field = $this->setup_field( get_field_object( $key, $post_id ) );
+
+			if ( $field['render_field'] === false || $field['render_field'] === "readonly" ){
+				continue;
+			}
 			
 			// if it's a repeater field, get the validated field so we can do meta queries...
 			if ( $is_repeater = ( 'repeater' == $field['type'] && $index ) ){

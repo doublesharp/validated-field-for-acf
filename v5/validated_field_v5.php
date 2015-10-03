@@ -493,6 +493,10 @@ class acf_field_validated_field extends acf_field {
 		$field = $this->setup_field( $field );
 		$sub_field = $this->setup_sub_field( $field );
 		
+		if ( $field['render_field'] === false || $field['render_field'] === "readonly" ){
+			continue;
+		}
+		
 		if ( $field['required'] && empty( $value ) ){
 			return $valid;									// let the required field handle it
 		}
