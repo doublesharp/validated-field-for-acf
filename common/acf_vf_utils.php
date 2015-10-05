@@ -2,6 +2,9 @@
 
 if ( !class_exists( 'acf_vf_utils' ) ):
 class acf_vf_utils{
+	
+	private static final $SQUOT = '%%squot%%';
+	private static final $DQUOT = '%%dquot%%';
 
 	static function get_unique_form_error( $unique, $field, $value ){
 		switch ( $unique ){

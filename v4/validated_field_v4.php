@@ -1201,6 +1201,10 @@ PHP;
 			}
 		}
 
+		// Just avoid using any type of quotes in the db values
+		$field['pattern'] = str_replace( acf_vf_utils::$SQUOT, "'", $field['pattern'] );
+		$field['pattern'] = str_replace( acf_vf_utils::$DQUOT, '"', $field['pattern'] );
+
 		return $field;
 	}
 
@@ -1230,6 +1234,11 @@ PHP;
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
 		$sub_field = apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id );
 		$field['sub_field'] = $sub_field;
+
+		// Just avoid using any type of quotes in the db values
+		$field['pattern'] = str_replace( "'", acf_vf_utils::$SQUOT, $field['pattern'] );
+		$field['pattern'] = str_replace( '"', acf_vf_utils::$DQUOT, $field['pattern'] );
+		
 		return $field;
 	}
 }

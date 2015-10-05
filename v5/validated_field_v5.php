@@ -496,7 +496,7 @@ class acf_field_validated_field extends acf_field {
 		if ( $field['render_field'] === false || $field['render_field'] === "readonly" ){
 			continue;
 		}
-		
+
 		if ( $field['required'] && empty( $value ) ){
 			return $valid;									// let the required field handle it
 		}
@@ -1286,8 +1286,8 @@ PHP;
 		}
 
 		// Just avoid using any type of quotes in the db values
-		$field['pattern'] = str_replace( "%%squot%%", "'", $field['pattern'] );
-		$field['pattern'] = str_replace( "%%dquot%%", '"', $field['pattern'] );
+		$field['pattern'] = str_replace( acf_vf_utils::$SQUOT, "'", $field['pattern'] );
+		$field['pattern'] = str_replace( acf_vf_utils::$DQUOT, '"', $field['pattern'] );
 
 		return $field;
 	}
@@ -1311,8 +1311,8 @@ PHP;
 		$field['sub_field'] = $sub_field;
 
 		// Just avoid using any type of quotes in the db values
-		$field['pattern'] = str_replace( "'", "%%squot%%", $field['pattern'] );
-		$field['pattern'] = str_replace( '"', "%%dquot%%", $field['pattern'] );
+		$field['pattern'] = str_replace( "'", acf_vf_utils::$SQUOT, $field['pattern'] );
+		$field['pattern'] = str_replace( '"', acf_vf_utils::$DQUOT, $field['pattern'] );
 
 		return $field;
 	}
