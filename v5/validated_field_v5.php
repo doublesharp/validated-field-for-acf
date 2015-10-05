@@ -1285,6 +1285,11 @@ PHP;
 			$field['label'] .= sprintf( ' (<i class="fa fa-ban" style="color:red;" title="%1$s"><small><em> %1$s</em></small></i>)', __( 'Read only', 'acf_vf' ) );
 		}
 
+		// Disable the mask if the sub field is anything but...
+		if ( !in_array( $sub_field['type'], array( 'text', 'url', 'password' ) ) ){
+			$field['mask'] = false;
+		}
+
 		// Just avoid using any type of quotes in the db values
 		$field['pattern'] = str_replace( acf_vf_utils::$SQUOT, "'", $field['pattern'] );
 		$field['pattern'] = str_replace( acf_vf_utils::$DQUOT, '"', $field['pattern'] );
