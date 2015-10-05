@@ -554,11 +554,12 @@ PHP;
 											<td><?php
 											// Create the drop down of field types
 											do_action( 'acf/create_field', array(
-												'type'	=> 'select',
-												'name'	=> 'fields[' . $key . '][sub_field][type]',
-												'value'	=> $sub_field['type'],
-												'class'	=> 'type',
-												'choices' => $fields_names
+												'type'		=> 'select',
+												'name'		=> 'fields[' . $key . '][sub_field][type]',
+												'value'		=> $sub_field['type'],
+												'class'		=> 'type',
+												'choices' 	=> $fields_names,
+												'class'		=> 'field-type'
 											));
 
 											// Create the default sub field settings

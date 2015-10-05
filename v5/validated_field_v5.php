@@ -779,7 +779,8 @@ PHP;
 								'name'			=> 'type',
 								'prefix'		=> $sub_field['prefix'],
 								'choices' 		=> $fields_names,
-								'required'		=> true
+								'required'		=> true,
+								'class'			=> 'field-type'
 							), 'tr' );			
 
 							// Render the Sub Field
