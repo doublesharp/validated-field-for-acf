@@ -25,7 +25,7 @@ class acf_vf_utils{
 		return false;
 	}
 
-	public static function is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, $value ){
+	public static function is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, $is_flex, $is_frontend, $value ){
 		global $wpdb;
 
 		// are we editting a user?
@@ -37,15 +37,16 @@ class acf_vf_utils{
 			$post_type = get_post_type( $post_id );	
 		}
 
-		// the db name is modded for repeaters
+		// prepend for options
 		$this_key = $is_options ? 'options_' : '';
-		$this_key.= $is_repeater ? 
-			$parent_field['name'] . '_' . $index . '_' . $field['name'] : 
-			$field['name'];
+		// for repeaters and flex content add the parent and index
+		$this_key.= $is_repeater || $is_flex ? $parent_field['name'] . '_' . $index . '_' : '';
+		// the key for this field
+		$this_key.= $field['name'];
 
 		// modify keys for options and repeater fields
 		$meta_key = $is_options ? 'options_' : '';
-		$meta_key.= $is_repeater ? 
+		$meta_key.= $is_repeater || $is_flex ? 
 			$parent_field['name'] . '_%_' . $field['name']:
 			'';
 
@@ -58,13 +59,13 @@ class acf_vf_utils{
 			$table_id = 'user_id';
 			$table_key = 'meta_key';
 			$table_value = 'meta_value';
-			$sql_prefix = "SELECT m.umeta_id AS {$table_id}, m.{$table_id} AS {$table_id}, u.user_login AS title FROM {$wpdb->usermeta} m JOIN {$wpdb->users} u ON u.ID = m.{$table_id}";
+			$sql_prefix = "SELECT m.umeta_id AS meta_id, m.{$table_id} AS {$table_id}, u.user_login AS title FROM {$wpdb->usermeta} m JOIN {$wpdb->users} u ON u.ID = m.{$table_id}";
 		} elseif ( $is_options ) {
 			$table_id = 'option_id';
 			$table_key = 'option_name';
 			$table_value = 'option_value';
 			$post_ids = array( $post_id );
-			$sql_prefix = "SELECT o.option_id AS {$table_id}, o.{$table_id} AS {$table_id}, o.option_name AS title FROM {$wpdb->options} o";
+			$sql_prefix = "SELECT o.option_id AS meta_id, o.{$table_id} AS {$table_id}, o.option_name AS title FROM {$wpdb->options} o";
 		} else {
 			// set up queries for the posts table
 			if ( function_exists( 'icl_object_id' ) ){
@@ -81,12 +82,12 @@ class acf_vf_utils{
 			$table_id = 'post_id';
 			$table_key = 'meta_key';
 			$table_value = 'meta_value';
-			$sql_prefix = "SELECT m.meta_id AS {$table_id}, m.{$table_id} AS {$table_id}, p.post_title AS title FROM {$wpdb->postmeta} m JOIN {$wpdb->posts} p ON p.ID = m.{$table_id} AND p.post_status IN ($status_in)";
+			$sql_prefix = "SELECT m.meta_id AS meta_id, m.{$table_id} AS {$table_id}, p.post_title AS title FROM {$wpdb->postmeta} m JOIN {$wpdb->posts} p ON p.ID = m.{$table_id} AND p.post_status IN ($status_in)";
 		}
 
 		switch ( $unique ){
 			case 'global': 
-				// check to see if this value exists anywhere in the postmeta table
+				// check to see if this value exists anywhere in the postmeta table, any post type, any meta key
 				if ( $is_user || $is_options ){
 					$sql = false;
 				} else {
@@ -98,7 +99,7 @@ class acf_vf_utils{
 				}
 				break;
 			case 'post_type':
-				// check to see if this value exists in the postmeta table with this $post_id
+				// check to see if this value exists in the postmeta table with this post_type, any meta key
 				if ( $is_user ){
 					$sql = $wpdb->prepare( 
 						"{$sql_prefix} WHERE ( ( {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s ) OR {$table_id} NOT IN ([IN_NOT_IN]) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
@@ -126,9 +127,9 @@ class acf_vf_utils{
 			case 'post_key':
 				// check to see if this value exists in the postmeta table with both this $post_id and $meta_key
 				if ( $is_user ){
-					if ( $is_repeater ){
+					if ( $is_repeater || $is_flex ){
 						$sql = $wpdb->prepare(
-							"{$sql_prefix} WHERE ( ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+							"{$sql_prefix} WHERE ( ( {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 							$this_key,
 							$meta_key,
 							$meta_key,
@@ -144,7 +145,7 @@ class acf_vf_utils{
 						);
 					}
 				} elseif ( $is_options ){
-					if ( $is_repeater ){
+					if ( $is_repeater || $is_flex ){
 						$sql = $wpdb->prepare(
 							"{$sql_prefix} WHERE {$table_key} != %s AND {$table_key} LIKE %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 							$this_key,
@@ -161,9 +162,9 @@ class acf_vf_utils{
 						);
 					}
 				} else {
-					if ( $is_repeater ){
+					if ( $is_repeater || $is_flex ){
 						$sql = $wpdb->prepare(
-							"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
+							"{$sql_prefix} AND p.post_type = %s WHERE ( ( {$table_key} != %s AND {$table_key} LIKE %s ) OR ( {$table_id} NOT IN ([IN_NOT_IN]) AND {$table_key} LIKE %s ) ) AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 							$post_type,
 							$this_key,
 							$meta_key,
@@ -199,7 +200,7 @@ class acf_vf_utils{
 				// check to see if this value exists in the postmeta table with both this $post_id and $meta_key
 				if ( $is_user || $is_options ){
 					$sql = false;
-				} elseif ( $is_repeater ){
+				} elseif ( $is_repeater || $is_flex ){
 					$sql = $wpdb->prepare(
 						"{$sql_prefix} WHERE {$table_id} IN ([IN_NOT_IN]) AND {$table_key} != %s AND {$table_key} LIKE %s AND ( {$table_value} = %s OR {$table_value} LIKE %s )", 
 						$this_key,
@@ -228,7 +229,7 @@ class acf_vf_utils{
 
 			// Update the [IN_NOT_IN] values
 			$sql = self::prepare_in_and_not_in( $sql, $post_ids );
-
+error_log($sql);
 			// Execute the SQL
 			$rows = $wpdb->get_results( $sql );
 			if ( count( $rows ) ){
@@ -239,7 +240,7 @@ class acf_vf_utils{
 						$permalink = admin_url( "user-edit.php?user_id={$row->user_id}" );
 					} elseif ( $is_options ){
 						$permalink = admin_url( "options.php#{$row->title}" );
-					} elseif ( $frontend ){
+					} elseif ( $is_frontend ){
 						$permalink = get_permalink( $row->{$table_id} );
 					} else {
 						$permalink = admin_url( "post.php?post={$row->{$table_id}}&action=edit" );

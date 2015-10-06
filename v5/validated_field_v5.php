@@ -465,17 +465,19 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	function validate_field( $valid, $value, $field, $input ) {
+		global $acf_vf_indexes, $acf_vf_request;
+
 		if ( !$valid )
 			return $valid;
 
 		// we need values in this array
 		if ( isset( $_REQUEST['acf']['acf_vf'] ) ){
 			// Grab the keys we added and remove them from the $_REQUEST
-			$acf_vf = $_REQUEST['acf']['acf_vf'];
+			$acf_vf_request = $_REQUEST['acf']['acf_vf'];
 			unset( $_REQUEST['acf']['acf_vf'] );
 		} elseif ( null !== ( $post = get_post() ) ){
 			// This look slike a post, get the ID and current status
-			$acf_vf = array(
+			$acf_vf_request = array(
 				'post_ID' => $post->ID,
 				'post_status' => $post->post_status,
 			);
@@ -483,7 +485,7 @@ class acf_field_validated_field extends acf_field {
 			// This might be a user update
 			global $profileuser;
 			if ( !empty( $profileuser ) ){
-				$acf_vf = array(
+				$acf_vf_request = array(
 					'post_ID' => 'user_' . $profileuser->ID
 				);
 			}
@@ -502,8 +504,8 @@ class acf_field_validated_field extends acf_field {
 		}
 
 		// The new post status we stuck into the ACF request
-		$post_status = isset( $acf_vf['post_status'] )?
-			$acf_vf['post_status'] :
+		$post_status = isset( $acf_vf_request['post_status'] )?
+			$acf_vf_request['post_status'] :
 			false;
 
 		// we aren't publishing and we don't want to validate drafts globally or for this field
@@ -512,15 +514,15 @@ class acf_field_validated_field extends acf_field {
 		}
 
 		// get ID of the submit post or cpt, allow null for options page
-		$post_id = isset( $acf_vf['post_ID'] )? 
-			$acf_vf['post_ID'] : 
+		$post_id = isset( $acf_vf_request['post_ID'] )? 
+			$acf_vf_request['post_ID'] : 
 			null;
 
 		// the type of the submitted post
 		$post_type = get_post_type( $post_id );				
 
-		$frontend = isset( $acf_vf['frontend'] )?
-			$acf_vf['frontend'] :
+		$is_frontend = isset( $acf_vf_request['frontend'] )?
+			$acf_vf_request['frontend'] :
 			false;
 
 		$parent_field = !empty( $field['parent'] ) ? 
@@ -528,13 +530,20 @@ class acf_field_validated_field extends acf_field {
 			false;
 
 		$is_repeater = isset( $parent_field ) && 'repeater' == $parent_field['type'];
+		$is_flex = isset( $parent_field ) && 'flexible_content' == $parent_field['type'];
 
-		// extract the field key
-		preg_match( '/\\[([^\\]]*?)\\](\\[(\d*?)\\]\\[([^\\]]*?)\\])?/', $field['key'], $matches );
-		$key = isset( $matches[1] )? $matches[1] : false;	// the key for this ACF
-		$index = isset( $matches[3] )? $matches[3] : false;	// the field index, if it is a repeater
-		$sub_key = isset( $matches[4] )? $matches[4] : false; // the key for the sub field, if it is a repeater
+		// track the field index based on the field name
+		if ( !isset( $acf_vf_indexes ) || !is_array( $acf_vf_indexes ) ){
+			$acf_vf_indexes = array();
+		}
+		// initialize or increment the index
+		$index = isset( $acf_vf_indexes[$field['name']] ) ?
+			$acf_vf_indexes[$field['name']]+1 :
+			0;
+		// cache the current value
+		$acf_vf_indexes[$field['name']] = $index;
 
+		// treat arrays as strings for the purposes of our string based validation
 		if ( is_array( $value ) ){
 			$value = implode( ',', $value );
 		}
@@ -648,7 +657,7 @@ PHP;
 				case 'post_key':
 				case 'this_post_key':
 					// only check the key for a repeater for duplicate submissions
-					if ( $is_repeater ){
+					if ( $is_repeater || $is_flex ){
 						foreach ( $_REQUEST['acf'] as $key => $acf ){
 							if ( is_array( $acf ) ){	
 								foreach( $acf as $row ){
@@ -667,7 +676,7 @@ PHP;
 			}
 
 			// Run the SQL queries to see if there are duplicate values
-			if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, $value ) ) ){
+			if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, $is_flex, $is_frontend, $value ) ) ){
 				return $message;
 			}
 		}
