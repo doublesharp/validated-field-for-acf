@@ -644,12 +644,13 @@ PHP;
 					foreach ( $_REQUEST['acf'] as $key => $submitted ){
 						if ( is_array( $submitted ) ){	
 							foreach( $submitted as $row ){
-								foreach( $row as $row_key => $row_value ){
-									if ( $row_value == $value && ++$value_instances > 1 ){
-										return acf_vf_utils::get_unique_form_error( $unique, $field, $value );
+								if ( is_array( $row ) ){
+									foreach( $row as $row_key => $row_value ){
+										if ( $row_value == $value && ++$value_instances > 1 ){
+											return acf_vf_utils::get_unique_form_error( $unique, $field, $value );
+										}
 									}
-								}
-								
+								}								
 							}
 						}
 					}
@@ -660,13 +661,17 @@ PHP;
 					if ( $is_repeater || $is_flex ){
 						foreach ( $_REQUEST['acf'] as $key => $acf ){
 							if ( is_array( $acf ) ){	
-								foreach( $acf as $row ){
-									foreach( $row as $row_key => $row_value ){
-										if ( $row_key == $field['key'] && $row_value == $value ){
-											if ( ++$value_instances > 1 ){
-												return acf_vf_utils::get_unique_form_error( $unique, $field, $value );
+								foreach( $acf as $id => $row ){
+									if ( is_array( $row ) ){
+										foreach( $row as $row_key => $row_value ){
+											if ( $row_key == $field['key'] && $row_value == $value ){
+												if ( ++$value_instances > 1 ){
+													return acf_vf_utils::get_unique_form_error( $unique, $field, $value );
+												}
 											}
 										}
+									} else {
+										//echo $field['key'];
 									}
 								}
 							}
