@@ -617,7 +617,7 @@ PHP;
 						// check to see if this is our error or not.
 						if ( strpos( $error['file'], basename( __FILE__ ) ) && strpos( $error['file'], "eval()'d code" ) ){
 							preg_match( '/eval\\(\\)\'d code\\((\d+)\\)/', $error['file'], $matches );
-							return sprintf( __( 'PHP Error: $s%1, line $d%2.', 'acf_vf' ), $error['message'], $matches[1] );
+							return sprintf( __( 'PHP Error: %1$s, line %2$d..', 'acf_vf' ), $error['message'], $matches[1] );
 						} 
 					}
 					// if a string is returned, return it as the error.
