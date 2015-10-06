@@ -229,7 +229,7 @@ class acf_vf_utils{
 
 			// Update the [IN_NOT_IN] values
 			$sql = self::prepare_in_and_not_in( $sql, $post_ids );
-error_log($sql);
+			
 			// Execute the SQL
 			$rows = $wpdb->get_results( $sql );
 			if ( count( $rows ) ){
