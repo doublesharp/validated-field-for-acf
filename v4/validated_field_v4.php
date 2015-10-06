@@ -246,14 +246,13 @@ class acf_field_validated_field extends acf_field {
 			// load the field config, set defaults
 			$field = $this->setup_field( get_field_object( $key, $post_id ) );
 
+			$field['render_field'] = apply_filters( 'acf_vf/render_field', true, $field, false );
 			if ( $field['render_field'] === false || $field['render_field'] === "readonly" ){
 				continue;
 			}
 
-			$is_repeater = isset( $parent_field ) && 'repeater' == $parent_field['type'];
-			
 			// if it's a repeater field, get the validated field so we can do meta queries...
-			if ( $is_repeater && false !== $index ){
+			if ( $is_repeater = ( 'repeater' == $field['type'] && false !== $index ) ){
 				foreach ( $field['sub_fields'] as $repeater ){
 					$repeater = $this->setup_field( $repeater );
 					$sub_field = $this->setup_sub_field( $repeater );
@@ -409,7 +408,7 @@ PHP;
 				}
 
 				// Run the SQL queries to see if there are duplicate values
-				if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, false, $is_frontend, $value ) ) ){
+				if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, isset( $parent_field )? $parent_field : null, $index, $is_repeater, false, $is_frontend, $value ) ) ){
 					$this->add_response( $return_fields, $input, $message );		
 					continue;
 				}
@@ -910,6 +909,9 @@ PHP;
 				</script>
 			<?php
 			}
+			if ( !$this->drafts && $field['drafts'] == 'yes' ){ 
+				$this->drafts_head();
+			}
 		endif;
 	}
 
@@ -950,7 +952,7 @@ PHP;
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'debug_head' ), 20 );
 		}
 
-		if ( ! $this->drafts ){ 
+		if ( $this->drafts ){ 
 			add_action( $this->frontend? 'wp_head' : 'admin_head', array( &$this, 'drafts_head' ), 20 );
 		}
 		
@@ -1001,7 +1003,7 @@ PHP;
 
 	function drafts_head(){
 		// don't validate drafts for anything
-		echo '<script type="text/javascript">jQuery(document).ready(function(){ vf.drafts=false; });</script>';
+		echo '<script type="text/javascript">jQuery(document).ready(function(){ vf.drafts=true; });</script>';
 	}
 
 	function frontend_head(){
@@ -1240,7 +1242,7 @@ PHP;
 	*/
 	function update_field( $field, $post_id ){
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
-		
+
 		// Process filters that are subtype specific
 		$sub_field = apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id );
 
