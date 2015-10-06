@@ -253,7 +253,7 @@ class acf_field_validated_field extends acf_field {
 			$is_repeater = isset( $parent_field ) && 'repeater' == $parent_field['type'];
 			
 			// if it's a repeater field, get the validated field so we can do meta queries...
-			if ( $is_repeater && false !== $index ) ){
+			if ( $is_repeater && false !== $index ){
 				foreach ( $field['sub_fields'] as $repeater ){
 					$repeater = $this->setup_field( $repeater );
 					$sub_field = $this->setup_sub_field( $repeater );
@@ -268,8 +268,6 @@ class acf_field_validated_field extends acf_field {
 				// the wrapped field
 				$sub_field = $this->setup_sub_field( $field );
 			}
-
-			$is_flex = isset( $parent_field ) && 'flex-content' == $parent_field['type'];
 
 			$value = $input['value'];							// the submitted value
 			if ( $field['required'] && empty( $value ) ){
@@ -411,7 +409,7 @@ PHP;
 				}
 
 				// Run the SQL queries to see if there are duplicate values
-				if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, $is_flex, $is_frontend, $value ) ) ){
+				if ( true !== ( $message = acf_vf_utils::is_value_unique( $unique, $post_id, $field, $parent_field, $index, $is_repeater, false, $is_frontend, $value ) ) ){
 					$this->add_response( $return_fields, $input, $message );		
 					continue;
 				}
