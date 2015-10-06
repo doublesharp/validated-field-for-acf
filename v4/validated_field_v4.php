@@ -44,12 +44,12 @@ class acf_field_validated_field extends acf_field {
 			'pattern'	=> '',
 			'message'	=>  __( 'Validation failed.', 'acf_vf' ),
 			'unique'	=> 'non-unique',
-			'unique_statuses' => apply_filters( 'acf_vf/unique_statuses', array( 'publish', 'future' ) ),
+			'unique_statuses' => apply_filters( 'acf_vf/unique_statuses', array( 'publish', 'future', 'draft', 'pending' ) ),
 			'drafts'	=> true
 		);
 
 		$this->sub_defaults = array(
-			'type'		=> '',
+			'type'		=> 'text',
 			'key'		=> '',
 			'name'		=> '',
 			'_name'		=> '',
@@ -524,7 +524,7 @@ PHP;
 			do_action( 'acf/create_field', array(
 				'type'	=> 'radio',
 				'name'	=> 'fields['.$key.'][drafts]',
-				'value'	=> ( false == $field['drafts'] || 'false' === $field['drafts'] )? 'false' : 'true',
+				'value'	=> ( false == $field['drafts'] || 'false' === $field['drafts'] )? 'no' : 'yes',
 				'choices' => array(
 					'yes'	=> __( 'Yes', 'acf_vf' ),
 					'no' => __( 'No', 'acf_vf' ),
@@ -1240,7 +1240,11 @@ PHP;
 	*/
 	function update_field( $field, $post_id ){
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
+		
+		// Process filters that are subtype specific
 		$sub_field = apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id );
+
+		// Set the filters sub_field to the parent
 		$field['sub_field'] = $sub_field;
 
 		// Just avoid using any type of quotes in the db values
