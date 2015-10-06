@@ -1,6 +1,13 @@
 .validated-select { width: 200px; }
 .validation-type { display: none; }
 
-
 /* required for conditional logic when the default view is hidden */
 .acf-field-validated-field>.acf-input>.validated-field>.hidden-by-conditional-logic { display: block !important; }
+
+/* readonly checkboxes */
+ul.acf-checkbox-list.read_only li,
+ul.acf-checkbox-list.hidden li,
+ul.acf-checkbox-list.unique_statuses li {
+	float: left;
+	width: 150px;
+}
