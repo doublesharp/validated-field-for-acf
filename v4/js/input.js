@@ -89,73 +89,70 @@ if ( typeof acf.o == 'undefined' ){
 			var fields = [];
 
 			// inspect each of the validated fields
-			formObj.find('.field_type-validated_field').each(function(){
-				div = $(this);
+			formObj.find('.field').not('[data-field_type="repeater"]').each(function(){
+				var $el = $(this);
 
 				// we want to show some of the hidden fields.
-				var validate = true;
-				if ( div.is(':hidden') ){
+				if ( $el.is(':hidden') ){
 					validate = false;
 
 					// if this field is hidden by a tab group, allow validation
-					if ( div.hasClass('acf-tab_group-hide') ){
-						validate = true;
-						
+					if ( $el.hasClass('acf-tab_group-hide') ){						
 						// vars
-						var $tab_field = div.prevAll('.field_type-tab:first'),
-							$tab_group = div.prevAll('.acf-tab-wrap:first');			
+						var $tab_field = $el.prevAll('.field_type-tab:first'),
+							$tab_group = $el.prevAll('.acf-tab-wrap:first');			
 						
 						// if the tab itself is hidden, bypass validation
-						if ( $tab_field.hasClass('acf-conditional_logic-hide') ){
-							validate = false;
-						} else {
+						if ( !$tab_field.hasClass('acf-conditional_logic-hide') ){
 							// activate this tab as it holds hidden required field!
 							$tab = $tab_group.find('.acf-tab-button[data-key="' + $tab_field.attr('data-field_key') + '"]');
+							validate = true;
 						}
+					}
+					if (!validate){
+						return;
 					}
 				}
 				
 				// if is hidden by conditional logic, ignore
-				if ( div.hasClass('acf-conditional_logic-hide') ){
-					validate = false;
+				if ( $el.hasClass('acf-conditional_logic-hide') ){
+					return;
 				}
 				
 				// if field group is hidden, ignore
-				if ( div.closest('.postbox.acf-hidden').exists() ){
-					validate = false;		
+				if ( $el.closest('.postbox.acf-hidden').exists() ){
+					return;	
 				}
 				
-				// we want to validate this field
-				if ( validate ){
-					if ( div.find('.acf_wysiwyg').exists() && typeof( tinyMCE ) == "object" ){
-						// wysiwyg
-						var id = div.find('.wp-editor-area').attr('id'),
-							editor = tinyMCE.get( id );
+				var field = null;
+				if ( $el.find('.acf_wysiwyg').exists() && typeof( tinyMCE ) == "object" ){
+					// wysiwyg
+					var id = $el.find('.wp-editor-area').attr('id'),
+						editor = tinyMCE.get( id );
+					field = { 
+						id: $el.find('.wp-editor-area').attr('name'),
+						value: editor.getContent()
+					};
+				} else if ( $el.find('.acf_relationship, input[type="radio"], input[type="checkbox"]').exists() ) {
+					// relationship / radio / checkbox
+					sel = '.acf_relationship .relationship_right input, input[type="radio"]:checked, input[type="checkbox"]:checked';
+					field = { id: $el.find('input[type="hidden"], ' + sel ).attr('name'), value: [] };
+					$el.find( sel ).each( function(){
+						field.value.push( $( this ).val() );
+					});
+				} else {
+					// text / textarea / select
+					var text = $el.find('input[type="text"], input[type="email"], input[type="number"], input[type="hidden"], textarea, select');
+					if ( text.exists() ){
 						field = { 
-							id: div.find('.wp-editor-area').attr('name'),
-							value: editor.getContent()
+							id: text.attr('name'),
+							value: text.val()
 						};
-					} else if ( div.find('.acf_relationship, input[type="radio"], input[type="checkbox"]').exists() ) {
-						// relationship / radio / checkbox
-						sel = '.acf_relationship .relationship_right input, input[type="radio"]:checked, input[type="checkbox"]:checked';
-						field = { id: div.find('input[type="hidden"], ' + sel ).attr('name'), value: [] };
-						div.find( sel ).each( function(){
-							field.value.push( $( this ).val() );
-						});
-					} else {
-						// text / textarea / select
-						var text = div.find('input[type="text"], input[type="email"], input[type="number"], input[type="hidden"], textarea, select');
-						if ( text.exists() ){
-							field = { 
-									id: text.attr('name'),
-									value: text.val()
-							};
-						}
 					}
-
-					// add to the array to send to the server
-					fields.push( field );
 				}
+
+				// add to the array to send to the server
+				fields.push( field );
 			});
 
 			$('.acf_postbox:hidden').remove();

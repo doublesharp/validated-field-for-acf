@@ -264,11 +264,15 @@ class acf_field_validated_field extends acf_field {
 					$sub_field = false;							// in case it isn't the right one
 				}
 			} else {
-				// the wrapped field
-				$sub_field = $this->setup_sub_field( $field );
+				$sub_field = $this->setup_sub_field( $field );	// the wrapped field
+			}
+
+			if ( $field['type'] != 'validated_field' ){			// If this field was submitted for value comparison only
+				continue;
 			}
 
 			$value = $input['value'];							// the submitted value
+
 			if ( $field['required'] && empty( $value ) ){
 				continue;										// let the required field handle it
 			}
@@ -349,11 +353,12 @@ PHP;
 								continue 2;
 							} 
 						}
-						// if a string is returned, return it as the error.
-						if ( is_string( $valid ) ){
+						
+						if ( is_string( $valid ) ){				// if a string is returned, return it as the error.
 							$this->add_response( $return_fields, $input, $valid );		
 							continue 2;
 						}
+
 						break;
 				}
 			} elseif ( ! empty( $function ) && $function != 'none' ) {
@@ -469,18 +474,7 @@ PHP;
 	function create_options( $field ){
 		// defaults?
 		$field = $this->setup_field( $field );
-
-
-
-		/*do_action( 'acf/create_fields', 
-			array( 'fields' => array(
-				'type'	=> 'text',
-				'name'	=> 'fields[' . $key . '][mask]',
-				'value'	=> $field['mask'],
-				'class'	=> 'input-mask'
-			) )
-		);*/
-
+		
 		// key is needed in the field names to correctly save the data
 		$key = $field['name'];
 		$html_key = preg_replace( '~[\\[\\]]+~', '_', $key );
