@@ -92,7 +92,7 @@ class acf_vf_utils{
 					$sql = false;
 				} else {
 					$sql = $wpdb->prepare( 
-						"{$sql_prefix} AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE ( {$table_value} = %s OR {$table_value} LIKE %s )",
+						"{$sql_prefix} AND p.post_type != 'acf' AND {$table_id} NOT IN ([IN_NOT_IN]) WHERE ( {$table_value} = %s OR {$table_value} LIKE %s )",
 						$value,
 						'%"' . $wpdb->esc_like( $value ) . '"%'
 					);
