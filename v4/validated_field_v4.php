@@ -709,7 +709,6 @@ PHP;
 						'post_type'		=> __( 'Unique For Post Type/User/Option', 'acf_vf' ),
 						'post_key'		=> __( 'Unique For Post Type/User/Option + Field/Meta Key ', 'acf_vf' ),
 						'this_post'		=> __( 'Unique For Post/User', 'acf_vf' ),
-						'this_post_key'	=> __( 'Unique For Post/User + Field/Meta Key', 'acf_vf' ),
 					),
 					'optgroup'	=> false,
 					'multiple'	=> '0',
