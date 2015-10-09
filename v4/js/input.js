@@ -129,30 +129,31 @@ if ( typeof acf.o == 'undefined' ){
 					// wysiwyg
 					var id = $el.find('.wp-editor-area').attr('id'),
 						editor = tinyMCE.get( id );
-					field = { 
+					fields.push({ 
 						id: $el.find('.wp-editor-area').attr('name'),
 						value: editor.getContent()
-					};
+					});
 				} else if ( $el.find('.acf_relationship, input[type="radio"], input[type="checkbox"]').exists() ) {
 					// relationship / radio / checkbox
 					sel = '.acf_relationship .relationship_right input, input[type="radio"]:checked, input[type="checkbox"]:checked';
 					field = { id: $el.find('input[type="hidden"], ' + sel ).attr('name'), value: [] };
-					$el.find( sel ).each( function(){
-						field.value.push( $( this ).val() );
-					});
+					$inputs = $el.find( sel );
+					if ( $inputs.length ){	
+						$inputs.each( function(){
+							field.value.push( $( this ).val() );
+						});
+						fields.push(field);
+					}
 				} else {
 					// text / textarea / select
 					var text = $el.find('input[type="text"], input[type="email"], input[type="number"], input[type="hidden"], textarea, select');
 					if ( text.exists() ){
-						field = { 
+						fields.push({ 
 							id: text.attr('name'),
 							value: text.val()
-						};
+						});
 					}
 				}
-
-				// add to the array to send to the server
-				fields.push( field );
 			});
 
 			$('.acf_postbox:hidden').remove();
