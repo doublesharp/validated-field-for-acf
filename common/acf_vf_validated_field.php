@@ -4,13 +4,13 @@ class acf_field_validated_field extends acf_field {
 	function __construct(){
 
 		// Maintain relationship fields
-		add_filter( 'acf/format_value/type=relationship', array( $this, 'process_relationship_values'), 20, 3 );
+		add_filter( 'acf/format_value/type=relationship', array( 'acf_field_validated_field', 'process_relationship_values'), 20, 3 );
 
 		parent::__construct();
 
 	}
 
-	function process_relationship_values( $value, $post_id, $field ){ 
+	public static function process_relationship_values( $value, $post_id, $field ){ 
 		$relation_key = $field['name'].'__r';
 		$sorted_key = $field['name'].'__sorted';
 
