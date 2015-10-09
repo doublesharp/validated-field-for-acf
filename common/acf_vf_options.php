@@ -44,7 +44,7 @@ class acf_vf_options {
 					'label' => __( 'Draft Validation', 'acf_vf' ),
 					'name' => 'acf_vf_drafts',
 					'type' => 'true_false',
-					'instructions' => __( 'Check this box to enable Draft validation globally, or uncheck to allow it to be set per field.', 'acf_vf' ),
+					'instructions' => __( 'Check this box to force Draft validation globally, or uncheck to allow it to be set per field.', 'acf_vf' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
@@ -52,7 +52,7 @@ class acf_vf_options {
 						'class' => '',
 						'id' => '',
 					),
-					'message' => __( 'Enable Draft Validation', 'acf_vf' ),
+					'message' => __( 'Force Draft Validation', 'acf_vf' ),
 					'default_value' => 0,
 				),
 				array (
@@ -60,7 +60,7 @@ class acf_vf_options {
 					'label' => 'Frontend Validation',
 					'name' => 'acf_vf_frontend',
 					'type' => 'true_false',
-					'instructions' => sprintf( __( 'Check this box to turn on validation for front-end forms created with $s%1.', 'acf_vf' ), '<code>acf_form()</code>' ),
+					'instructions' => sprintf( __( 'Check this box to turn on validation for front-end forms created with %1$s.', 'acf_vf' ), '<code>acf_form()</code>' ),
 					'required' => 0,
 					'conditional_logic' => 0,
 					'wrapper' => array (
