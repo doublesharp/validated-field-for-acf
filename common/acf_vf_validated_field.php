@@ -14,23 +14,25 @@ class acf_field_validated_field extends acf_field {
 		$relation_key = $field['name'].'__r';
 		$sorted_key = $field['name'].'__sorted';
 
-		// delete existing  relationship keys
+		// delete existing relationship keys
 		delete_post_meta( $post_id, $relation_key );
+		delete_post_meta( $post_id, $sorted_key );
 
-		$values = array();
-		foreach ( $value as $the_value ) {
+		$values = is_array( $value )? $value : array( $value );
+		$post_ids = array();
+		foreach ( $values as $the_value ) {
 			// if filter is passing through a Post object, extract the ID
 			$the_value = ( is_object( $the_value ) )? $the_value->ID : $the_value;
 
-			$values[] = $the_value;
+			$post_ids[] = $the_value;
 
 			// add each ID to it's own meta key
 			add_post_meta( $post_id, $relation_key, $the_value, false );
 		}
 
 		// sort the IDs numerically and save
-		asort( $values, SORT_NUMERIC );
-		update_post_meta( $post_id, $sorted_key, $values );
+		sort( $post_ids, SORT_NUMERIC );
+		update_post_meta( $post_id, $sorted_key, $post_ids );
 
 		// Continue processing
 		return $value;
