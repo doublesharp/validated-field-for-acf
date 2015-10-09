@@ -21,6 +21,7 @@ if ( !function_exists( 'load_textdomain_acf_vf' ) ){
 
 	include_once 'common/acf_vf_utils.php';
 	include_once 'common/acf_vf_options.php';
+	include_once 'common/acf_vf_validated_field.php';
 
 	// ACF 4
 	function register_acf_validated_field(){

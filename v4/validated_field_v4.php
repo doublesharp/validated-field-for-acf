@@ -1,6 +1,6 @@
 <?php
-if ( class_exists( 'acf_Field' ) && ! class_exists( 'acf_field_validated_field' ) ):
-class acf_field_validated_field extends acf_field {
+if ( class_exists( 'acf_field_validated_field' ) && !class_exists( 'acf_field_validated_field_v4' ) ):
+class acf_field_validated_field_v4 extends acf_field_validated_field {
 	// vars
 	var $slug,
 		$config,
@@ -235,8 +235,7 @@ class acf_field_validated_field extends acf_field {
 		foreach ( $inputs as $i=>$input ){						// loop through each field
 			// input defaults
 			$input = array_merge( $this->input_defaults, $input );
-			$valid = true;										// wait for a any test to fail
-
+			
 			// extract the field key
 			preg_match( '/\\[([^\\]]*?)\\](\\[(\d*?)\\]\\[([^\\]]*?)\\])?/', $input['id'], $matches );
 			$key = isset( $matches[1] )? $matches[1] : false;	// the key for this ACF
@@ -267,13 +266,14 @@ class acf_field_validated_field extends acf_field {
 				$sub_field = $this->setup_sub_field( $field );	// the wrapped field
 			}
 
+
 			if ( $field['type'] != 'validated_field' ){			// If this field was submitted for value comparison only
 				continue;
 			}
 
 			$value = $input['value'];							// the submitted value
 
-			if ( $field['required'] && empty( $value ) ){
+			if ( isset($field['required']) && $field['required'] && empty( $value ) ){
 				continue;										// let the required field handle it
 			}
 
@@ -474,7 +474,7 @@ PHP;
 	function create_options( $field ){
 		// defaults?
 		$field = $this->setup_field( $field );
-		
+
 		// key is needed in the field names to correctly save the data
 		$key = $field['name'];
 		$html_key = preg_replace( '~[\\[\\]]+~', '_', $key );
@@ -704,10 +704,12 @@ PHP;
 					'name'	=> 'fields[' . $key . '][unique]',
 					'value'	=> $field['unique'],
 					'choices' => array(
-						'non-unique'=> __( 'Non-Unique Value', 'acf_vf' ),
-						'global'	=> __( 'Unique Globally', 'acf_vf' ),
-						'post_type'	=> __( 'Unique For Post Type', 'acf_vf' ) . '/' . __( 'User' ),
-						'post_key'	=> __( 'Unique For Post Type', 'acf_vf' ) . '/' . __( 'User' ) . ' + ' . __( 'Field/Meta Key', 'acf_vf' ),
+						'non-unique'	=> __( 'Non-Unique Value', 'acf_vf' ),
+						'global'		=> __( 'Unique Globally', 'acf_vf' ),
+						'post_type'		=> __( 'Unique For Post Type/User/Option', 'acf_vf' ),
+						'post_key'		=> __( 'Unique For Post Type/User/Option + Field/Meta Key ', 'acf_vf' ),
+						'this_post'		=> __( 'Unique For Post/User', 'acf_vf' ),
+						'this_post_key'	=> __( 'Unique For Post/User + Field/Meta Key', 'acf_vf' ),
 					),
 					'optgroup'	=> false,
 					'multiple'	=> '0',
@@ -870,7 +872,7 @@ PHP;
 			?>
 			<div class="validated-field">
 				<?php
-				if ( $this->check_value( 'yes', $field['read_only'] ) ){
+				if ( self::check_value( 'yes', $field['read_only'] ) ){
 					?>
 					<p><?php 
 					ob_start();
@@ -888,7 +890,7 @@ PHP;
 				?>
 			</div>
 			<?php
-			if ( !empty( $field['mask'] ) && ( $is_new || $this->check_value( 'no', $field['read_only'] ) ) ){ ?>
+			if ( !empty( $field['mask'] ) && ( $is_new || self::check_value( 'no', $field['read_only'] ) ) ){ ?>
 				<script type="text/javascript">
 					jQuery(function($){
 						$(function(){
@@ -1048,208 +1050,7 @@ PHP;
 			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
 		}
 	}
-
-	/*
-	*  field_group_admin_head()
-	*
-	*  This action is called in the admin_head action on the edit screen where your field is edited.
-	*  Use this action to add css and javascript to assist your create_field_options() action.
-	*
-	*  @info	http://codex.wordpress.org/Plugin_API/Action_Reference/admin_head
-	*  @type	action
-	*  @since	3.6
-	*  @date	23/01/13
-	*/
-	function field_group_admin_head(){ }
-
-	/*
-	*  load_value()
-	*
-	*  This filter is appied to the $value after it is loaded from the db
-	*
-	*  @type	filter
-	*  @since	3.6
-	*  @date	23/01/13
-	*
-	*  @param	$value - the value found in the database
-	*  @param	$post_id - the $post_id from which the value was loaded from
-	*  @param	$field - the field array holding all the field options
-	*
-	*  @return	$value - the value to be saved in te database
-	*/
-	function load_value( $value, $post_id, $field ){
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
-		return apply_filters( 'acf/load_value/type='.$sub_field['type'], $value, $post_id, $sub_field );
-	}
-
-	/*
-	*  update_value()
-	*
-	*  This filter is appied to the $value before it is updated in the db
-	*
-	*  @type	filter
-	*  @since	3.6
-	*  @date	23/01/13
-	*
-	*  @param	$value - the value which will be saved in the database
-	*  @param	$post_id - the $post_id of which the value will be saved
-	*  @param	$field - the field array holding all the field options
-	*
-	*  @return	$value - the modified value
-	*/
-	function update_value( $value, $post_id, $field ){
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
-		return apply_filters( 'acf/update_value/type='.$sub_field['type'], $value, $post_id, $sub_field );
-	}
-
-	/*
-	*  format_value()
-	*
-	*  This filter is appied to the $value after it is loaded from the db and before it is passed to the create_field action
-	*
-	*  @type	filter
-	*  @since	3.6
-	*  @date	23/01/13
-	*
-	*  @param	$value	- the value which was loaded from the database
-	*  @param	$post_id - the $post_id from which the value was loaded
-	*  @param	$field	- the field array holding all the field options
-	*
-	*  @return	$value	- the modified value
-	*/
-	function format_value( $value, $post_id, $field ){
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
-		return apply_filters( 'acf/format_value/type='.$sub_field['type'], $value, $post_id, $sub_field );
-	}
-
-	/*
-	*  format_value_for_api()
-	*
-	*  This filter is appied to the $value after it is loaded from the db and before it is passed back to the api functions such as the_field
-	*
-	*  @type	filter
-	*  @since	3.6
-	*  @date	23/01/13
-	*
-	*  @param	$value	- the value which was loaded from the database
-	*  @param	$post_id - the $post_id from which the value was loaded
-	*  @param	$field	- the field array holding all the field options
-	*
-	*  @return	$value	- the modified value
-	*/
-	function format_value_for_api( $value, $post_id, $field ){
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
-		return apply_filters( 'acf/format_value_for_api/type='.$sub_field['type'], $value, $post_id, $sub_field );
-	}
-
-	/*
-	*  load_field()
-	*
-	*  This filter is appied to the $field after it is loaded from the database
-	*
-	*  @type	filter
-	*  @since	3.6
-	*  @date	23/01/13
-	*
-	*  @param	$field - the field array holding all the field options
-	*
-	*  @return	$field - the field array holding all the field options
-	*/
-	function load_field( $field ){
-		global $currentpage, $pagenow, $post;
-
-		// determine if this is a new post or an edit
-		$is_new = $pagenow=='post-new.php';
-		$post_type = get_post_type( $post );
-
-		$field = $this->setup_field( $field );
-		$sub_field = $this->setup_sub_field( $field );
-		$sub_field = apply_filters( 'acf/load_field/type='.$sub_field['type'], $sub_field );
-
-		// The relationship field gets settings from the sub_field so we need to return it since it effectively displays through this method.
-		if ( isset( $_POST['action'] ) && $_POST['action'] == 'acf/fields/relationship/query_posts' ){
-			// Bug fix, if the taxonomy is "all" just omit it from the filter.
-			if ( $sub_field['taxonomy'][0] == 'all' ){
-				unset( $sub_field['taxonomy']);
-			}
-			return $sub_field;
-		}
-
-		$field['sub_field'] = $sub_field;
-
-		$field['render_field'] = apply_filters( 'acf_vf/render_field', true, $field, $is_new );
-		if ( !$is_new && $post_type != 'acf-field-group' && $field['render_field'] === 'readonly' ){
-			$field['read_only'] = 'yes';
-		}
-
-		// this can be off if the permissions plugin is disabled
-		$read_only_type = apply_filters( 'acf_vf/settings_read_only_type', 'radio' );
-		if ( $read_only_type == 'radio' && is_array( $field['read_only'] ) ){
-			// default to read only for everyone unless it's off (better security)
-			if ( $field['read_only'][0] == 'no' ){
-				$field['read_only'] = 'no';
-			} else {
-				$field['read_only'] = 'yes';
-			}
-		}
-
-		if ( get_post_type( $post ) != 'acf' ){
-			// Show icons for read-only fields
-			if ( $this->check_value( 'yes', $field['read_only'] ) && get_post_type() != 'acf-field-group' ){
-				$field['label'] .= sprintf( ' (<i class="fa fa-ban" style="color:red;" title="%1$s"><small><em> %1$s</em></small></i>)', __( 'Read only', 'acf_vf' ) );
-			}
-		}
-
-		// Disable the mask if the sub field is anything but...
-		if ( !in_array( $sub_field['type'], array( 'text', 'url', 'password' ) ) ){
-			$field['mask'] = false;
-		}
-
-		// Just avoid using any type of quotes in the db values
-		$field['pattern'] = str_replace( acf_vf_utils::$SQUOT, "'", $field['pattern'] );
-		$field['pattern'] = str_replace( acf_vf_utils::$DQUOT, '"', $field['pattern'] );
-
-		return $field;
-	}
-
-	function check_value( $value, $obj_or_array ){
-		if ( is_array( $obj_or_array ) ){
-			return in_array( $value, $obj_or_array );
-		} else {
-			return $value == $obj_or_array;
-		}
-	}
-
-	/*
-	*  update_field()
-	*
-	*  This filter is appied to the $field before it is saved to the database
-	*
-	*  @type	filter
-	*  @since	3.6
-	*  @date	23/01/13
-	*
-	*  @param	$field - the field array holding all the field options
-	*  @param	$post_id - the field group ID (post_type = acf)
-	*
-	*  @return	$field - the modified field
-	*/
-	function update_field( $field, $post_id ){
-		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
-
-		// Process filters that are subtype specific
-		$sub_field = apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id );
-
-		// Set the filters sub_field to the parent
-		$field['sub_field'] = $sub_field;
-
-		// Just avoid using any type of quotes in the db values
-		$field['pattern'] = str_replace( "'", acf_vf_utils::$SQUOT, $field['pattern'] );
-		$field['pattern'] = str_replace( '"', acf_vf_utils::$DQUOT, $field['pattern'] );
-
-		return $field;
-	}
 }
 
-new acf_field_validated_field();
+new acf_field_validated_field_v4();
 endif;
