@@ -203,7 +203,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		(function($){
 			$(document).ready(function(){
 				$form = $('form.acf-form, form#post');
-				if ( $form.exists() ){
+				if ( $form.length ){
 					$form.append('<input type="hidden" name="acf[acf_vf][post_ID]" value="' + acf.o.post_id + '"/>');
 					//$form.append('<input type="hidden" name="acf[acf_vf][frontend]" value="true"/>');
 				}
