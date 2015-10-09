@@ -104,6 +104,8 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 				add_action( 'wp_head', array( $this, 'input_admin_enqueue_scripts' ), 1 );
 			}
 			if ( is_admin() ){
+				// add the post_ID to the acf[] form using jQuery
+				add_action( 'admin_head', array( $this, 'set_post_id_to_acf_form' ) );
 
 				// insert javascript into the header.
 				add_action( 'admin_head', array( $this, 'admin_head' ) );
@@ -200,9 +202,10 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		<script type="text/javascript">
 		(function($){
 			$(document).ready(function(){
-				if ( $form = $('form.acf-form') && $form.length ){
+				$form = $('form.acf-form, form#post');
+				if ( $form.exists() ){
 					$form.append('<input type="hidden" name="acf[acf_vf][post_ID]" value="' + acf.o.post_id + '"/>');
-					$form.append('<input type="hidden" name="acf[acf_vf][frontend]" value="true"/>');
+					//$form.append('<input type="hidden" name="acf[acf_vf][frontend]" value="true"/>');
 				}
 			});
 		})(jQuery);
@@ -715,13 +718,18 @@ PHP;
 		$field_key = $field['key'];
 
 		// Validate Drafts
+		if ( $this->drafts ){
+
+		} else {
+
+		}
 		acf_render_field_setting( $field, array(
 			'label'			=> __( 'Validate Drafts/Preview?', 'acf_vf' ),
 			// Show a message if drafts will always be validated
-			'instructions'	=> $this->drafts ?
-				sprintf( __( '<em>Warning: <code>Draft Validation</code>has been set to <code>true</code> which overrides field level configurations. <a href="%1$s">Click here</a> to update the Validated Field settings.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf&page=acf-validated-field')."#general" ) :
+			'message'	=> $this->drafts ?
+				sprintf( __( '<em><a href="%1$s"><code>Validated Field Settings: Draft Validation</code></a> has been set to <code>true</code> which overrides field level configurations.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf&page=acf-validated-field')."#general" ) :
 				'',
-			'type'			=> 'radio',
+			'type'			=> $this->drafts ? 'message' : 'radio',
 			'name'			=> 'drafts',
 			'prefix'		=> $field['prefix'],
 			'choices' 		=> array(
@@ -1147,13 +1155,13 @@ PHP;
 	function field_group_admin_enqueue_scripts(){
 		$min = ( !$this->debug )? '.min' : '';
 		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0' ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0', true ); 
 		
 		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
 		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
 
 		if ( $this->link_to_field_group ){
-			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION, true );
 		}
 	}
 
@@ -1181,6 +1189,6 @@ PHP;
 			return in_array( $pagenow, array( 'post.php', 'post-new.php' ) );
 	}
 }
-
-new acf_field_validated_field_v5();
+global $acf_vf;
+$acf_vf = new acf_field_validated_field_v5();
 endif;

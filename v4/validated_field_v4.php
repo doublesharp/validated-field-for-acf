@@ -489,45 +489,25 @@ PHP;
 		unset( $fields_names[__( 'Basic', 'acf' )][ 'validated_field' ] );
 
 		?>
-		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_readonly" id="field_option_<?php echo $html_key; ?>_readonly">
-			<td class="label"><label><?php _e( 'Read Only?', 'acf_vf' ); ?> </label>
-			</td>
-			<td><?php
-			do_action( 'acf/create_field', array(
-				'type'	=> apply_filters( 'acf_vf/create_field/read_only/type', 'radio' ),
-				'name'	=> 'fields['.$key.'][read_only]',
-				'value'	=> apply_filters( 'acf_vf/create_field/read_only/value', ( empty( $field['read_only'] ) || $field['read_only'] == 'false' )? 'no' : $field['read_only'] ),
-				'choices' => apply_filters( 'acf_vf/create_field/read_only/choices', array(
-					'no' 	=> __( 'No', 'acf_vf' ),
-					'yes'	=> __( 'Yes', 'acf_vf' ),
-				) ),
-				'class'			=> 'read_only horizontal'
-			));
-			?>
-			</td>
-		</tr>
-		<?php
-			// 3rd party read only settings
-			do_action( 'acf_vf/settings_readonly', $field );
-		?>
 		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_drafts" id="field_option_<?php echo $html_key; ?>_drafts">
 			<td class="label"><label><?php _e( 'Validate Drafts/Preview?', 'acf_vf' ); ?> </label>
 			</td>
 			<td><?php 
-			do_action( 'acf/create_field', array(
-				'type'	=> 'radio',
-				'name'	=> 'fields['.$key.'][drafts]',
-				'value'	=> ( false == $field['drafts'] || 'false' === $field['drafts'] )? 'no' : 'yes',
-				'choices' => array(
-					'yes'	=> __( 'Yes', 'acf_vf' ),
-					'no' => __( 'No', 'acf_vf' ),
-				),
-				'class' => 'drafts horizontal'
-			));
-
 			if ( $this->drafts ){
-				printf( __( '<em>Warning <code>Draft Validation</code>has been set to <code>true</code> which overrides field level configurations. <a href="%1$s">Click here</a> to update the Validated Field settings.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf&page=acf-validated-field')."#general" );
+				printf( __( '<em><code>Draft Validation</code>has been set to <code>true</code> which overrides field level configurations. <a href="%1$s">Click here</a> to update the Validated Field settings.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf&page=acf-validated-field')."#general" );
+			} else {
+				do_action( 'acf/create_field', array(
+					'type'	=> 'radio',
+					'name'	=> 'fields['.$key.'][drafts]',
+					'value'	=> ( false == $field['drafts'] || 'false' === $field['drafts'] )? 'no' : 'yes',
+					'choices' => array(
+						'yes'	=> __( 'Yes', 'acf_vf' ),
+						'no' => __( 'No', 'acf_vf' ),
+					),
+					'class' => 'drafts horizontal'
+				));
 			}
+
 			?>
 			</td>
 		</tr>
@@ -576,6 +556,27 @@ PHP;
 				</div>
 			</td>
 		</tr>
+		<tr class="field_option field_option_<?php echo $this->name; ?> field_option_<?php echo $this->name; ?>_readonly" id="field_option_<?php echo $html_key; ?>_readonly">
+			<td class="label"><label><?php _e( 'Read Only?', 'acf_vf' ); ?> </label>
+			</td>
+			<td><?php
+			do_action( 'acf/create_field', array(
+				'type'	=> apply_filters( 'acf_vf/create_field/read_only/type', 'radio' ),
+				'name'	=> 'fields['.$key.'][read_only]',
+				'value'	=> apply_filters( 'acf_vf/create_field/read_only/value', ( empty( $field['read_only'] ) || $field['read_only'] == 'false' )? 'no' : $field['read_only'] ),
+				'choices' => apply_filters( 'acf_vf/create_field/read_only/choices', array(
+					'no' 	=> __( 'No', 'acf_vf' ),
+					'yes'	=> __( 'Yes', 'acf_vf' ),
+				) ),
+				'class'			=> 'read_only horizontal'
+			));
+			?>
+			</td>
+		</tr>
+		<?php
+			// 3rd party read only settings
+			do_action( 'acf_vf/settings_readonly', $field );
+		?>
 		<tr class="field_option field_option_<?php echo $this->name; ?> non_read_only">
 			<td class="label"><label><?php _e( 'Input Mask', 'acf_vf' ); ?></label></td>
 			<td><?php _e( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric.', 'acf_vf' ); ?> 
@@ -747,6 +748,7 @@ PHP;
 				ace.config.loadModule("ace/ext/searchbox");
 
 				var editor = ace.edit("acf-field-<?php echo $html_key; ?>_editor");
+				editor.$blockScrolling = Infinity;
 				editor.setTheme("ace/theme/monokai");
 				editor.getSession().setMode("ace/mode/text");
 				editor.getSession().on('change', function(e){
@@ -1020,8 +1022,8 @@ PHP;
 	function input_admin_head(){
 		// register acf scripts
 		$min = ( ! $this->debug )? '.min' : '';
-		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0' ); 
-		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0', true ); 
+		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION, true ); 
 
 	}
 	/*
@@ -1040,16 +1042,17 @@ PHP;
 		$min = ( ! $this->debug )? '.min' : '';	
 		
 		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0' ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0', true ); 
 		
 		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
 		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
 
 		if ( $this->link_to_field_group ){
-			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION );
+			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION, true );
 		}
 	}
 }
 
-new acf_field_validated_field_v4();
+global $acf_vf;
+$acf_vf = new acf_field_validated_field_v4();
 endif;

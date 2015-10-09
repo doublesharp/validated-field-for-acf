@@ -180,7 +180,7 @@ SQL;
 				AND {$table_value} = %s
 SQL;
 
-		} elseif ( $is_options && in_array( $unique, array( 'post_key', 'this_post' ) ) ){
+		} elseif ( $is_options && in_array( $unique, array( 'post_key', 'this_post', 'this_post_key' ) ) ){
 			$this_sql = <<<SQL
 				{$sql_prefix}
 				WHERE ( 
@@ -200,7 +200,7 @@ SQL;
 				)
 				AND {$table_value} = %s
 SQL;
-		} elseif ( ( $is_post || $is_user ) && $unique == 'this_post' ){
+		} elseif ( ( $is_post || $is_user ) && in_array( $unique, array( 'this_post', 'this_post_key' ) ) 	){
 			$this_sql = <<<SQL
 				{$sql_prefix}
 				WHERE
