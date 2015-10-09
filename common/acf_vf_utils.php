@@ -9,17 +9,17 @@ class acf_vf_utils{
 	static function get_unique_form_error( $unique, $field, $value ){
 		switch ( $unique ){
 			case 'global';
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on all posts.', 'acf_vf' ), $value );
+				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on all posts.', 'acf_vf' ), is_array( $value )? implode( ',', $value ) : $value );
 				break;
 			case 'post_type':
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post type.', 'acf_vf' ), $value );
+				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post type.', 'acf_vf' ), is_array( $value )? implode( ',', $value ) : $value );
 				break;
 			case 'this_post':
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post.', 'acf_vf' ), $value );
+				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post.', 'acf_vf' ), is_array( $value )? implode( ',', $value ) : $value );
 				break;
 			case 'post_key':
 			case 'this_post_key':
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for %2$s.', 'acf_vf' ), $value, $field['label'] );
+				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for %2$s.', 'acf_vf' ), is_array( $value )? implode( ',', $value ) : $value, $field['label'] );
 				break;
 		}
 		return false;
