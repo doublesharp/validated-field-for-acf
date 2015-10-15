@@ -132,11 +132,13 @@ class acf_field_validated_field extends acf_field {
 	*
 	*  @return	$field - the modified field
 	*/
-	function update_field( $field, $post_id ){
+	function update_field( $field, $post_id=false ){
 		$sub_field = $this->setup_sub_field( $this->setup_field( $field ) );
 
-		// Process filters that are subtype specific
-		$sub_field = apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id );
+		// Process filters that are subtype specific for v4/v5
+		$sub_field = $post_id?
+			apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field, $post_id ) :
+			apply_filters( 'acf/update_field/type='.$sub_field['type'], $sub_field );
 
 		// Set the filters sub_field to the parent
 		$field['sub_field'] = $sub_field;
