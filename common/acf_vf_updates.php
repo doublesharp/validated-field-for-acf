@@ -14,8 +14,8 @@ class acf_vf_updates {
 
 		// list of updates
 		$this->db_updates = array(
-			'upgrade_0' => __( 'Relationship Fields: Generate helper meta fields for uniqueness queries.', 'acf_vf' ),
-			'upgrade_1' => __( 'Update Validated Field Read Only values.', 'acf_vf' ),
+			'upgrade_1' => __( 'Relationship Fields: Generate helper meta fields for uniqueness queries.', 'acf_vf' ),
+			'upgrade_2' => __( 'Update Validated Field Read Only values.', 'acf_vf' ),
 		);
 
 		// Init at priority 20 so $acf_vf will have been instantiated
@@ -49,7 +49,7 @@ class acf_vf_updates {
  
 		// translations
 		wp_localize_script( 'acf-validated-db-updates', 'vf_upgrade_l10n', array(
-			'upgrade_complete' => __( 'Complete! Please refresh your browser.', 'acf_vf' )
+			'upgrade_complete' => __( 'Database upgrades completed! Your browser will now refresh.', 'acf_vf' )
 		) );
 	}
 
@@ -108,6 +108,10 @@ class acf_vf_updates {
 	private function to_json_response( $response ){
 		global $acf_vf;
 
+		if ( isset( $response['messages'] ) && empty( $response['messages'] ) ){
+			$response['messages'] = array( array( 'text' => __( 'Nothing to update!', 'acf_vf' ) ) );
+		}
+
 		header( 'HTTP/1.1 200 OK' );							// be positive!
 		header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
 		header( 'Content-type application/json' );
@@ -118,7 +122,6 @@ class acf_vf_updates {
 	}
 
 	public function get_upgrades(){
-		$response = array();
 		$upgrades = array();
 		$functions = array_keys( $this->db_updates );
 		for ( $i=$this->db_version; $i<count( $functions ); $i++ ){
@@ -129,16 +132,16 @@ class acf_vf_updates {
 			);
 		}
 
-		$response['upgrades'] = $upgrades;
-		$response['message'] = __( 'The following database updates are needed for Validated Field to function correctly.', 'acf_vf' );
-		$response['action'] = __( 'Upgrade', 'acf_vf' );
+		$response = array(
+			'upgrades' => $upgrades,
+			'message' => __( 'The following database updates are needed for Validated Field to function correctly.', 'acf_vf' ),
+			'action' => __( 'Upgrade', 'acf_vf' )
+		);
 		$this->to_json_response( $response );
 	}
 
 	public function do_upgrade(){
 		$upgrade = isset( $_REQUEST['upgrade'] )? $_REQUEST['upgrade'] : '';
-		error_log(print_r( __CLASS__, true));
-		error_log($upgrade);
 		$response = array();
 		if ( method_exists( __CLASS__, $upgrade ) ){
 			$response[] = call_user_func( array( $this, $upgrade ) );
@@ -150,20 +153,11 @@ class acf_vf_updates {
 		$this->to_json_response( $response );
 	}
 
-	public function upgrade_0(){
+	public function upgrade_1(){
 		global $wpdb, $acf_vf;
 
-		$response = array();
-
 		$messages = array();
-		$sql = <<<SQL
-			SELECT post_id, SUBSTRING(meta_key, 2) AS meta_key, meta_value AS field_key
-			FROM $wpdb->postmeta field 
-			WHERE 
-			field.meta_key LIKE '_%' 
-			AND field.meta_value like 'field_%';
-SQL;
-		$db_fields = $wpdb->get_results( $sql );
+		$db_fields = $this->get_acf_fields();
 		foreach( $db_fields as $db_field ){
 			$field = get_field_object( $db_field->field_key );
 			if ( $field['type'] == 'relationship' || ( $field['type'] == 'validated_field' && $field['sub_field']['type'] == 'relationship' ) ){
@@ -178,31 +172,70 @@ SQL;
 
 		$response = array(
 			'messages' => $messages,
-			'id' => 'upgrade_0'
+			'id' => __FUNCTION__
 		);
 
-		$this->increment_version();
+		$this->increment_version( __FUNCTION__ );
 
 		$this->to_json_response( $response );
 	}
 
-	public function upgrade_1(){
+	public function upgrade_2(){
+		$messages = array();
+		$db_fields = $this->get_acf_fields();
+		foreach( $db_fields as $db_field ){
+			$field = get_field_object( $db_field->field_key );
+			if ( $field['type'] == 'validated_field' ){
+				$update = false;
+				if ( empty( $field['read_only'] ) || $field['read_only'] == 'false' ){
+					$field['read_only'] = 'no';
+					$update = true;
+				} elseif ( $field['read_only'] == 'true' ) {
+					$field['read_only'] = 'yes';
+					$update = true;
+				}
+				if ( $update ){
+					acf_update_field( $field );
+					$messages[] = array(
+						'text' => sprintf( __( 'Updated read-only settings for field %1$s.', 'acf_vf' ), $field['label'] )
+					);
+				}
+			}
+		}
+
+		if ( empty( $messages ) ){
+
+		}
 		$response = array(
-			'messages' => array(),
-			'id' => 'upgrade_1'
+			'messages' => $messages,
+			'id' => __FUNCTION__
 		);
+
+		$this->increment_version( __FUNCTION__ );
+
 		$this->to_json_response( $response );
+	}
+
+	private function get_acf_fields(){
+		global $wpdb;		
+		$sql = <<<SQL
+			SELECT post_id, SUBSTRING(meta_key, 2) AS meta_key, meta_value AS field_key
+			FROM $wpdb->postmeta field 
+			WHERE 
+			field.meta_key LIKE '_%' 
+			AND field.meta_value like 'field_%';
+SQL;
+		return $wpdb->get_results( $sql );
 	}
 
 	private function get_version_key(){
-		error_log("acf_vf_db_version_v{$this->acf_version}");
 		return "acf_vf_db_version_v{$this->acf_version}";
 	}
 
-	private function increment_version(){
-		$this->db_version++;
-		$key = $this->get_version_key();
-		update_option( $key, $this->db_version );
+	private function increment_version( $function ){
+		$version = (int) preg_replace( '~[^0-9]~', '', $function );
+		$this->db_version = $version;
+		update_option( $this->get_version_key(), $this->db_version );
 	}
 }
 new acf_vf_updates();

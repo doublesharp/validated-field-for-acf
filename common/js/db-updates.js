@@ -14,6 +14,27 @@
 		$('.acf-tab-button').filter('[data-key="field_5617ec772774e"]').css({'color':'red'});
 	};
 
+	// Empty object, we are going to use this as our Queue
+	var ajaxQueue = $({});
+	$.ajaxQueue = function(ajaxOpts) {
+		// hold the original complete function
+		var oldComplete = ajaxOpts.complete;
+
+		// queue our ajax request
+		ajaxQueue.queue(function(next) {    
+
+			// create a complete callback to fire the next event in the queue
+			ajaxOpts.complete = function(){
+				// fire the original complete if it was there
+				if (oldComplete) oldComplete.apply(this, arguments);    
+				next(); // run the next query in the queue
+			};
+
+			// run the query
+			$.ajax(ajaxOpts);
+		});
+	};
+
 	$(document).ready(function(){
 		$('form#post input[type="submit"]').attr('disabled', true);
 
@@ -43,10 +64,10 @@
 
 		$upgrades.on('click', '#acf-vf-do-upgrades', function(){
 			$(this).attr('disabled', true);
-			var success = true
+			var success = true;
 			$upgrades.find('li').each(function(i, $el){
 				upgrade = $(this).data('upgrade');
-				$.ajax({
+				$.ajaxQueue({
 					url: ajaxurl,
 					data: {
 						action: 'acf_vf_do_upgrade',
@@ -73,10 +94,17 @@
 				});
 
 			});
+				
+			ajaxQueue.queue(function(next) {
+				if ( success ){
+					$upgrades.append('<br/><br/>' + vf_upgrade_l10n.upgrade_complete );
+					setTimeout(function(){
+						location.hash = 'general';
+						location.reload();
+					}, 1500 );
+				}
+			});
 
-			if (success){
-				$upgrades.append('<br/><br/>' + vf_upgrade_l10n.upgrade_complete );
-			}
 		});
 
 	});
