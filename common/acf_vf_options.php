@@ -34,15 +34,6 @@ class acf_vf_options {
 					'default_value' => 0,
 				),
 				array (
-					'key' => 'field_55d6c0d4b3ae0',
-					'label' => 'Frontend Validation',
-					'name' => 'acf_vf_frontend',
-					'type' => 'true_false',
-					'instructions' => sprintf( __( 'Check this box to turn on validation for front-end forms created with %1$s.', 'acf_vf' ), '<code>acf_form()</code>' ),
-					'message' => __( 'Enable Frontend Validation', 'acf_vf' ),
-					'default_value' => 0,
-				),
-				array (
 					'key' => 'field_5606d52b87541',
 					'label' => 'UI / UX',
 					'type' => 'tab',
