@@ -17,8 +17,9 @@
 				$('.acf-tab-wrap .acf-tab-button').each(function(i, button){ 
 					if (hash==$(button).text().toLowerCase().replace(' ', '-')){
 						$(button).trigger('click');
+
 						//acf.unload.changed = 0;
-						//$(window).off('beforeunload');
+						$(window).off('beforeunload');
 						return false;
 					}
 				});
