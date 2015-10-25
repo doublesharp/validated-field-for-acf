@@ -89,7 +89,7 @@ class acf_field_validated_field extends acf_field {
 		}
 
 		// this can be off if the permissions plugin is disabled
-		$read_only_type = apply_filters( 'acf_vf/settings_read_only_type', 'radio' );
+		$read_only_type = apply_filters( 'acf_vf/create_field/read_only/type', 'radio' );
 		if ( $read_only_type == 'radio' && is_array( $field['read_only'] ) ){
 			// default to read only for everyone unless it's off (better security)
 			if ( $field['read_only'][0] == 'no' ){
