@@ -1073,7 +1073,7 @@ PHP;
 		if ( false === $field['render_field'] ): 
 			// if it is not rendered, hide the label with CSS
 		?>
-			<style>div[data-key="<?php echo $sub_field['key']; ?>"] { display: none; }</style>
+			<style>[data-key="<?php echo $sub_field['key']; ?>"] { display: none; }</style>
 		<?php
 		// if it is shown either render it normally or as read-only
 		else : 
