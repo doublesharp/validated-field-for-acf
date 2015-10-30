@@ -124,7 +124,6 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		add_action( 'admin_menu', array( $this, 'add_options_page' ) );
 
 		add_filter( 'acf/prepare_field_for_export', array( $this, 'prepare_field_for_export' ) );	
-		
 
 		// bug fix for acf with backslashes in the content.
 		add_filter( 'content_save_pre', array( $this, 'fix_post_content' ) );
@@ -497,7 +496,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		$sub_field = $this->setup_sub_field( $field );
 		
 		if ( $field['render_field'] === false || $field['render_field'] === "readonly" ){
-			continue;
+			return $valid;
 		}
 
 		if ( $field['required'] && empty( $value ) ){
@@ -708,7 +707,6 @@ PHP;
 			}
 		}
 
-			return date('Y-M-d h:i:s');
 		return $valid;
 	}
 
