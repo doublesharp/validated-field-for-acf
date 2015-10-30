@@ -710,19 +710,6 @@ PHP;
 		return $valid;
 	}
 
-	private function maybe_sort_value( $value, $field ){
-		$_value = $value;
-		if ( is_array( $_value ) ){
-			if ( isset($field['sub_field']) && in_array( $field['sub_field']['type'], array( 'post_object', 'page_link', 'relationship', 'taxonomy', 'user' ) ) ){
-				$_value = array_map( 'intval', $_value );
-				sort( $_value, SORT_NUMERIC );	
-			} else {
-				sort( $_value );
-			}
-		}
-		return $_value;
-	}
-
 	/*
 	*  render_field_settings()
 	*
