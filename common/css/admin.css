@@ -4,4 +4,9 @@ ul.acf-checkbox-list.hidden li,
 ul.acf-checkbox-list.unique_statuses li {
 	float: left;
 	width: 150px;
+	margin-right: 20px;
+}
+.acf_vf_conflict {
+	color:inherit;
+	text-decoration:underline;
 }
