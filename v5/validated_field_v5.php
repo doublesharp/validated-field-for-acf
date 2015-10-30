@@ -1080,38 +1080,36 @@ PHP;
 			?>
 			<div class="validated-field">
 				<?php
+				// wrapper for other fields, especially relationship
+				$html = <<<HTML
+					<div data-key='{$sub_field['key']}'
+						 data-type='{$sub_field['type']}' 
+						 class="acf-field acf-field-{$sub_field['type']} field_type-{$sub_field['type']}" >
+					<div class="acf-input">
+HTML;
+				// Buffer output
+				ob_start();
+
+				// Render the subfield
+				do_action( 'acf/render_field/type='.$sub_field['type'], $sub_field );
+				$contents = ob_get_contents();
+
 				// for read only we need to buffer the output so that we can modify it
 				if ( $this->check_value( 'yes', $field['read_only'] ) ){
-					?>
-					<p>
-					<?php 
-
-					// Buffer output
-					ob_start();
-
-					// Render the subfield
-					echo do_action( 'acf/render_field/type='.$sub_field['type'], $sub_field );
-
 					// Try to make the field readonly
-					$contents = ob_get_contents();
 					$contents = preg_replace("~<(input|textarea|select)~", "<\${1} disabled=true read_only", $contents );
 					$contents = preg_replace("~(acf-hidden|insert-media add_media|wp-switch-editor)~", "\${1} disabled acf-vf-readonly", $contents );
-
-					// Stop buffering
-					ob_end_clean();
-
-					// Return our (hopefully) readonly input.
-					echo $contents;
-
-					?>
-					</p>
-					<?php
-				} else {
-					// wrapper for other fields, especially relationship
-					echo "<div class='acf-field acf-field-{$sub_field['type']} field_type-{$sub_field['type']}' data-type='{$sub_field['type']}' data-key='{$sub_field['key']}'><div class='acf-input'>";
-					echo do_action( 'acf/render_field/type='.$sub_field['type'], $sub_field );
-					echo "</div></div>";
 				}
+
+				// Add our (maybe) readonly input.
+				$html .= $contents;
+
+				// Stop buffering
+				ob_end_clean();
+
+				$html .= "</div></div>";
+
+				echo $html;
 				?>
 			</div>
 			<?php

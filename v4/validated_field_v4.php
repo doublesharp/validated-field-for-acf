@@ -892,21 +892,15 @@ PHP;
 			?>
 			<div class="validated-field">
 				<?php
+				ob_start();
+				do_action( 'acf/create_field', $sub_field ); 
+				$contents = ob_get_contents();
 				if ( self::check_value( 'yes', $field['read_only'] ) ){
-					?>
-					<p><?php 
-					ob_start();
-					do_action( 'acf/create_field', $sub_field ); 
-					$contents = ob_get_contents();
 					$contents = preg_replace("~<(input|textarea|select)~", "<\${1} disabled=true readonly", $contents );
 					$contents = preg_replace("~acf-hidden~", "acf-hidden acf-vf-readonly", $contents );
-					ob_end_clean();
-					echo $contents;
-					?></p>
-					<?php
-				} else {
-					do_action( 'acf/create_field', $sub_field ); 
 				}
+				ob_end_clean();
+				echo $contents;
 				?>
 			</div>
 			<?php
