@@ -22,23 +22,28 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 	*/
 	function __construct(){
 		// vars
-		$this->slug 	= 'acf-validated-field';
-		$this->strbool 	= array( 'true' => true, 'false' => false );
-		$this->name		= 'validated_field';
-		$this->label 	= __( 'Validated Field', 'acf_vf' );
-		$this->category	= __( 'Basic', 'acf' );
+		$this->slug 			= 'acf-validated-field';
+		$this->strbool 			= array( 'true' => true, 'false' => false );
+		$this->name				= 'validated_field';
+		$this->label 			= __( 'Validated Field', 'acf_vf' );
+		$this->category			= __( 'Basic', 'acf' );
+		$this->drafts			= $this->option_value( 'drafts' );
+		$this->frontend_css 	= $this->option_value( 'frontend_css' );
+		$this->debug 			= $this->option_value( 'debug' );
+		$this->link_to_tab 		= $this->option_value( 'link_to_tab' );
+		$this->link_to_field_group = $this->option_value( 'link_to_field_group_editor' );
 
 		$this->defaults = array(
-			'read_only' => false,
-			'mask'		=> '',
-			'mask_autoclear' => true,
-			'mask_placeholder' => '_',
-			'function'	=> 'none',
-			'pattern'	=> '',
-			'message'	=>  __( 'Validation failed.', 'acf_vf' ),
-			'unique'	=> 'non-unique',
-			'unique_statuses' => apply_filters( 'acf_vf/unique_statuses', array( 'publish', 'future', 'draft', 'pending' ) ),
-			'drafts'	=> true
+			'read_only' 		=> 'no',
+			'mask'				=> '',
+			'mask_autoclear' 	=> 'no',
+			'mask_placeholder' 	=> '_',
+			'function'			=> 'none',
+			'pattern'			=> '',
+			'message'			=>  __( 'Validation failed.', 'acf_vf' ),
+			'unique'			=> 'non-unique',
+			'unique_statuses' 	=> apply_filters( 'acf_vf/unique_statuses', array( 'publish', 'future', 'draft', 'pending' ) ),
+			'drafts'			=> 'yes'
 		);
 
 		$this->sub_defaults = array(
@@ -104,7 +109,10 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 			register_field_group( acf_vf_options::get_field_group() );
 		}
 	}
-
+	
+	function option_value( $key ){
+		return get_option( "options_{$key}" );
+	}
 
 	function field_group_location( $field_group ){
 		$field_group['location'] = array(
@@ -367,14 +375,13 @@ PHP;
 				continue;
 			}	
 
-			$unique = $field['unique'];
-			$field_is_unique = !empty( $value ) && !empty( $unique ) && $unique != 'non-unique';
+			$field_is_unique = !empty( $value ) && !empty( $field['unique'] ) && $field['unique'] != 'non-unique';
 
 			if ( $field_is_unique ){
 				$value_instances = 0;
 				// sort the value if it's an array before we compare
 				$_value = $this->maybe_sort_value( $value, $field );	
-				switch ( $unique ){
+				switch ( $field['unique'] ){
 					case 'global';
 					case 'post_type':
 					case 'this_post':
@@ -385,7 +392,7 @@ PHP;
 							if ( $_field_value == $_value ){
 								// increment until we have a dupe
 								if ( ++$value_instances > 1 ){
-									$message = $this->get_unique_form_error( $unique, $field, $value );
+									$message = $this->get_unique_form_error( $field, $value );
 									$this->add_response( $return_fields, $input, $message );		
 									continue 3;
 								}
@@ -411,7 +418,7 @@ PHP;
 								if ( $row_key == $input_key && $_field_value == $_value ){
 									// increment until we have a dupe
 									if ( ++$value_instances > 1 ){
-										$message = $this->get_unique_form_error( $unique, $field, $value );
+										$message = $this->get_unique_form_error( $field, $value );
 										$this->add_response( $return_fields, $input, $message );		
 										continue 3;
 									}
@@ -422,7 +429,7 @@ PHP;
 				}
 
 				// Run the SQL queries to see if there are duplicate values
-				if ( true !== ( $message = $this->is_value_unique( $unique, $post_id, $field, isset( $parent_field )? $parent_field : null, $index, $is_repeater, false, $is_frontend, $value ) ) ){
+				if ( true !== ( $message = $this->is_value_unique( $post_id, $field, isset( $parent_field )? $parent_field : null, $index, $is_repeater, false, $is_frontend, $value ) ) ){
 					$this->add_response( $return_fields, $input, $message );		
 					continue;
 				}
@@ -453,19 +460,6 @@ PHP;
 		}
 
 		$return_fields[] = $result;
-	}
-
-	private function prepare_in_not_in( $sql, $post_ids ){
-		global $wpdb;
-		$not_in_count = substr_count( $sql, '[IN_NOT_IN]' );
-		if ( $not_in_count > 0 ){
-			$args = array( str_replace( '[IN_NOT_IN]', implode( ', ', array_fill( 0, count( $post_ids ), '%d' ) ), str_replace( '%', '%%', $sql ) ) );
-			for ( $i=0; $i < substr_count( $sql, '[IN_NOT_IN]' ); $i++ ) { 
-				$args = array_merge( $args, $post_ids );
-			}
-			$sql = call_user_func_array( array( $wpdb, 'prepare' ), $args );
-		}
-		return $sql;
 	}
 
 	/*
@@ -928,11 +922,8 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function input_admin_enqueue_scripts(){
-		// register acf scripts
-		$min = $this->get_min();
-
-		wp_register_script( 'acf-validated-field', plugins_url( "js/input{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
-		wp_register_script( 'jquery-masking', plugins_url( "../common/js/jquery.maskedinput{$min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
+		wp_register_script( 'acf-validated-field', plugins_url( "js/input{$this->min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
+		wp_register_script( 'jquery-masking', plugins_url( "../common/js/jquery.maskedinput{$this->min}.js", __FILE__ ), array( 'jquery' ), $this->settings['version'], true );
 		
 		// translations
 		wp_localize_script( 'acf-validated-field', 'vf_l10n', array(
@@ -962,7 +953,7 @@ PHP;
 		}
 
 		if ( $this->link_to_tab ){
-			wp_enqueue_script( 'acf-validated-field-link-to-tab', plugins_url( "../common/js/link-to-tab{$min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION );
+			wp_enqueue_script( 'acf-validated-field-link-to-tab', plugins_url( "../common/js/link-to-tab{$this->min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION );
 		}
 	}
 
@@ -1024,36 +1015,8 @@ PHP;
 	*  @date	23/01/13
 	*/
 	function input_admin_head(){
-		// register acf scripts
-		$min = $this->get_min();
-		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0', true ); 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$this->min}.css", __FILE__ ), array(), '4.4.0', true ); 
 		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array( 'acf-input' ), ACF_VF_VERSION, true ); 
-
-	}
-	/*
-	*  field_group_admin_enqueue_scripts()
-	*
-	*  This action is called in the admin_enqueue_scripts action on the edit screen where your field is edited.
-	*  Use this action to add css + javascript to assist your create_field_options() action.
-	*
-	*  $info	http://codex.wordpress.org/Plugin_API/Action_Reference/admin_enqueue_scripts
-	*  @type	action
-	*  @since	3.6
-	*  @date	23/01/13
-	*/
-	function field_group_admin_enqueue_scripts(){
-		// register acf scripts
-		$min = $this->get_min();	
-		
-		wp_deregister_style( 'font-awesome' );
-		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$min}.css", __FILE__ ), array(), '4.4.0', true ); 
-		
-		wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$min}/ace.js", __FILE__ ), array(), '1.2' );
-		wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
-
-		if ( $this->link_to_field_group ){
-			wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION, true );
-		}
 	}
 }
 
