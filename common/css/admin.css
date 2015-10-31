@@ -10,3 +10,19 @@ ul.acf-checkbox-list.unique_statuses li {
 	color:inherit;
 	text-decoration:underline;
 }
+a.acf-icon[disabled],
+a.acf-icon[disabled]:hover {
+	opacity: 0.3 !important;
+}
+.acf-button.blue[disabled], .acf-button.blue.disabled {
+	opacity: 0.3;
+}
+tr[data-name="mask_autoclear"] td.acf-label,
+tr[data-name="mask_placeholder"] td.acf-label,
+tr[data-name="pattern"] td.acf-label,
+tr[data-name="message"] td.acf-label,
+tr[data-name="unique_multi"] td.acf-label,
+tr[data-name="unique_statuses"] td.acf-label {
+	padding-left: 20px !important;
+	border-left: 10px solid #ddd !important;
+}
