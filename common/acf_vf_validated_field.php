@@ -7,8 +7,14 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
         public static $DQUOT = '%%dquot%%';
         public static $fields_with_id_values = array('post_object', 'page_link', 'relationship', 'taxonomy', 'user');
 
+        protected $validation_count;
+        protected $min;
+
         function __construct()
         {
+            $this->min = (!$this->debug)? '.min' : '';
+
+
             // Handle deletes for validated fields by invoking action on sub_field
             add_action("acf/delete_value/type=validated_field", array($this, 'delete_value'), 10, 3);
 
@@ -26,7 +32,47 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             add_action('acf/render_field/type=repeater', array($this, 'repeater_start'), 1);
             add_action('acf/render_field/type=repeater', array($this, 'repeater_end'), 999);
 
+
+            add_filter('acf/validate_value/type=validated_field', array($this, 'count_validation'));
+            add_action('acf/validate_save_post', array($this, 'validate_save_post'));
+
             parent::__construct();
+        }
+
+        protected function option_value( $key ){
+            return get_option( "options_acf_vf_{$key}" );
+        }
+
+
+        /*
+        *  count_validation()
+        *
+        *  This function counts the number of times the validation is run.
+        *
+        *  @type    filter
+        *  
+        *  @param   $valid (bool|string) - the validity of the current field or an error message
+        *
+        *  @return  $valid (bool|string) - passes through the validation
+        *
+        */
+        function count_validation($valid){
+            $this->validation_count++;
+            return $valid;
+        }
+
+
+        /*
+        *  validate_save_post()
+        *
+        *  This action is called when the validation is complete. It is used to save the validation count.
+        *
+        *  @type    action
+        *  
+        */
+        function validate_save_post(){
+            $validation_count = get_option('acf_vf_validation_count', 0) + $this->validation_count;
+            update_option('acf_vf_validation_count', $validation_count);
         }
 
         /*
@@ -169,6 +215,18 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             return $value;
         }
 
+        /*
+        *  delete_metadata_helpers()
+        *
+        *  This action is called when a field value is deleted. Loop through all possible suffixes to clean up the database.
+        *
+        *  @type    action
+        *  
+        *  @param   $the_id (int|string) - the ID of the Object attached to this ACF Field and value.
+        *  @param   $key (string)- the current meta key.
+        *  @param   $field (array) - the current ACF field.
+        *
+        */
         public function delete_metadata_helpers($the_id, $key, $field)
         {
             // use this to determine what to delete/update
@@ -224,12 +282,6 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             return $_value;
         }
 
-        protected function get_min()
-        {
-            // Use minified unless debug is on
-            return (!$this->debug)? '.min' : '';
-        }
-
         public function admin_notices()
         {
             if (!current_user_can('manage_options')) { 
@@ -254,14 +306,14 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
         }
 
         // Buffer the start of a repeater output
-        function repeater_start($field)
+        public function repeater_start($field)
         {
             // Buffer output
             ob_start();
         }
 
         // Modify the buffer for repeaters that contain readonly fields
-        function repeater_end($field)
+        public function repeater_end($field)
         {
             $contains_read_only = false;
             foreach ($field['sub_fields'] as $sub_field) {
@@ -280,7 +332,7 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
 
             // modify as needed
             if ($contains_read_only) {
-                $contents = preg_replace("~(add-row|remove-row)~", "\${1}-disabled disabled\" disabled=\"disabled\"", $contents);
+                $contents = preg_replace('~(add-row|remove-row)~', '${1}-disabled disabled" disabled="disabled" title="Read only"', $contents);
             }
 
             // Stop buffering
@@ -506,6 +558,29 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             return apply_filters("acf/format_value_for_api/type={$sub_field['type']}", $value, $post_id, $sub_field);
         }
 
+        /*
+        *  field_group_admin_enqueue_scripts()
+        *
+        *  This action is called in the admin_enqueue_scripts action on the edit screen where your field is edited.
+        *  Use this action to add css + javascript to assist your create_field_options() action.
+        *
+        *  $info    http://codex.wordpress.org/Plugin_API/Action_Reference/admin_enqueue_scripts
+        *  @type    action
+        *  @since   3.6
+        *  @date    23/01/13
+        */
+        protected function field_group_admin_enqueue_scripts(){       
+            wp_deregister_style( 'font-awesome' );
+            wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$this->min}.css", __FILE__ ), array(), '4.4.0', true ); 
+            
+            wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$this->min}/ace.js", __FILE__ ), array(), '1.2' );
+            wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$this->min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
+
+            if ( $this->link_to_field_group ){
+                wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$this->min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION, true );
+            }
+        }
+
         // UTIL FUNCTIONS
 
         protected static function check_value($value, $obj_or_array)
@@ -517,9 +592,9 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             }
         }
 
-        protected function get_unique_form_error($unique, $field, $value)
+        protected function get_unique_form_error($field, $value)
         {
-            switch ($unique){
+            switch ($field['unique']){
             case 'global';
                 return sprintf(__('The value "%1$s" was submitted multiple times and should be unique for all fields on all posts.', 'acf_vf'), $this->get_value_text($value, $field));
               break;
@@ -570,7 +645,7 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             return 'post';
         }
 
-        protected function is_value_unique($unique, $post_id, $field, $parent_field, $index, $is_repeater, $is_flex, $is_frontend, $value)
+        protected function is_value_unique( $post_id, $field, $parent_field, $index, $is_frontend, $value)
         {
             global $wpdb;
 
@@ -591,23 +666,45 @@ if (class_exists('acf_Field') && !class_exists('acf_field_validated_field')) :
             // We have to copy name to _name for ACF5
             $field_name = $this->get_field_name($field);
 
+            // Repeaters and Flex Content keys are included in the sub_key
+            $is_indexed = isset( $parent_field ) && in_array($parent_field['type'], array('repeater', 'flexible_content'));
+
             // prepend for options
             $this_key = $is_options ? 'options_' : '';
             // for repeaters and flex content add the parent and index
-            $this_key.= $is_repeater || $is_flex ? $parent_field['name'] . '_' . $index . '_' : '';
+            $this_key.= $is_indexed ? $parent_field['name'] . '_' . $index . '_' : '';
             // the key for this field
             $this_key.= $field_name;
 
             $this_key_sorted = "{$this_key}__sorted";
-            $this_key_r = "{$this_key}__r";
 
             // modify keys for options and repeater fields
             $meta_key = $is_options ? 'options_' : '';
-            $meta_key.= ($is_repeater || $is_flex) ? $parent_field['name'] . '_%_' : '';
+            $meta_key.= $is_indexed ? $parent_field['name'] . '_%_' : '';
             $meta_key.= $field_name;
 
             $meta_key_sorted = "{$meta_key}__sorted";
-            $meta_key_r = "{$meta_key}__r";
+
+            // Does the field type indicate that it has Object ID values?
+            $values_are_ids = $this->values_are_ids($field);
+
+            // Create the relationship key for the value Object type
+            if ( $values_are_ids ) {
+                // get the current field name and append the suffix
+                if ($field['type'] == 'user') { 
+                    $meta_key_r = "{$meta_key}__u";
+                    $this_key_r = "{$this_key}__u";
+                } elseif ($field['type'] == 'taxonomy') {
+                    $meta_key_r = "{$meta_key}__t";
+                    $this_key_r = "{$this_key}__t";
+                } else {
+                    $meta_key_r = "{$meta_key}__p";
+                    $this_key_r = "{$this_key}__p";
+                }
+            } else {
+                $meta_key_r = "{$meta_key}__x";
+                $this_key_r = "{$this_key}__x";
+            }
 
             // we only want to validate posts with these statuses
             $status_in = "'" . implode("','", $field['unique_statuses']) . "'";
@@ -663,7 +760,7 @@ SQL;
             maybe_serialize($value)
            );
 
-            if ($is_post && in_array($unique, array('global'))) {
+            if ($is_post && in_array($field['unique'], array('global'))) {
                 // POSTS: search all post types except ACF
                 $this_sql = <<<SQL
 				{$sql_prefix} AND p.post_type != 'acf' 
@@ -677,7 +774,7 @@ SQL;
 					) 
 				) AND {$table_value} = %s
 SQL;
-            } elseif ($is_options && in_array($unique, array('global', 'post_type'))) {
+            } elseif ($is_options && in_array($field['unique'], array('global', 'post_type'))) {
                 // OPTIONS: search options for dupe values in any key
                 $this_sql = <<<SQL
 				{$sql_prefix}
@@ -687,7 +784,7 @@ SQL;
 				AND {$table_key} NOT LIKE %s
 				AND {$table_value} = %s
 SQL;
-            } elseif ($is_user && in_array($unique, array('global', 'post_type'))) {
+            } elseif ($is_user && in_array($field['unique'], array('global', 'post_type'))) {
                 // USERS: search users for dupe values in any key
                 $this_sql = <<<SQL
 				{$sql_prefix}
@@ -698,7 +795,7 @@ SQL;
 					AND {$table_key} NOT LIKE %s
 				) AND {$table_value} = %s
 SQL;
-            } elseif ($is_post && $unique == 'post_type') {
+            } elseif ($is_post && $field['unique'] == 'post_type') {
                 // POSTS: prefix with the post_type, but search all keys for dupes
                 $sql_replacements = array_merge(array($post_type), $sql_replacements);
                 $this_sql = <<<SQL
@@ -713,7 +810,7 @@ SQL;
 					) 
 				) AND {$table_value} = %s
 SQL;
-            } elseif ($is_post && $unique == 'post_key') {
+            } elseif ($is_post && $field['unique'] == 'post_key') {
                 // POSTS: prefix with the post_type, then search within this key for dupes
                 $sql_replacements = array_merge(array($post_type), $sql_replacements);
             
@@ -731,7 +828,7 @@ SQL;
 					OR {$table_value} IN ([IN_NOT_IN_VALUES])
 				)
 SQL;
-            } elseif ($is_options && in_array($unique, array('post_key', 'this_post'))) {
+            } elseif ($is_options && in_array($field['unique'], array('post_key', 'this_post'))) {
                 // OPTIONS: search within this key for dupes. include "this_post" since there is no ID for options.
                 $this_sql = <<<SQL
 				{$sql_prefix}
@@ -745,7 +842,7 @@ SQL;
 					OR {$table_value} IN ([IN_NOT_IN_VALUES])
 				)
 SQL;
-            } elseif ($is_user && in_array($unique, array('post_key'))) {
+            } elseif ($is_user && in_array($field['unique'], array('post_key'))) {
                 // USERS: search within this key for dupes
                 $this_sql = <<<SQL
 				{$sql_prefix}
@@ -761,7 +858,7 @@ SQL;
 					OR {$table_value} IN ([IN_NOT_IN_VALUES])
 				)
 SQL;
-            } elseif (($is_post || $is_user) && in_array($unique, array('this_post'))   ) {
+            } elseif (($is_post || $is_user) && in_array($field['unique'], array('this_post'))   ) {
                 // POSTS/USERS: search only this ID, but any key
                 $this_sql = <<<SQL
 				{$sql_prefix}
@@ -772,7 +869,7 @@ SQL;
 				AND {$table_key} NOT LIKE %s
 				AND {$table_value} = %s
 SQL;
-            } elseif ($unique == 'this_post_key') {
+            } elseif ($field['unique'] == 'this_post_key') {
                 // POSTS/USERS/OPTIONS: this will succeed and not run a query. this should have been detected in the input validation.
                 return true;
             } else {

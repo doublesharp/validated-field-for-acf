@@ -134,7 +134,7 @@
 		// Uniqueness changes
 		$field.find('.validation-unique').on('change',function(){
 			var $this = $(this);
-			var unqa = $this.closest('.acf-field').siblings('tr[data-name="unique_statuses"]');
+			var unqa = $this.closest('.acf-field').siblings('tr[data-name*="unique_"]');
 			if ($this.val()=='non-unique'||$this.val()=='') { unqa.hide(300); } else { unqa.show(300); }
 		});
 		// Initial setup

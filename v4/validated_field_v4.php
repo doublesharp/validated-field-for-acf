@@ -27,11 +27,6 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 		$this->name		= 'validated_field';
 		$this->label 	= __( 'Validated Field', 'acf_vf' );
 		$this->category	= __( 'Basic', 'acf' );
-		$this->drafts	= $this->option_value( 'acf_vf_drafts' );
-		$this->frontend_css = $this->option_value( 'acf_vf_frontend_css' );
-		$this->debug 	= $this->option_value( 'acf_vf_debug' );
-		$this->link_to_tab = $this->option_value( 'acf_vf_link_to_tab' );
-		$this->link_to_field_group = $this->option_value( 'acf_vf_link_to_field_group_editor' );
 
 		$this->defaults = array(
 			'read_only' => false,
@@ -124,10 +119,6 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 			),
 		);
 		return $field_group;
-	}
-
-	function option_value( $key ){
-		return get_option( "options_{$key}" );
 	}
 
 	function ajaxurl(){
