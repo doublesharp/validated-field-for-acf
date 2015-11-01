@@ -1,17 +1,6 @@
 <?php
 if ( class_exists( 'acf_field_validated_field' ) && !class_exists( 'acf_field_validated_field_v5' ) ):
 class acf_field_validated_field_v5 extends acf_field_validated_field {
-	// vars
-	var $slug,
-		$config,
-		$settings,					// will hold info such as dir / path
-		$defaults,					// will hold default field options
-		$sub_defaults,				// will hold default sub field options
-		$debug,						// if true, don't use minified and confirm form submit					
-		$drafts,
-		$is_frontend_css,
-		$link_to_tab,
-		$link_to_field_group;
 
 	/*
 	*  __construct
@@ -21,7 +10,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 	*  @since	3.6
 	*  @date	23/01/13
 	*/
-	function __construct(){
+	public function __construct(){
 		// vars
 		$this->slug 			= 'acf-validated-field';
 		$this->name				= 'validated_field';
@@ -32,7 +21,6 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		$this->debug 			= $this->option_value( 'debug' );
 		$this->link_to_tab 		= $this->option_value( 'link_to_tab' );
 		$this->link_to_field_group = $this->option_value( 'link_to_field_group_editor' );
-
 		$this->defaults = array(
 			'read_only' 		=> 'no',
 			'hidden' 			=> 'no',
@@ -95,9 +83,9 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 			$admin_l10n['validation_failed_1'] .= '.';
 			$admin_l10n['validation_failed_2'] .= '.';
 			return $admin_l10n;
-		});
+		} );
 
-		add_action( 'acf/input/admin_head', function( ){
+		add_action( 'acf/input/admin_head', function(){
 		}, 1, 2 );
 
 		// sets the post ID and frontend variable to acf form
@@ -131,7 +119,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		add_filter( 'acf/get_valid_field', array( $this, 'fix_upgrade' ) );
 	}
 
-	function acf_vf_head(){
+	public function acf_vf_head(){
 		global $is_validate_drafts;
 
 
@@ -146,7 +134,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 
 			if( $fields ){
 				foreach( $fields as $field_name => $value )	{
-					$field = get_field_object($field_name, false, array('load_value' => false));
+					$field = get_field_object( $field_name, false, array('load_value' => false ) );
 					if ( $field['type'] == 'validated_field' && $field['drafts'] ){
 						$is_validate_drafts = true;
 						break;
@@ -157,33 +145,33 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 
 		?>
 		<script>
-		(function($){
+		(function($ ){
 			if ( typeof acf != 'undefined' ){
 				acf.version = '<?php echo acf()->settings['version']; ?>';
 				acf.add_action('ready', function(){
 					<?php if ( $is_validate_drafts ): ?>
 						$(document).off('click', '#save-post');
-						$(document).on( 'click', '#save-post', function(e){
-							e.$el = $(this);
-							acf.validation.click_publish(e);
-						});
+						$(document).on('click', '#save-post', function(e){
+							e.$el = $(this );
+							acf.validation.click_publish(e );
+						} );
 
 					<?php endif; ?>
 					// intercept click to add post_status to the form
 					$(document).off('click', 'input[type="submit"]');
-					$(document).on( 'click', 'input[type="submit"]', function(e){
+					$(document).on('click', 'input[type="submit"]', function(e){
 						e.$el = $(this);
 
 						$post_status = get_post_status();
 						
 						// if we click publish, then set to publish
-						if ( e.$el.val() == '<?php _e( 'Publish' ); ?>' ){
+						if (e.$el.val() == '<?php _e( 'Publish' ); ?>'){
 							$post_status.val('publish');
 						} else {
 							// otherwise set to the selected status
 							$post_status.val($('select#post_status').val());
 							// if it's published but we are setting to something else just save it
-							if ( $post_status.val() != 'publish' && $('#original_post_status').val() == 'publish' ){
+							if ($post_status.val() != 'publish' && $('#original_post_status').val() == 'publish'){
 								acf.validation.click_ignore(e);
 								return
 							}
@@ -191,30 +179,30 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 						
 						// with our elements inserted, publish away
 						acf.validation.click_publish(e);
-					});
+					} );
 
-					$(document).on( 'click', '.acf_vf_conflict', function(e){
-						location.href = $(this).attr('href');
-					});
+					$(document).on('click', '.acf_vf_conflict', function(e){
+						location.href = $(this ).attr('href');
+					} );
 
 					// get the acf_vf post status element, or create it if needed
 					function get_post_status(){
 						$form = $('form#post');
 						$post_status = $form.find('input[name="acf[acf_vf][post_status]"]');
-						if ( !$post_status.length ){
+						if ( !$post_status.length){
 							$post_status = $('<input type="hidden" name="acf[acf_vf][post_status]"/>');
 							$form.append($post_status);
 						}
 						return $post_status;
 					}
-				});
+				} );
 			}
-		})(jQuery);
+		} )(jQuery);
 		</script>
 		<?php
 	}
 
-	function fix_upgrade( $field ){
+	public function fix_upgrade( $field ){
 		// the $_POST will tell us if this is an upgrade
 		$is_5_upgrade = 
 			isset( $_POST['action'] ) && $_POST['action'] == 'acf/admin/data_upgrade' && 
@@ -228,7 +216,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $field;
 	}
 
-	function fix_post_content( $content ){
+	public function fix_post_content( $content ){
 		// are we saving a field group?
 		$is_field_group = get_post_type() == 'acf-field-group';
 
@@ -248,7 +236,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $content;
 	}
 
-	function do_slash_fix( $string ){
+	public function do_slash_fix( $string ){
 		if ( preg_match( '~(?<!\\\\)\\\\(?!\\\\)~', $string ) ){
 			$string = str_replace('\\', '\\\\', $string );
 		}
@@ -258,7 +246,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $string;
 	}
 
-	function do_recursive_slash_fix( $array ){
+	public function do_recursive_slash_fix( $array ){
 		// loop through all levels of the array
 		foreach( $array as $key => &$value ){
 			if ( is_array( $value ) ){
@@ -273,20 +261,19 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $array;
 	}
 
-	function add_acf_ajax_validation(){
+	public function add_acf_ajax_validation(){
 		global $acf;
 		if ( version_compare( $acf->settings['version'], '5.2.6', '<' ) ){
 			remove_all_actions( 'wp_ajax_acf/validate_save_post' );
 			remove_all_actions( 'wp_ajax_nopriv_acf/validate_save_post' );
 		}
-		add_action( 'wp_ajax_acf/validate_save_post',			array( $this, 'ajax_validate_save_post') );
-		add_action( 'wp_ajax_nopriv_acf/validate_save_post',	array( $this, 'ajax_validate_save_post') );
+		add_action( 'wp_ajax_acf/validate_save_post',			array( $this, 'ajax_validate_save_post' ) );
+		add_action( 'wp_ajax_nopriv_acf/validate_save_post',	array( $this, 'ajax_validate_save_post' ) );
 	}
 
-	function set_post_id_to_acf_form(){
+	public function set_post_id_to_acf_form(){
 		global $acf_vf;
 		?>
-
 		<script type="text/javascript">
 		(function($){
 			$(document).ready(function(){
@@ -302,16 +289,16 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		<?php
 	}
 
-	function edit_form_after_editor( $post ){
+	public function edit_form_after_editor( $post ){
 		echo "<input type='hidden' name='acf[acf_vf][post_ID]' value='{$post->ID}'/>";
 	}
 
-	function personal_options( $user ){
+	public function personal_options( $user ){
 		// for users the ID is prepending with "user_"
 		echo "<input type='hidden' name='acf[acf_vf][post_ID]' value='user_{$user->ID}'/>";
 	}
 
-	function prepare_field_for_export( $field ){
+	public function prepare_field_for_export( $field ){
 		if ( isset( $field['sub_field'] ) ){	
 			remove_filter( 'acf/prepare_field_for_export', array( $this, 'prepare_field_for_export' ) );
 			$field['sub_field'] = acf_prepare_field_for_export( $field['sub_field'] );
@@ -320,7 +307,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $field;
 	}
 
-	function validate_update_value( $value, $post_id, $field ){
+	public function validate_update_value( $value, $post_id, $field ){
 		if ( function_exists( 'get_the_field' ) && !acf_validate_value( $value, $field, '' ) ){
 			// if it's not value set the new value to the current value
 			$value = get_the_field( $field['name'], $post_id );
@@ -329,11 +316,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $value;
 	}
 
-	function option_value( $key ){
-		return get_field( $key, 'options' );
-	}
-
-	function add_options_page(){
+	public function add_options_page(){
 		$page = acf_add_options_page( apply_filters( 'acf_vf/add_options_page', array(
 			'page_title' 	=> sprintf( __( 'Validated Field Settings for ACF %1$d', 'acf_vf' ), 5 ),
 			'menu_title' 	=> sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 5 ),
@@ -348,7 +331,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		acf_add_local_field_group( acf_vf_options::get_field_group() );
 	}
 
-	function field_group_location( $field_group ){
+	public function field_group_location( $field_group ){
 		$field_group['location'] = array(
 			array(
 				array(
@@ -361,11 +344,11 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $field_group;
 	}
 
-	function remove_acf_form_style(){
+	public function remove_acf_form_style(){
 		wp_dequeue_style( array( 'colors-fresh' ) );
 	}
 
-	function setup_field( $field ){
+	public function setup_field( $field ){
 		// setup booleans, for compatibility
 		$field = acf_prepare_field( array_merge( $this->defaults, $field ) );
 
@@ -381,7 +364,6 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 			$sub_field[$key] = $value;
 		}
 
-
 		// these fields need some special formatting
 		$sub_field['_input'] = $field['prefix'].'['.$sub_field['key'].']';
 		$sub_field['_name'] = $field['name'];
@@ -396,13 +378,13 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		// make sure all the defaults are set
 		$field['sub_field'] = array_merge( $this->sub_defaults, $sub_field );
 		foreach( $this->defaults as $key => $default ){
-			if ( !isset( $this->sub_defaults[$key]))
-				unset($field['sub_field'][$key]);
+			if ( !isset( $this->sub_defaults[$key] ))
+				unset($field['sub_field'][$key] );
 		}
 		return $field;
 	}
 
-	function setup_sub_field( $field ){
+	public function setup_sub_field( $field ){
 		return $field['sub_field'];	
 	}
 
@@ -411,10 +393,10 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 	*
 	*  Get the various post statuses that have been registered
 	*
-	*  @type		function
+	*  @type		public function
 	*
 	*/
-	function get_post_statuses() {
+	public function get_post_statuses() {
 		global $wp_post_statuses;
 		return $wp_post_statuses;
 	}
@@ -424,10 +406,10 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 	*
 	*  Override the default acf_input()->ajax_validate_save_post() to return a custom validation message
 	*
-	*  @type		function
+	*  @type		public function
 	*
 	*/
-	function ajax_validate_save_post() {
+	public function ajax_validate_save_post() {
 		// validate
 		if ( !isset( $_POST['_acfnonce'] ) ) {
 			// ignore validation, this form $_POST was not correctly configured
@@ -461,8 +443,8 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		die( json_encode( $json ) );
 	}
 
-	function validate_field( $valid, $value, $field, $input ) {
-		global $acf_vf_indexes, $acf_vf_request;
+	public function validate_field( $valid, $value, $field, $input ) {
+		global $acf_vf_request;
 
 		// if the validation has failed previously no need to proceed
 		if ( !$valid )
@@ -519,7 +501,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 			null;
 
 		$is_frontend = isset( $acf_vf_request['is_frontend'] )? 
-			(boolean) $acf_vf_request['is_frontend'] : 
+			(boolean ) $acf_vf_request['is_frontend'] : 
 			false;
 
 		// the type of the submitted post
@@ -531,18 +513,6 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 
 		$is_repeater = isset( $parent_field ) && 'repeater' == $parent_field['type'];
 		$is_flex = isset( $parent_field ) && 'flexible_content' == $parent_field['type'];
-
-		// track the field index based on the field name
-		if ( !isset( $acf_vf_indexes ) || !is_array( $acf_vf_indexes ) ){
-			$acf_vf_indexes = array();
-		}
-		// initialize or increment the index
-		$index = isset( $acf_vf_indexes[$field['name']] ) ?
-			$acf_vf_indexes[$field['name']]+1 :
-			0;
-
-		// cache the current value
-		$acf_vf_indexes[$field['name']] = $index;
 
 		// treat arrays as strings for the purposes of our string based validation
 		if ( is_array( $value ) ){
@@ -583,7 +553,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 					if ( substr( $pattern, -1 ) != ';' ) $pattern.= ';';
 
 					// not yet saved to the database, so this is the previous value still
-					$prev_value = get_post_meta( $post_id, $this_key, true);
+					$prev_value = get_post_meta( $post_id, $this_key, true );
 
 					// unique function for this key
 					$function_name = "validate_{$this_key}_function";
@@ -624,7 +594,7 @@ PHP;
 						// check to see if this is our error or not.
 						if ( strpos( $error['file'], basename( __FILE__ ) ) && strpos( $error['file'], "eval()'d code" ) ){
 							preg_match( '/eval\\(\\)\'d code\\((\d+)\\)/', $error['file'], $matches );
-							return sprintf( __( 'PHP Error: %1$s, line %2$d..', 'acf_vf' ), $error['message'], $matches[1] );
+							return sprintf( __( 'PHP Error: %1$s, line %2$d.', 'acf_vf' ), $error['message'], $matches[1] );
 						} 
 					}
 					// if a string is returned, return it as the error.
@@ -640,10 +610,10 @@ PHP;
 		}
 
 		// validate the submitted values since there might be dupes in the form submit that aren't yet in the database
-		if (!empty( $value ) && !empty( $field['unique'] ) && $field['unique'] != 'non-unique') {
-			$value_instances = 0;
+		if ( !empty( $value ) && !empty( $field['unique'] ) && $field['unique'] != 'non-unique' ) {
+			$value_instances = array();
 
-			if ($field['unique_multi'] == 'values'){
+			if ( $field['unique_multi'] == 'values' ){
 				// sort the value if it's an array before we compare
 				$_value = $this->maybe_sort_value( $value, $field );
 			} else {
@@ -660,22 +630,48 @@ PHP;
 							foreach( $form_field as $row ){
 								if ( is_array( $row ) ){
 									foreach( $row as $field_key => $field_value ){
-										// sort the value if it's an array before we compare
-										if ($field['unique_multi'] == 'values'){
-											$_field_value = $this->maybe_sort_value( $field_value, $field );
+										if ($field['unique_multi'] == 'each_value' ){
+											$values = !is_array($_value ) ? array($_value ) : $_value;
+											$field_values = !is_array($field_value ) ? array($field_value ) : $field_value;
+											foreach ($values as $the_value ) {
+												foreach ($field_values as $the_field_value ) {
+													if ($the_value == $the_field_value ){
+														$_key = maybe_serialize($the_value );
+														$instances = isset($value_instances[$_key] ) ? $value_instances[$_key] : 0;
+														$value_instances[$_key] = ++$instances;
+														if ( $instances > 1 ){
+															return "1".$this->get_unique_form_error( $field, $the_value );
+														}
+													}
+												}
+											}
 										} else {
-											$_field_value = $field_value;
-										}
-										if ( $_field_value == $_value && ++$value_instances > 1 ){
-											return $this->get_unique_form_error( $field, $value );
+											if ($field['unique_multi'] == 'values' ){
+												// sort the value if it's an array before we compare
+												$_field_value = $this->maybe_sort_value( $field_value, $field );
+											} else {
+												// don't do anything, compare it directly
+												$_field_value = $field_value;
+											}
+											if ( $_field_value == $_value ){
+												$_key = maybe_serialize($_value );
+												$instances = isset($value_instances[$_key] ) ? $value_instances[$_key] : 0;
+												$value_instances[$_key] = ++$instances;
+												if ( $instances > 1 ){
+													return $this->get_unique_form_error( $field, $value );
+												}	
+											}
 										}
 									}
 								}								
 							}
-						} else {
-							if ( $form_field == $_value && ++$value_instances > 1 ){
+						} elseif ( $form_field == $_value ){
+							$_key = maybe_serialize($_value );
+							$instances = isset($value_instances[$_key] ) ? $value_instances[$_key] : 0;
+							$value_instances[$_key] = ++$instances;
+							if ( $instances > 1 ){
 								return $this->get_unique_form_error( $field, $value );
-							}	
+							}
 						}
 					}
 					break;
@@ -688,15 +684,37 @@ PHP;
 								foreach( $form_value as $id => $row ){
 									if ( is_array( $row ) ){
 										foreach( $row as $field_key => $field_value ){
-											// sort the value if it's an array before we compare
-											if ($field['unique_multi'] == 'values'){
-												$_field_value = $this->maybe_sort_value( $field_value, $field );
-											} else {
-												$_field_value = $field_value;
-											}
-											if ( $field_key == $field['key'] && $_field_value == $_value ){
-												if ( ++$value_instances > 1 ){
-													return $this->get_unique_form_error( $field, $value );
+											if ($field_key == $field['key'] ){	
+												if ($field['unique_multi'] == 'each_value' ){
+													$values = !is_array($_value ) ? array($_value ) : $_value;
+													$field_values = !is_array($field_value ) ? array($field_value ) : $field_value;
+													foreach ($values as $the_value ) {
+														foreach ($field_values as $the_field_value ) {
+															if ($the_value == $the_field_value ){
+																$_key = maybe_serialize($the_value );
+																$instances = isset($value_instances[$_key] ) ? $value_instances[$_key] : 0;
+																$value_instances[$_key] = ++$instances;
+																if ( $instances > 1 ){
+																	return $this->get_unique_form_error( $field, $the_value );
+																}
+															}
+														}
+													}
+												} else {
+													// sort the value if it's an array before we compare
+													if ($field['unique_multi'] == 'values' ){
+														$_field_value = $this->maybe_sort_value( $field_value, $field );
+													} else {
+														$_field_value = $field_value;
+													}
+													if ( $_field_value == $_value ){
+														$_key = maybe_serialize($_value );
+														$instances = isset($value_instances[$_key] ) ? $value_instances[$_key] : 0;
+														$value_instances[$_key] = ++$instances;
+														if ( $instances > 1 ){
+															return $this->get_unique_form_error( $field, $value );
+														}
+													}
 												}
 											}
 										}
@@ -708,7 +726,7 @@ PHP;
 					break;
 			}
 			// Run the SQL queries to see if there are duplicate values
-			if ( true !== ( $message = $this->is_value_unique( $post_id, $field, $parent_field, $index, $is_frontend, $value ) ) ){
+			if ( true !== ( $message = $this->is_value_unique( $post_id, $field, $parent_field, $is_frontend, $value ) ) ){
 				return $message;
 			}
 		}
@@ -725,10 +743,10 @@ PHP;
 	*  @since	3.6
 	*  @date	23/01/13
 	*
-	*  @param	$field (array) the $field being edited
+	*  @param	$field (array ) the $field being edited
 	*  @return	n/a
 	*/
-	function render_field_settings( $field ) {
+	public function render_field_settings( $field ) {
 		//return;
 		// defaults?
 		$field = $this->setup_field( $field );
@@ -758,7 +776,7 @@ PHP;
 			'label'			=> __( 'Validate Drafts/Preview?', 'acf_vf' ),
 			// Show a message if drafts will always be validated
 			'message'	=> $this->drafts ?
-				sprintf( __( '<em><a href="%1$s"><code>Validated Field Settings: Draft Validation</code></a> has been set to <code>true</code> which overrides field level configurations.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf-field-group&page=validated-field-settings')."#general" ) :
+				sprintf( __( '<em><a href="%1$s"><code>Validated Field Settings: Draft Validation</code></a> has been set to <code>true</code> which overrides field level configurations.</em>', 'acf_vf' ), admin_url('edit.php?post_type=acf-field-group&page=validated-field-settings' )."#general" ) :
 				'',
 			'type'			=> $this->drafts ? 'message' : 'radio',
 			'name'			=> 'drafts',
@@ -768,7 +786,7 @@ PHP;
 			),
 			'layout'		=> 'horizontal',
 			'class'			=> 'drafts'
-		));
+		) );
 		?>
 		</td></tr>
 		<tr class="acf-field acf-sub_field" data-setting="validated_field" data-name="sub_field">
@@ -789,7 +807,7 @@ PHP;
 				$metas = array(
 					'id'			=> $sub_field['id'],
 					'key'			=> $sub_field['key'],
-					'parent'		=> $sub_field['parent'],
+					'parent'		=> $su_field['parent'],
 					'save'			=> '',
 				);
 
@@ -800,7 +818,7 @@ PHP;
 
 						// meta		
 						foreach( $metas as $k => $v ) {
-							acf_hidden_input(array( 'class' => "input-{$k}", 'name' => "{$sub_field['prefix']}[{$k}]", 'value' => $v ));
+							acf_hidden_input(array( 'class' => "input-{$k}", 'name' => "{$sub_field['prefix']}[{$k}]", 'value' => $v ) );
 						}
 
 						?>
@@ -845,7 +863,7 @@ PHP;
 		// Read only
 		acf_render_field_setting( $field, array(
 			'label'			=> __( 'Read Only?', 'acf_vf' ),
-			'instructions'	=> sprintf( __( 'When a field is marked read only, it will be visible but uneditable. Read only fields are marked as "Field Label %1$s".', 'acf_vf' ), sprintf('(<i class="fa fa-ban" style="color:red;" title="%1$s"><small><em> %1$s</em></small></i>)', __('Read only', 'acf_vf'))),
+			'instructions'	=> sprintf( __( 'When a field is marked read only, it will be visible but uneditable. Read only fields are marked as "Field Label %1$s".', 'acf_vf' ), sprintf('(<i class="fa fa-ban" style="color:red;" title="%1$s"><small><em> %1$s</em></small></i> )', __('Read only', 'acf_vf' )) ),
 			'type'			=> apply_filters( 'acf_vf/create_field/read_only/type', 'radio' ),
 			'name'			=> 'read_only',
 			'layout'		=> 'horizontal', 
@@ -854,7 +872,7 @@ PHP;
 				'yes'	=> __( 'Yes', 'acf_vf' ),
 			) ),
 			'class'			=> 'read_only'
-		));
+		) );
 
 		// 3rd party read only settings
 		do_action( 'acf_vf/settings_readonly', $field );
@@ -865,12 +883,12 @@ PHP;
 		// Input Mask
 		acf_render_field_setting( $field, array(
 			'label'			=> __( 'Input mask', 'acf_vf' ),
-			'instructions'	=> sprintf( __( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric. <a href="%1$s" target="_new">More info</a>.', 'acf_vf'), 'http://digitalbush.com/projects/masked-input-plugin/' ),
+			'instructions'	=> sprintf( __( 'Use &#39;a&#39; to match A-Za-z, &#39;9&#39; to match 0-9, and &#39;*&#39; to match any alphanumeric. <a href="%1$s" target="_new">More info</a>.', 'acf_vf' ), 'http://digitalbush.com/projects/masked-input-plugin/' ),
 			'type'			=> 'text',
 			'name'			=> 'mask',
 			'layout'		=> 'horizontal',
 			'class'			=> 'input-mask'
-		));
+		) );
 
 		// Input Mask
 		acf_render_field_setting( $field, array(
@@ -884,7 +902,7 @@ PHP;
 				'no' 	=> __( 'No', 'acf_vf' ),
 			),
 			'class'			=> 'mask-settings'
-		));
+		) );
 
 		// Input Mask
 		acf_render_field_setting( $field, array(
@@ -893,7 +911,7 @@ PHP;
 			'type'			=> 'text',
 			'name'			=> 'mask_placeholder',
 			'class'			=> 'mask-settings'
-		));
+		) );
 
 		// Validation Function
 		acf_render_field_setting( $field, array(
@@ -911,7 +929,7 @@ PHP;
 			'optgroup' => true,
 			'multiple' => '0',
 			'class'			=> 'validated_select validation-function',
-		));
+		) );
 
 		?>
 		<tr class="acf-field validation-settings" data-setting="validated_field" data-name="pattern" id="field_option_<?php echo $html_key; ?>_validation">
@@ -934,7 +952,7 @@ PHP;
 								<li><code>$meta_key = meta_key</code></li>
 								<li><code>$value = form value</code></li>
 								<li><code>$prev_value = db value</code></li>
-								<li><code>$inputs = array(<blockquote>'field'=>?,<br/>'value'=>?,<br/>'prev_value'=>?<br/></blockquote>)</code></li>
+								<li><code>$inputs = array(<blockquote>'field'=>?,<br/>'value'=>?,<br/>'prev_value'=>?<br/></blockquote> )</code></li>
 								<li><code>&amp;$message = error message</code></li>
 							</ul>
 							</li>
@@ -964,7 +982,7 @@ PHP;
 					'prefix'		=> $field['prefix'],
 					'layout'		=> 'horizontal',
 					'class'			=> 'editor',
-				));
+				) );
 
 				?>
 				<div id="<?php echo $field_id; ?>-editor" class='ace-editor' style="height:200px;"><?php echo $field['pattern']; ?></div>
@@ -980,7 +998,7 @@ PHP;
 			'name'			=> 'message',
 			'layout'		=> 'horizontal',
 			'class'			=> 'validation-settings'
-		));
+		) );
 
 		// Uniqueness
 		acf_render_field_setting( $field, array(
@@ -1000,7 +1018,7 @@ PHP;
 			'optgroup' 		=> false,
 			'multiple' 		=> '0',
 			'class'			=> 'validated_select validation-unique',
-		));
+		) );
 
 		// Uniqueness
 		acf_render_field_setting( $field, array(
@@ -1009,15 +1027,15 @@ PHP;
 			'type'			=> 'select',
 			'name'			=> 'unique_multi',
 			'choices' 		=> array(
-				'exact_order'	=> __( 'Check for duplicate values, including the order', 'acf_vf' ),
-				'values'		=> __( 'Check for duplicate values, ignoring the order', 'acf_vf' ),
-				'each_value'	=> __( 'Each value may be selected only once', 'acf_vf' )
+				'exact_order'	=> __( 'Compare all selected values in order', 'acf_vf' ),
+				'values'		=> __( 'Compare all selected values, ignoring the order', 'acf_vf' ),
+				'each_value'	=> __( 'Compare each selected value', 'acf_vf' )
 			),
 			'layout'		=> 'horizontal',
 			'optgroup' 		=> false,
 			'multiple' 		=> '0',
 			'class'			=> 'unique-options',
-		));
+		) );
 
 		// Unique Status
 		$statuses = $this->get_post_statuses();
@@ -1033,7 +1051,7 @@ PHP;
 			'value'			=> $field['unique_statuses'],
 			'choices' 		=> $choices,
 			'class'			=> 'unique-options unique_statuses'
-		));
+		) );
 	}
 
 	/*
@@ -1041,16 +1059,16 @@ PHP;
 	*
 	*  Create the HTML interface for your field
 	*
-	*  @param	$field (array) the $field being rendered
+	*  @param	$field (array ) the $field being rendered
 	*
 	*  @type	action
 	*  @since	3.6
 	*  @date	23/01/13
 	*
-	*  @param	$field (array) the $field being edited
+	*  @param	$field (array ) the $field being edited
 	*  @return	n/a
 	*/
-	function render_field( $field ) {
+	public function render_field( $field ) {
 		global $pagenow;
 
 		// set up field properties
@@ -1092,7 +1110,7 @@ HTML;
 					$contents = preg_replace("~(acf-hidden|insert-media add_media|wp-switch-editor)~", "\${1} disabled acf-vf-readonly", $contents );
 				}
 
-				// Add our (maybe) readonly input.
+				// Add our (maybe ) readonly input.
 				$html .= $contents;
 
 				// Stop buffering
@@ -1136,7 +1154,7 @@ HTML;
 	*  @since	3.6
 	*  @date	23/01/13
 	*/
-	function input_admin_enqueue_scripts(){
+	public function input_admin_enqueue_scripts(){
 		wp_register_script( 'jquery-masking', plugins_url( "../common/js/jquery.maskedinput{$this->min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION, true );
 
 		// enqueue scripts
@@ -1145,7 +1163,7 @@ HTML;
 			'jquery-ui-core',
 			'jquery-ui-tabs',
 			'jquery-masking'
-		));
+		) );
 	}
 
 	/*
@@ -1154,14 +1172,14 @@ HTML;
 	*  This action is called in the wp_head/admin_head action on the edit screen where your field is created.
 	*  Use this action to add css and javascript to assist your create_field() action.
 	*
-	*  @type	action (admin_footer)
+	*  @type	action (admin_footer )
 	*  @since	3.6
 	*  @date	23/01/13
 	*
 	*  @param	n/a
 	*  @return	n/a
 	*/
-	function input_admin_footer(){
+	public function input_admin_footer(){
 		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$this->min}.css", __FILE__ ), array(), '4.4.0' ); 
 		wp_enqueue_style( 'acf-validated_field', plugins_url( '../common/css/input.css', __FILE__ ), array(), ACF_VF_VERSION ); 
 		wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "../common/css/admin.css", __FILE__ ), array(), ACF_VF_VERSION );
@@ -1178,19 +1196,20 @@ HTML;
 	*  @since	3.6
 	*  @date	23/01/13
 	*/
-	function field_group_admin_enqueue_scripts(){
+	public function field_group_admin_enqueue_scripts(){
 		global $acf;
 
 		// process common functionality from parent
 		parent::field_group_admin_enqueue_scripts();
 
+		wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$this->min}.css", __FILE__ ), array(), '4.4.0' ); 
 		wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "../common/css/admin.css", __FILE__ ), array(), ACF_VF_VERSION );
 		// javascript for field group editor
 		wp_register_script( 'acf-validated-field-admin', plugins_url( "../common/js/admin{$this->min}.js", __FILE__ ), array( 'jquery', 'acf-field-group', 'ace-editor' ), ACF_VF_VERSION );	
 		wp_enqueue_script( array(
 			'jquery',
 			'acf-validated-field-admin',
-		));	
+		) );	
 
 		// common header code, called on input pages as well
 		add_action( is_admin()? 'admin_head' : 'wp_head', array( $this, 'acf_vf_head' ) );
