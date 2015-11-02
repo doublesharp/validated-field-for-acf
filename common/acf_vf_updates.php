@@ -30,6 +30,8 @@ class acf_vf_updates
 		if ( $this->db_version < count( $this->db_updates ) ) {
 			add_filter( 'acf_vf/options_field_group', array( $this, 'options_field_group' ) );
 		}
+
+		update_option( $this->get_version_key(), 0 );
 	}
 
 	public function init()
@@ -172,10 +174,13 @@ class acf_vf_updates
 		$db_fields = $this->get_acf_fields();
 		foreach ( $db_fields as $db_field ) {
 			$field = get_field_object( $db_field->field_key );
-			if ( $field['type'] == 'relationship' || ( $field['type'] == 'validated_field' && $field['sub_field']['type'] == 'relationship' ) ) {
-				$value = maybe_serialize( get_post_meta( $db_field->post_id, $db_field->meta_key, true ) );
-				$acf_vf->process_relationship_values( $value, $db_field->post_id, $field );
+			// If this field value is an array....
+			if ( is_array( $field['value'] ) ) {
+				// Update the meta data helpers
+				$acf_vf->update_metadata_helpers( $field['value'], $db_field->post_id, $field );
+				// Load the post
 				$post = get_post( $db_field->post_id );
+				// Let everyone know we fixed things
 				$messages[] = array(
 					'text' => sprintf( __( 'Updated values for field %1$s, post %2$s.', 'acf_vf' ), $field['label'], $post->post_title )
 			   );
