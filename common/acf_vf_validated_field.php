@@ -2,17 +2,17 @@
 if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' ) ) :
 	class acf_field_validated_field extends acf_field
 	{
-        // vars
-        public $slug,
-            $config,
-            $settings,                  // will hold info such as dir / path
-            $defaults,                  // will hold default field options
-            $sub_defaults,              // will hold default sub field options
-            $debug,                     // if true, don't use minified and confirm form submit                  
-            $drafts,
-            $is_frontend_css,
-            $link_to_tab,
-            $link_to_field_group;
+		// vars
+		public $slug,
+			$config,
+			$settings,				  // will hold info such as dir / path
+			$defaults,				  // will hold default field options
+			$sub_defaults,			  // will hold default sub field options
+			$debug,					 // if true, don't use minified and confirm form submit				  
+			$drafts,
+			$is_frontend_css,
+			$link_to_tab,
+			$link_to_field_group;
 
 		public static $SQUOT = '%%squot%%';
 		public static $DQUOT = '%%dquot%%';
@@ -54,15 +54,15 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		*
 		* This function gets a Validated Field option value.
 		*
-		* @type	function
+		* @type function
 		* 
 		* @param  $key ( string ) - the option value key to load
 		*
 		* @return $value ( mixed ) - the option value
 		*
 		*/
-		protected function option_value( $key ){
-      return get_field( "acf_vf_{$key}", 'option' );
+		public function option_value( $key ){
+			return get_field( "acf_vf_{$key}", 'option' );
 		}
 
 		/*
@@ -107,7 +107,7 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		* @return $in_array ( bool ) - the function returns true if the field value contains Object IDs or false if it does not.
 		*
 		*/
-		protected function values_are_ids( $field )
+		public function values_are_ids( $field )
 		{
 			// we need to map down for validated fields
 			$_field = ( $field['type'] == 'validated_field' )? $field['sub_field'] : $field;
@@ -641,7 +641,7 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		public function field_group_admin_enqueue_scripts(){	  
 			wp_deregister_style( 'font-awesome' );
 			wp_enqueue_style( 'font-awesome', plugins_url( "../common/css/font-awesome/css/font-awesome{$this->min}.css", __FILE__ ), array(), '4.4.0', true ); 
-            wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "../common/css/admin.css", __FILE__ ), array( ), ACF_VF_VERSION );
+			wp_enqueue_style( 'acf-validated-field-admin', plugins_url( "../common/css/admin.css", __FILE__ ), array( ), ACF_VF_VERSION );
 			
 			wp_enqueue_script( 'ace-editor', plugins_url( "../common/js/ace{$this->min}/ace.js", __FILE__ ), array(), '1.2' );
 			wp_enqueue_script( 'ace-ext-language_tools', plugins_url( "../common/js/ace{$this->min}/ext-language_tools.js", __FILE__ ), array(), '1.2' );
