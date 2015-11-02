@@ -30,8 +30,6 @@ class acf_vf_updates
 		if ( $this->db_version < count( $this->db_updates ) ) {
 			add_filter( 'acf_vf/options_field_group', array( $this, 'options_field_group' ) );
 		}
-
-		update_option( $this->get_version_key(), 0 );
 	}
 
 	public function init()
