@@ -3,13 +3,12 @@ if ( !class_exists( 'acf_vf_options' ) ):
 class acf_vf_options
 	{
 
-	static function get_field_group( )
+	static function get_field_group()
 	{
-		return apply_filters( 
-			'acf_vf/options_field_group', array( 
+		return apply_filters( 'acf_vf/options_field_group', array( 
 			'key' => 'group_55d6baa806f00',
 			'title' => __( 'Validated Field Settings', 'acf_vf' ),
-			'fields' => array( 
+			'fields' => array(
 				array( 
 					'key' => 'field_55d6bd56d220f',
 					'label' => __( 'General', 'acf_vf' ),
@@ -33,7 +32,7 @@ class acf_vf_options
 					'type' => 'true_false',
 					'instructions' => __( 'Check this box to force Draft validation globally, or uncheck to allow it to be set per field.', 'acf_vf' ),
 					'message' => __( 'Force Draft Validation', 'acf_vf' ),
-					'default_value' => 0,
+					'default_value' => 1,
 				),
 				array( 
 					'key' => 'field_5606d52b87541',
@@ -56,16 +55,16 @@ class acf_vf_options
 					'label' => __( 'Link to Field Group Editor', 'acf_vf' ),
 					'name' => 'acf_vf_link_to_field_group_editor',
 					'type' => 'true_false',
-					'instructions' => sprintf( __( 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named $s%1, use the URL $s%2.', 'acf_vf' ), '<code>another_text_field</code>', '<code><i>/wp-admin/post.php?post=44&action=edit#another_text_field</i></code>' ),
+					'instructions' => sprintf( __( 'Uncheck this box to disable the "Link to Field Group" functionality. This feature allows you to specify fields to open using the URL hash, and keep fields open when the page is refreshed. To open a field named %1$s, use the URL %2$s.', 'acf_vf' ), '<code>another_text_field</code>', '<code><i>/wp-admin/post.php?post=ID&action=edit#another_text_field</i></code>' ),
 					'message' => __( 'Enable Link to Field Group Editor', 'acf_vf' ),
 					'default_value' => 1,
 				),
 				array( 
 					'key' => 'field_55d6c123b3ae1',
 					'label' => __( 'Admin CSS on Frontend', 'acf_vf' ),
-					'name' => 'acf_vf_frontend_css',
+					'name' => 'acf_vf_is_frontend_css',
 					'type' => 'true_false',
-					'instructions' => sprintf( __( 'Uncheck this box to turn off "$s%1" admin theme enqueued by $s%2.', 'acf_vf' ), 'colors-fresh', '<code>acf_form_head( )</code>' ),
+					'instructions' => sprintf( __( 'Uncheck this box to turn off "%1$s" admin theme enqueued by %2$s.', 'acf_vf' ), 'colors-fresh', '<code>acf_form_head()</code>' ),
 					'message' => __( 'Enqueue Admin CSS on Frontend', 'acf_vf' ),
 					'default_value' => 1,
 				),
