@@ -29,6 +29,7 @@ class acf_vf_updates
 		// We need to load the tab early for ACF4
 		if ( $this->db_version < count( $this->db_updates ) ) {
 			add_filter( 'acf_vf/options_field_group', array( $this, 'options_field_group' ) );
+			add_filter( 'acf_vf/admin_notices/upgrade', '__return_true' );
 		}
 	}
 

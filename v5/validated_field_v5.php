@@ -11,63 +11,12 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 	*  @date	23/01/13
 	*/
 	public function __construct(){
-		// vars
-		$this->slug 			= 'acf-validated-field';
-		$this->name				= 'validated_field';
-		$this->label 			= __( 'Validated Field', 'acf_vf' );
-		$this->category			= __( 'Basic', 'acf' );
-		$this->drafts			= $this->option_value( 'drafts' );
-		$this->frontend_css 	= $this->option_value( 'is_frontend_css' );
-		$this->debug 			= $this->option_value( 'debug' );
-		$this->link_to_tab 		= $this->option_value( 'link_to_tab' );
-		$this->link_to_field_group = $this->option_value( 'link_to_field_group_editor' );
-		$this->defaults = array(
-			'read_only' 		=> 'no',
-			'hidden' 			=> 'no',
-			'mask'				=> '',
-			'mask_autoclear' 	=> 'no',
-			'mask_placeholder' 	=> '_',
-			'function'			=> 'none',
-			'pattern'			=> '',
-			'message'			=>  __( 'Validation failed.', 'acf_vf' ),
-			'unique'			=> 'non-unique',
-			'unique_multi'		=> 'each_value',
-			'unique_statuses' 	=> apply_filters( 'acf_vf/unique_statuses', 
-				array( 'publish', 'future', 'draft', 'pending' ) 
-			),
-			'drafts'			=> false,
-			'render_field' 		=> true
-		);
 
-		$this->sub_defaults = array(
-			'type'				=> '',
-			'key'				=> '',
-			'name'				=> '',
-			'_name'				=> '',
-			'id'				=> '',
-			'value'				=> '',
-			'field_group' 		=> '',
-			'readonly' 			=> '',
-			'disabled' 			=> '',
-			'message'			=> ''
-		);
-
-		$this->input_defaults = array(
-			'id'				=> '',
-			'value'				=> '',
-		);
+		add_filter( 'acf_vf/options_field_group', array( $this, 'field_group_location' ) );
+		acf_add_local_field_group( acf_vf_options::get_field_group() );
 
 		// do not delete!
 		parent::__construct();
-
-		// settings
-		$this->settings = array(
-			'path'		=> apply_filters( 'acf/helpers/get_path', __FILE__ ),
-			'dir'		=> apply_filters( 'acf/helpers/get_dir', __FILE__ ),
-			'version'	=> ACF_VF_VERSION,
-		);
-
-		// COMMON, if needed
 
 		// override the default ajax actions to provide our own messages since they aren't filtered
 		add_action( 'init', array( $this, 'add_acf_ajax_validation' ) );
@@ -78,15 +27,12 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		// validate for all
 		add_filter( "acf/update_value/type=validated_field", array( $this, 'validate_update_value' ), 10, 3 );
 
-
+		// put periods at the end of error messages for consistency.
 		add_filter( 'acf/input/admin_l10n', function( $admin_l10n ){
 			$admin_l10n['validation_failed_1'] .= '.';
 			$admin_l10n['validation_failed_2'] .= '.';
 			return $admin_l10n;
 		} );
-
-		add_action( 'acf/input/admin_head', function(){
-		}, 1, 2 );
 
 		// sets the post ID and frontend variable to acf form
 		add_action( 'acf/input/admin_head', array( $this, 'set_post_id_to_acf_form' ) );
@@ -98,6 +44,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 			add_action( 'acf/input/admin_enqueue_scripts',  array( $this, 'remove_acf_form_style' ) );
 		}
 
+		// javascript - intercept drafts, fix duplicate links, 
 		add_action( 'acf/input/admin_head', array( $this, 'acf_vf_head' ) );
 
 		// add the post_ID and frontend to the acf[] form using jQuery
@@ -112,17 +59,22 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		// make sure plugins have loaded so we can modify the options
 		add_action( 'admin_menu', array( $this, 'add_options_page' ) );
 
+		// remove fields from sub field for validated field export
 		add_filter( 'acf/prepare_field_for_export', array( $this, 'prepare_field_for_export' ) );	
 
 		// bug fix for acf with backslashes in the content.
 		add_filter( 'content_save_pre', array( $this, 'fix_post_content' ) );
 		add_filter( 'acf/get_valid_field', array( $this, 'fix_upgrade' ) );
+
+		add_filter( 'acf_vf/admin/settings_url', function(){
+			return admin_url( 'edit.php?post_type=acf-field-group&page=validated-field-settings' );
+		});
 	}
 
 	public function acf_vf_head(){
 		global $is_validate_drafts;
 
-
+		// Support linking to an ACF tab by hash->name
 		if ( $this->link_to_tab ){
 			wp_enqueue_script( 'acf-validated-field-link-to-tab', plugins_url( "../common/js/link-to-tab{$this->min}.js", __FILE__ ), array( 'jquery' ), ACF_VF_VERSION );
 		}
@@ -250,7 +202,7 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		// loop through all levels of the array
 		foreach( $array as $key => &$value ){
 			if ( is_array( $value ) ){
-				// div deeper
+				// dive deeper
 				$value = $this->do_recursive_slash_fix( $value );
 			} elseif ( is_string( $value ) ){
 				// fix single backslashes to double
@@ -326,9 +278,6 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 			'redirect' 		=> false, 
 			'autoload'		=> true,
 		) ) );
-
-		add_filter( 'acf_vf/options_field_group', array( $this, 'field_group_location' ) );
-		acf_add_local_field_group( acf_vf_options::get_field_group() );
 	}
 
 	public function field_group_location( $field_group ){
@@ -344,11 +293,11 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		return $field_group;
 	}
 
-	public function remove_acf_form_style(){
+	public function remove_acf_form_style() {
 		wp_dequeue_style( array( 'colors-fresh' ) );
 	}
 
-	public function setup_field( $field ){
+	public function setup_field( $field ) {
 		// setup booleans, for compatibility
 		$field = acf_prepare_field( array_merge( $this->defaults, $field ) );
 
@@ -358,9 +307,10 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 			array();				// create it
 
 		// mask the sub field as the parent by giving it the same key values
-		foreach( $field as $key => $value ){
-			if ( in_array( $key, array( 'sub_field', 'type' ) + array_keys( $this->defaults ) ) )
+		foreach( $field as $key => $value ) {
+			if ( in_array( $key, array( 'sub_field', 'type' ) + array_keys( $this->defaults ) ) ) {
 				continue;
+			}
 			$sub_field[$key] = $value;
 		}
 
@@ -370,16 +320,12 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		$sub_field['name'] = $sub_field['_input'];
 		$sub_field['id'] = str_replace( '-acfcloneindex', '', str_replace( ']', '', str_replace( '[', '-', $sub_field['_input'] ) ) );
 
-		// mask the sub field as the parent by giving it the same key values
-		foreach( array( 'key', 'name', '_name', 'id', 'value', 'field_group' ) as $key ){
-		//	$sub_field[$key] = isset( $field[$key] )? $field[$key] : '';
-		}
-
 		// make sure all the defaults are set
 		$field['sub_field'] = array_merge( $this->sub_defaults, $sub_field );
 		foreach( $this->defaults as $key => $default ){
-			if ( !isset( $this->sub_defaults[$key] ))
+			if ( !isset( $this->sub_defaults[$key] ) ) {
 				unset($field['sub_field'][$key] );
+			}
 		}
 		return $field;
 	}

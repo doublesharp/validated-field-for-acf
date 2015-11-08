@@ -14,6 +14,8 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			$link_to_tab,
 			$link_to_field_group;
 
+//		public $settings;
+
 		public static $SQUOT = '%%squot%%';
 		public static $DQUOT = '%%dquot%%';
 		public static $fields_with_id_values = array( 'post_object', 'page_link', 'relationship', 'taxonomy', 'user' );
@@ -23,6 +25,47 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 
 		function __construct()
 		{
+			// vars
+			$this->slug 			= 'acf-validated-field';
+			$this->name				= 'validated_field';
+			$this->label 			= __( 'Validated Field', 'acf_vf' );
+			$this->category			= __( 'Basic', 'acf' );
+
+			// settings - use the field key to get the default value
+			$this->drafts			= $this->get_option( 'field_55d6bc95a04d4' );		// drafts
+			$this->frontend_css 	= $this->get_option( 'field_55d6c123b3ae1' );		// is_frontend_css
+			$this->debug 			= $this->get_option( 'field_55d6bc95a04d4' );		// debug
+			$this->link_to_tab 		= $this->get_option( 'field_5606d0fdddb99' );		// link_to_tab
+			$this->link_to_field_group = $this->get_option( 'field_5606d206ddb9a' );	// link_to_field_group_editor
+
+			$this->defaults = array( 
+				'read_only' 		=> 'no',
+				'hidden'			=> 'no',
+				'mask'				=> '',
+				'mask_autoclear' 	=> 'no',
+				'mask_placeholder' 	=> '_',
+				'function'			=> 'none',
+				'pattern'			=> '',
+				'message'			=>  __( 'Validation failed.', 'acf_vf' ),
+				'unique'			=> 'non-unique',
+				'unique_multi'		=> 'each_value',
+				'unique_statuses' 	=> apply_filters( 'acf_vf/unique_statuses', 
+					array( 'publish', 'future', 'draft', 'pending' ) 
+				),
+				'drafts'			=> 'yes'
+			);
+
+			$this->sub_defaults = array( 
+				'type'		=> 'text',
+				'key'		=> '',
+				'name'		=> '',
+				'_name'		=> '',
+				'id'		=> '',
+				'value'		=> '',
+				'field_group' => '',
+			);
+
+			// Used in style and script enqueue
 			$this->min = ( !$this->debug )? '.min' : '';
 
 			// Handle deletes for validated fields by invoking action on sub_field
@@ -35,22 +78,33 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 
 			// Add admin notices, if the user is allowed
 			if ( current_user_can( 'manage_options' ) ) {
-				add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+				if ( is_multisite() ){
+					add_action( 'network_admin_notices', array( $this, 'admin_notices' ) );
+				} else {
+					add_action( 'admin_notices', array( $this, 'admin_notices' ) );
+				}
 			}
 
 			// Handle Repeaters with read only fields
 			add_action( 'acf/render_field/type=repeater', array( $this, 'repeater_start' ), 1 );
 			add_action( 'acf/render_field/type=repeater', array( $this, 'repeater_end' ), 999 );
 
-
+			// Track validations
 			add_filter( 'acf/validate_value/type=validated_field', array( $this, 'count_validation' ) );
 			add_action( 'acf/validate_save_post', array( $this, 'validate_save_post' ) );
 
 			parent::__construct();
+
+			// settings
+			$this->settings = array( 
+				'path'		=> apply_filters( 'acf/helpers/get_path', __FILE__ ),
+				'dir'		=> apply_filters( 'acf/helpers/get_dir', __FILE__ ),
+				'version'	=> ACF_VF_VERSION,
+			);
 		}
 
 		/*
-		* option_value()
+		* get_option()
 		*
 		* This function gets a Validated Field option value.
 		*
@@ -61,8 +115,8 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		* @return $value ( mixed ) - the option value
 		*
 		*/
-		public function option_value( $key ){
-			return get_field( "acf_vf_{$key}", 'option' );
+		public function get_option( $key ){
+			return  get_field( "{$key}", 'option' );
 		}
 
 		/*
@@ -334,6 +388,14 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			if ( false == ( $install_date = get_option( 'acf_vf_install_date', false ) ) ) {
 				update_option( 'acf_vf_install_date', date( 'Y-m-d h:i:s' ) );
 			}
+
+            if ( apply_filters( 'acf_vf/admin_notices/upgrade', false ) ){
+            	?>
+			    <div class="update-nag">
+			        <p><?php printf( __( 'Validated Field for Advanced Custom Fields needs to <a href="%1$s">upgrade your database</a> to function correctly!', 'acf_vf' ), apply_filters( 'acf_vf/admin/settings_url', '' ) . '#database-updates!' ); ?></p>
+			    </div>
+			    <?php
+            }
 		}
 
 		/*

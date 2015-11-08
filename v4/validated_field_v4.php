@@ -16,42 +16,7 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 		add_filter( 'acf_vf/options_field_group', array( $this, 'field_group_location' ) );
 		register_field_group( acf_vf_options::get_field_group( ) );
 
-		// vars
-		$this->slug 			= 'acf-validated-field';
-		$this->strbool 			= array( 'true' => true, 'false' => false );
-		$this->name				= 'validated_field';
-		$this->label 			= __( 'Validated Field', 'acf_vf' );
-		$this->category			= __( 'Basic', 'acf' );
-		$this->drafts			= $this->option_value( 'drafts' );
-		$this->frontend_css 	= $this->option_value( 'frontend_css' );
-		$this->debug 			= $this->option_value( 'debug' );
-		$this->link_to_tab 		= $this->option_value( 'link_to_tab' );
-		$this->link_to_field_group = $this->option_value( 'link_to_field_group_editor' );
-
-		$this->defaults = array( 
-			'read_only' 		=> 'no',
-			'mask'				=> '',
-			'mask_autoclear' 	=> 'no',
-			'mask_placeholder' 	=> '_',
-			'function'			=> 'none',
-			'pattern'			=> '',
-			'message'			=>  __( 'Validation failed.', 'acf_vf' ),
-			'unique'			=> 'non-unique',
-			'unique_multi'		=> 'each_value',
-			'unique_statuses' 	=> apply_filters( 'acf_vf/unique_statuses', array( 'publish', 'future', 'draft', 'pending' ) ),
-			'drafts'			=> 'yes'
-		);
-
-		$this->sub_defaults = array( 
-			'type'		=> 'text',
-			'key'		=> '',
-			'name'		=> '',
-			'_name'		=> '',
-			'id'		=> '',
-			'value'		=> '',
-			'field_group' => '',
-		);
-
+		// Sometimes this is empty in the form?
 		$this->input_defaults = array( 
 			'id'		=> '',
 			'value'		=> '',
@@ -59,13 +24,6 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 
 		// do not delete!
 		parent::__construct();
-
-		// settings
-		$this->settings = array( 
-			'path'		=> apply_filters( 'acf/helpers/get_path', __FILE__ ),
-			'dir'		=> apply_filters( 'acf/helpers/get_dir', __FILE__ ),
-			'version'	=> ACF_VF_VERSION,
-		);
 
 		add_action( 'wp_ajax_validate_fields', array( $this, 'ajax_validate_fields' ) );
 
