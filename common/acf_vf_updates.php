@@ -31,6 +31,8 @@ class acf_vf_updates
 			add_filter( 'acf_vf/options_field_group', array( $this, 'options_field_group' ) );
 			add_filter( 'acf_vf/admin_notices/upgrade', '__return_true' );
 		}
+
+		//$this->increment_version(0);
 	}
 
 	public function init()
