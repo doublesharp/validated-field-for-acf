@@ -11,6 +11,10 @@ class acf_vf_updates
 	{
 		// default to 0 and go through each update from there
 
+		if ( !function_exists( 'acf' ) ){
+			return;
+		}
+
 		$this->acf_version = version_compare( acf()->settings['version'], '5.0', '<' )? 4 : 5;
 		$this->db_version = get_option( $this->get_version_key(), 0 );
 
@@ -31,8 +35,6 @@ class acf_vf_updates
 			add_filter( 'acf_vf/options_field_group', array( $this, 'options_field_group' ) );
 			add_filter( 'acf_vf/admin_notices/upgrade', '__return_true' );
 		}
-
-		//$this->increment_version(0);
 	}
 
 	public function init()
