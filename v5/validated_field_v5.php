@@ -753,7 +753,7 @@ PHP;
 				$metas = array(
 					'id'			=> $sub_field['id'],
 					'key'			=> $sub_field['key'],
-					'parent'		=> $su_field['parent'],
+					'parent'		=> $sub_field['parent'],
 					'save'			=> '',
 				);
 
