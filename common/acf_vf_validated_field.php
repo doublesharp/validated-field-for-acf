@@ -63,6 +63,8 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 				'id'		=> '',
 				'value'		=> '',
 				'field_group' => '',
+				'readonly' => '',
+				'disabled' => '',
 			);
 
 			// Used in style and script enqueue
