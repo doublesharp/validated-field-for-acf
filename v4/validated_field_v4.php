@@ -901,6 +901,13 @@ PHP;
 			?>
 			<div class="validated-field">
 				<?php
+
+				$html = <<<HTML
+					<div data-field_key='{$sub_field['key']}'
+						 data-field_type='{$sub_field['type']}' 
+						 class="acf-field acf-field-{$sub_field['type']} field_type-{$sub_field['type']}" >
+					<div class="acf-input">
+HTML;
 				ob_start( );
 				do_action( 'acf/create_field', $sub_field ); 
 				$contents = ob_get_contents( );
@@ -908,8 +915,16 @@ PHP;
 					$contents = preg_replace( "~<( input|textarea|select)~", "<\${1} disabled=true readonly", $contents );
 					$contents = preg_replace( "~acf-hidden~", "acf-hidden acf-vf-readonly", $contents );
 				}
-				ob_end_clean( );
-				echo $contents;
+
+				// Add our (maybe ) readonly input.
+				$html .= $contents;
+
+				// Stop buffering
+				ob_end_clean();
+
+				$html .= "</div></div>";
+
+				echo $html;
 				?>
 			</div>
 			<?php
