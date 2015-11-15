@@ -80,7 +80,7 @@ class acf_vf_updates
 		// if it's edit, check the page and the post_type
 		if ( $pagenow == 'edit.php' ){
 			if ( isset( $_REQUEST['page'] ) && in_array( $_REQUEST['page'], $valid_pages ) ){
-				$valid_types = array( 'validated-field-settings', 'acf-validated-field' );
+				$valid_types = array( 'acf-field-group', 'acf' );
 				if ( isset( $_REQUEST['post_type'] ) && in_array( $_REQUEST['post_type'], $valid_types ) ){
 					return true;
 				}
