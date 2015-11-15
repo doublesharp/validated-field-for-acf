@@ -79,42 +79,52 @@ class acf_vf_updates
 		return false;
 	}
 
+	// The fields for the upgrade layout, doesn't save any values
+	public static function get_fields()
+	{
+		return array(
+			array(
+				'key' => 'field_5617ec772774e',
+				'label' => __( 'Database Updates!', 'acf_vf' ),
+				'name' => '',
+				'type' => 'tab',
+				'instructions' => '',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => 'justin',
+					'id' => '',
+				),
+				'placement' => 'top',
+				'endpoint' => 0,
+			),
+			array(
+				'key' => 'field_5617ec942774f',
+				'label' => __( 'Database Updates Message', 'acf_vf' ),
+				'name' => '',
+				'type' => 'message',
+				'instructions' => '',
+				'required' => 0,
+				'conditional_logic' => 0,
+				'wrapper' => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
+				'message' => '<div id="acf-vf-db-upgrades"></div>',
+				'new_lines' => 'wpautop',
+				'esc_html' => 0,
+			)
+		);
+	}
+
 	// Add new tab if there are DB updates to be done
 	public function options_field_group( $field_settings )
 	{
-		$field_settings['fields'][] = array (
-			'key' => 'field_5617ec772774e',
-			'label' => __( 'Database Updates!', 'acf_vf' ),
-			'name' => '',
-			'type' => 'tab',
-			'instructions' => '',
-			'required' => 0,
-			'conditional_logic' => 0,
-			'wrapper' => array (
-				'width' => '',
-				'class' => 'justin',
-				'id' => '',
-		   ),
-			'placement' => 'top',
-			'endpoint' => 0,
-	   );
-		$field_settings['fields'][] = array (
-			'key' => 'field_5617ec942774f',
-			'label' => __( 'Database Updates Message', 'acf_vf' ),
-			'name' => '',
-			'type' => 'message',
-			'instructions' => '',
-			'required' => 0,
-			'conditional_logic' => 0,
-			'wrapper' => array (
-				'width' => '',
-				'class' => '',
-				'id' => '',
-		   ),
-			'message' => '<div id="acf-vf-db-upgrades"></div>',
-			'new_lines' => 'wpautop',
-			'esc_html' => 0,
-	   );
+		$update_fields = self::get_fields();
+		$fields = array_merge( $field_settings['fields'], $update_fields );
+		$field_settings['fields'] = $fields;
 		return $field_settings;
 	}
 
@@ -128,7 +138,6 @@ class acf_vf_updates
 
 		header( 'HTTP/1.1 200 OK' );							// be positive!
 		header( 'Content-Type: application/json; charset=' . get_option( 'blog_charset' ) );
-		header( 'Content-type application/json' );
 		// Send the results back to the browser as JSON
 		die( version_compare( phpversion(), '5.3', '>=' )? 
 			json_encode( $response, $acf_vf->debug? JSON_PRETTY_PRINT : 0 ) :
