@@ -8,21 +8,22 @@ class acf_vf_updates
 	private $db_updates;
 
 	public function __construct()
-	{
-		// default to 0 and go through each update from there
-
+	{	
 		if ( !function_exists( 'acf' ) ){
 			return;
 		}
 
+		// store the db version for each ACF version since we can only load fields from the active version
 		$this->acf_version = version_compare( acf()->settings['version'], '5.0', '<' )? 4 : 5;
+
+		// default to 0 and go through each update from there
 		$this->db_version = get_option( $this->get_version_key(), 0 );
 
 		// list of updates
 		$this->db_updates = array(
 			'upgrade_1' => __( 'Relationship Fields: Generate helper meta fields for uniqueness queries.', 'acf_vf' ),
 			'upgrade_2' => __( 'Update Validated Field Read Only values.', 'acf_vf' ),
-	   );
+		);
 
 		// Init at priority 20 so $acf_vf will have been instantiated
 		// ACF4
@@ -67,15 +68,26 @@ class acf_vf_updates
 	private function is_settings_page()
 	{
 		global $pagenow;
-		if ( in_array( $pagenow, array( 'edit.php', 'admin.php' ) ) ) {
-			return (
-				isset( $_REQUEST['post_type'] ) && $_REQUEST['post_type'] == 'acf' && 
-				isset( $_REQUEST['page'] ) && $_REQUEST['page'] == 'acf-validated-field'
-		   ) || (
-				isset( $_REQUEST['post_type'] ) && $_REQUEST['post_type'] == 'acf-field-group' && 
-				isset( $_REQUEST['page'] ) && $_REQUEST['page'] == 'validated-field-settings'
-		   );
+
+		// for admin, just check the page value
+		$valid_pages = array( 'validated-field-settings', 'acf-validated-field' );
+		if ( $pagenow == 'admin.php' ){
+			if ( isset( $_REQUEST['page'] ) && in_array( $_REQUEST['page'], $valid_pages ) ){
+				return true;
+			}
 		}
+
+		// if it's edit, check the page and the post_type
+		if ( $pagenow == 'edit.php' ){
+			if ( isset( $_REQUEST['page'] ) && in_array( $_REQUEST['page'], $valid_pages ) ){
+				$valid_types = array( 'validated-field-settings', 'acf-validated-field' );
+				if ( isset( $_REQUEST['post_type'] ) && in_array( $_REQUEST['post_type'], $valid_types ) ){
+					return true;
+				}
+			}
+		}
+
+		// not our settings page
 		return false;
 	}
 
@@ -153,14 +165,14 @@ class acf_vf_updates
 			$upgrades[] = array(
 				'upgrade' => $function,
 				'label' => $this->db_updates[$function]
-		   );
+			);
 		}
 
 		$response = array(
 			'upgrades' => $upgrades,
 			'message' => __( 'The following database updates are needed for Validated Field to function correctly.', 'acf_vf' ),
 			'action' => __( 'Upgrade', 'acf_vf' )
-	   );
+		);
 		$this->to_json_response( $response );
 	}
 
@@ -195,14 +207,14 @@ class acf_vf_updates
 				// Let everyone know we fixed things
 				$messages[] = array(
 					'text' => sprintf( __( 'Updated values for field %1$s, post %2$s.', 'acf_vf' ), $field['label'], $post->post_title )
-			   );
+				);
 			}
 		}
 
 		$response = array(
 			'messages' => $messages,
 			'id' => __FUNCTION__
-	   );
+		);
 
 		$this->increment_version( __FUNCTION__ );
 
@@ -228,7 +240,7 @@ class acf_vf_updates
 					acf_update_field( $field );
 					$messages[] = array(
 						'text' => sprintf( __( 'Updated read-only settings for field %1$s.', 'acf_vf' ), $field['label'] )
-				   );
+					);
 				}
 			}
 		}
@@ -239,7 +251,7 @@ class acf_vf_updates
 		$response = array(
 			'messages' => $messages,
 			'id' => __FUNCTION__
-	   );
+		);
 
 		$this->increment_version( __FUNCTION__ );
 
