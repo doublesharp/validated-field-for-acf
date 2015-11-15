@@ -96,6 +96,20 @@ class acf_vf_options
 					'message' => __( 'This is a message about how you can upgrade to enable field level security.', 'acf_vf' ),
 					'esc_html' => 0,
 				),
+				array( 
+					'key' => 'field_6804637c31baa',
+					'label' => __( 'ACF Form Shortcode', 'acf_vf' ),
+					'type' => 'tab',
+					'placement' => 'top',
+					'endpoint' => 0,
+				),
+				array( 
+					'key' => 'field_8704decabv4eb',
+					'label' => __( 'ACF Form Shortcode Upgrade', 'acf_vf' ),
+					'type' => 'message',
+					'message' => __( 'This is a message about how you can upgrade to enable using acf_form via shortcode.', 'acf_vf' ),
+					'esc_html' => 0,
+				),
 			),
 			'options' => array( 
 				'position' => 'normal',
