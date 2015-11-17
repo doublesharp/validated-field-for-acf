@@ -38,6 +38,11 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			$this->link_to_tab 		= $this->get_option( 'field_5606d0fdddb99' );		// link_to_tab
 			$this->link_to_field_group = $this->get_option( 'field_5606d206ddb9a' );	// link_to_field_group_editor
 
+			// keep track of when this plugin started being used.
+			if ( false == ( $install_date = get_option( 'acf_vf_install_date', false ) ) ) {
+				update_option( 'acf_vf_install_date', date( 'Y-m-d h:i:s' ) );
+			}
+
 			$this->defaults = array( 
 				'read_only' 		=> 'no',
 				'hidden'			=> 'no',
@@ -78,13 +83,9 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			// Remove helper fields when a value is deleted
 			add_filter( 'acf/delete_value', array( $this, 'delete_metadata_helpers' ), 20, 3 );
 
-			// Add admin notices, if the user is allowed
-			if ( current_user_can( 'manage_options' ) ) {
-				if ( is_multisite() ){
-					add_action( 'network_admin_notices', array( $this, 'admin_notices' ) );
-				} else {
-					add_action( 'admin_notices', array( $this, 'admin_notices' ) );
-				}
+			// Add admin notices, if the user can do anything about it
+			if ( current_user_can( 'manage_plugins' ) || current_user_can( 'manage_options' ) ) {
+				add_action( 'admin_notices', array( $this, 'admin_notices' ) );
 			}
 
 			// Handle Repeaters with read only fields
@@ -382,22 +383,18 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		*/
 		public function admin_notices()
 		{
-			if ( !current_user_can( 'manage_options' ) ) { 
-				return; 
-			}
 
-			// keep track of when this plugin started being used.
-			if ( false == ( $install_date = get_option( 'acf_vf_install_date', false ) ) ) {
-				update_option( 'acf_vf_install_date', date( 'Y-m-d h:i:s' ) );
-			}
+			if ( current_user_can( 'manage_options' ) ) {
 
-            if ( apply_filters( 'acf_vf/admin_notices/upgrade', false ) ){
-            	?>
-			    <div class="update-nag">
-			        <p><?php printf( __( 'Validated Field for Advanced Custom Fields needs to <a href="%1$s">upgrade your database</a> to function correctly!', 'acf_vf' ), apply_filters( 'acf_vf/admin/settings_url', '' ) . '#database-updates!' ); ?></p>
-			    </div>
-			    <?php
-            }
+				if ( apply_filters( 'acf_vf/admin_notices/upgrade', false ) ){
+					?>
+					<div class="update-nag">
+						<p><?php printf( __( 'Validated Field for Advanced Custom Fields needs to <a href="%1$s">upgrade your database</a> to function correctly!', 'acf_vf' ), apply_filters( 'acf_vf/admin/settings_url', '' ) . '#database-updates!' ); ?></p>
+					</div>
+					<?php
+				}
+
+			}
 		}
 
 		/*
