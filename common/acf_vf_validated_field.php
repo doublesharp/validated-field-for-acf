@@ -5,16 +5,16 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		// vars
 		public $slug,
 			$config,
-			$settings,				  // will hold info such as dir / path
-			$defaults,				  // will hold default field options
-			$sub_defaults,			  // will hold default sub field options
-			$debug,					 // if true, don't use minified and confirm form submit				  
+			$settings,				// will hold info such as dir / path
+			$defaults,				// will hold default field options
+			$sub_defaults,			// will hold default sub field options
+			$disabled,
+			$debug,					// if true, don't use minified and confirm form submit				  
 			$drafts,
 			$is_frontend_css,
 			$link_to_tab,
-			$link_to_field_group;
-
-//		public $settings;
+			$link_to_field_group,
+			$confirm_row_removal;
 
 		public static $SQUOT = '%%squot%%';
 		public static $DQUOT = '%%dquot%%';
@@ -32,11 +32,13 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			$this->category			= __( 'Basic', 'acf' );
 
 			// settings - use the field key to get the default value
+			$this->enabled 			= $this->get_option( 'field_23d6q395ad4ds' );		// enabled
 			$this->drafts			= $this->get_option( 'field_55d6bc95a04d4' );		// drafts
 			$this->frontend_css 	= $this->get_option( 'field_55d6c123b3ae1' );		// is_frontend_css
 			$this->debug 			= $this->get_option( 'field_55d6bc95a04d4' );		// debug
 			$this->link_to_tab 		= $this->get_option( 'field_5606d0fdddb99' );		// link_to_tab
 			$this->link_to_field_group = $this->get_option( 'field_5606d206ddb9a' );	// link_to_field_group_editor
+			$this->confirm_row_removal = $this->get_option( 'field_960cdafeedb99' );	// confirm_row_removal
 
 			// keep track of when this plugin started being used.
 			if ( false == ( $install_date = get_option( 'acf_vf_install_date', false ) ) ) {
@@ -98,7 +100,7 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 
 			parent::__construct();
 
-			// settings
+			// Settings
 			$this->settings = array( 
 				'path'		=> apply_filters( 'acf/helpers/get_path', __FILE__ ),
 				'dir'		=> apply_filters( 'acf/helpers/get_dir', __FILE__ ),
