@@ -98,6 +98,10 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			add_filter( 'acf/validate_value/type=validated_field', array( $this, 'count_validation' ) );
 			add_action( 'acf/validate_save_post', array( $this, 'validate_save_post' ) );
 
+			// Common things to insert into the page when the fields are being edited.
+			add_action( 'acf/input/admin_head', array( $this, 'acf_input_admin_head' ) );
+
+			// Do not remove!
 			parent::__construct();
 
 			// Settings
@@ -200,10 +204,10 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			// Copy the value so we can return an unmodified version
 			$_value = $value;
 
+			$meta_key = $this->get_field_name( $field, $the_id );
+
 			// Alias to the subfield if this is a validated field
 			$_field = ( $field['type']=='validated_field' ) ? $field['sub_field'] : $field;
-
-			$meta_key = $this->get_field_name( $field, $the_id );
 
 			// Does the field type indicate that it has Object ID values?
 			$values_are_ids = $this->values_are_ids( $_field );
@@ -713,6 +717,38 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 				wp_enqueue_script( 'acf-validated-field-link-to-field-group', plugins_url( "../common/js/link-to-field-group{$this->min}.js", __FILE__ ), array( 'jquery', 'acf-field-group' ), ACF_VF_VERSION, true );
 			}
 		}
+	
+		/*
+		*  acf_input_admin_head()
+		*
+		*  This action is called when an ACF field group is displayed.
+		*
+		*  @info	http://codex.wordpress.org/Plugin_API/Action_Reference/admin_head
+		*  @type	action
+		*  @since	3.6
+		*/
+		public function acf_input_admin_head()
+		{
+			if ( $this->confirm_row_removal ){
+				?>
+				<script type="text/javascript">
+				(function($) {
+					
+					acf.add_action('ready', function(){
+						
+						$('body').on('click', '.acf-repeater-remove-row, a.acf-icon.-minus.small', function( e ){
+							
+							return confirm("Delete row?");
+							
+						});	
+						
+					});
+					
+				})(jQuery);	
+				</script>
+				<?php
+			}
+		}
 
 		// UTIL FUNCTIONS
 
@@ -749,17 +785,17 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 		{
 			switch ( $field['unique'] ){
 			case 'global';
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on all posts.', 'acf_vf' ), $this->get_value_text( $value, $field ) );
+				return sprintf( __( 'The value %1$s was submitted multiple times and should be unique for all fields on all posts.', 'acf_vf' ), $this->get_value_text( $value, $field ) );
 			 break;
 			case 'post_type':
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post type.', 'acf_vf' ), $this->get_value_text( $value, $field ) );
+				return sprintf( __( 'The value %1$s was submitted multiple times and should be unique for all fields on this post type.', 'acf_vf' ), $this->get_value_text( $value, $field ) );
 			 break;
 			case 'this_post':
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for all fields on this post.', 'acf_vf' ), $this->get_value_text( $value, $field ) );
+				return sprintf( __( 'The value %1$s was submitted multiple times and should be unique for all fields on this post.', 'acf_vf' ), $this->get_value_text( $value, $field ) );
 			 break;
 			case 'post_key':
 			case 'this_post_key':
-				return sprintf( __( 'The value "%1$s" was submitted multiple times and should be unique for %2$s.', 'acf_vf' ), $this->get_value_text( $value, $field ), $field['label'] );
+				return sprintf( __( 'The value %1$s was submitted multiple times and should be unique for %2$s.', 'acf_vf' ), $this->get_value_text( $value, $field ), "<code>{$field['label']}</code>" );
 			 break;
 			}
 			return false;
@@ -820,7 +856,7 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			// are we editting a user?
 			$is_user = $id_info['type'] == 'user';
 			// are we editting site options?
-			$is_options = $id_info['type'] == 'options';
+			$is_options = $id_info['type'] == 'option';
 			// if it's not a user or options, it's a post
 			$is_post = $id_info['type'] == 'post';
 
@@ -832,16 +868,13 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			// alias to the subfield if this is a validated field
 			$_field = ( $field['type']=='validated_field' ) ? $field['sub_field'] : $field;
 
-			// We have to copy name to _name for ACF5
-			$field_name = $this->get_field_name( $_field );
-
 			// Repeaters and Flex Content keys are included in the sub_key
 			$is_indexed = isset( $parent_field ) && in_array( $parent_field['type'], array( 'repeater', 'flexible_content' ) );
 
 			// modify keys for options and repeater fields
 			$meta_key = $is_options ? 'options_' : '';
 			$meta_key.= $is_indexed ? $parent_field['name'] . '_%%_' : '';
-			$meta_key.= $field_name;
+			$meta_key.= $field['name'];
 
 			// Does the field type indicate that it has Object ID values?
 			$values_are_ids = $this->values_are_ids( $_field );
@@ -1083,7 +1116,7 @@ SQL;
 				$_value = $this->get_value_text( $value, $field );
 
 				// This will fail in the validation with the conflict message/link.
-				return sprintf( __( 'The value "%1$s" is already in use by %2$s.', 'acf_vf' ), $_value, $conflicts );
+				return sprintf( __( 'The value %1$s is already in use by %2$s.', 'acf_vf' ), $_value, $conflicts );
 			}
 
 			// No duplicates were detected.
@@ -1114,22 +1147,33 @@ SQL;
 		}
 
 		// does prepare on the sql string using a variable number of parameters
-		protected function prepare_in_and_not_in( $sql, $post_ids, $pattern='[IN_NOT_IN]' )
+		protected function prepare_in_and_not_in( $sql, $values, $pattern='[IN_NOT_IN]' )
 		{
 			global $wpdb;
+
+			$is_numeric = true;
+			foreach ( $values as $value ) {
+				if ( !is_numeric( $value ) ) {
+					$is_numeric = false;
+					break;
+				}
+			}
+
+			$placeholder = $is_numeric ? '%d' : '%s';
 
 			$not_in_count = substr_count( $sql, $pattern );
 			if ( $not_in_count > 0 ) {
 
-				$digit_array = array_fill( 0, count( $post_ids ), '%d' );
+				$digit_array = array_fill( 0, count( $values ), $placeholder );
 				$digit_sql = implode( ', ', $digit_array );
 				$escaped_sql = str_replace( '%', '%%', $sql );
 				$args = array( str_replace( $pattern, $digit_sql, $escaped_sql ) );
 				for ( $i=0; $i < substr_count( $sql, $pattern ); $i++ ) { 
-					$args = array_merge( $args, $post_ids );
+					$args = array_merge( $args, $values );
 				}
 				$sql = call_user_func_array( array( $wpdb, 'prepare' ), $args );
 			}
+
 			return trim( $sql );
 		}
 
@@ -1146,7 +1190,7 @@ SQL;
 					$this_post = get_post( $this_post_id );
 					$post_titles[] = $this_post->post_title;
 				}
-				$_value = implode( ', ', $post_titles );
+				$_value = $this->implode_and_code( $post_titles );
 				break;
 			case 'taxonomy':
 				$tax_ids = is_array( $value )? $value : array( $value );
@@ -1155,7 +1199,7 @@ SQL;
 					$term = get_term( $tax_id, $field['sub_field']['taxonomy'] );
 					$terms[] = $term->name;
 				}
-				$_value = implode( ', ', $terms );
+				$_value = $this->implode_and_code( $terms );
 				break;
 			case 'user':
 				$user_ids = is_array( $value )? $value : array( $value );
@@ -1164,14 +1208,18 @@ SQL;
 					$user = get_user_by( 'id', $user_id );
 					$users[] = $user->user_login;
 				}
-				$_value = implode( ', ', $users );
+				$_value = $this->implode_and_code( $users );
 				break;
 			
 			default:
-				$_value = is_array( $value )? implode( ', ', $value ) : $value;
+				$_value = $this->implode_and_code( is_array( $value )? $value : array( $value ) );
 				break;
 			}
 			return $_value;
+		}
+
+		private function implode_and_code( $array ){
+			return '<code>' . implode( '</code>, <code>', $array ) . '</code>';
 		}
 
 		/**
@@ -1181,9 +1229,9 @@ SQL;
 		{
 			// We don't want to reprocess for relationship subs.
 			if ( function_exists( 'acf_get_field' ) ) {
-				$self =acf_get_field( $field['ID'] );
+				$self = acf_get_field( $field['ID'] );
 			} else {
-				$self =get_field_object( $field['name'] );
+				$self = get_field_object( $field['name'] );
 			}
 
 			if ( $self['type'] == 'validated_field' ) {
