@@ -60,6 +60,10 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 		}
 	}
 
+	public function admin_settings_url(){		
+		return admin_url( 'edit.php?post_type=acf&page=acf-validated-field' );
+	}
+
 	public function field_group_location( $field_group ){
 		$field_group['location'] = array( 
 			array( 
@@ -82,13 +86,13 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 	}
 
 	public function admin_add_menu( ){
-		$page = add_submenu_page( 'edit.php?post_type=acf', sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 4 ), sprintf( __( 'Validated Field Settings %1$d', 'acf_vf' ), 4 ), 'manage_options', $this->slug, array( &$this,'admin_settings_page' ) );
+		$page = add_submenu_page( 'edit.php?post_type=acf', __( 'Validated Field Settings', 'acf_vf' ), __( 'Validated Field Settings', 'acf_vf' ), 'manage_options', $this->slug, array( &$this,'admin_settings_page' ) );
 	}
 
 	public function admin_settings_page( ){
 		?>
 		<div class="wrap">
-		<h2><?php printf( __( 'Validated Field Settings for ACF %1$d', 'acf_vf' ), 4 ); ?></h2>
+		<h2><?php _e( 'Validated Field Settings', 'acf_vf' ); ?></h2>
 			<?php acf_form( array( 'post_id' => 'options' ) ); ?>
 		</div>
     	<?php
@@ -159,6 +163,10 @@ class acf_field_validated_field_v4 extends acf_field_validated_field {
 	*
 	*/
 	public function ajax_validate_fields( ) {
+		if ( !$this->enabled ){
+			return array();
+		}
+
 		$post_id = isset( $_REQUEST['post_id'] )?				// the submitted post_id
 			$_REQUEST['post_id'] : 
 			0;

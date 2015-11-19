@@ -1,6 +1,6 @@
 <?php
 if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' ) ) :
-	class acf_field_validated_field extends acf_field
+	abstract class acf_field_validated_field extends acf_field
 	{
 		// vars
 		public $slug,
@@ -101,6 +101,9 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 			// Common things to insert into the page when the fields are being edited.
 			add_action( 'acf/input/admin_head', array( $this, 'acf_input_admin_head' ) );
 
+			// This will be set the the subclass
+			add_filter( 'acf_vf/admin/settings_url', array( $this, 'admin_settings_url' ) );
+
 			// Do not remove!
 			parent::__construct();
 
@@ -111,6 +114,8 @@ if ( class_exists( 'acf_Field' ) && !class_exists( 'acf_field_validated_field' )
 				'version'	=> ACF_VF_VERSION,
 			);
 		}
+
+		public abstract function admin_settings_url();
 
 		/*
 		* get_option()

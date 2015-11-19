@@ -65,14 +65,14 @@ class acf_field_validated_field_v5 extends acf_field_validated_field {
 		// bug fix for acf with backslashes in the content.
 		add_filter( 'content_save_pre', array( $this, 'fix_post_content' ) );
 		add_filter( 'acf/get_valid_field', array( $this, 'fix_upgrade' ) );
+	}
 
-		add_filter( 'acf_vf/admin/settings_url', function(){
-			global $pagenow;
-			if ( $pagenow == 'admin.php' ){
-				return admin_url( 'admin.php?page=validated-field-settings' );
-			}
-			return admin_url( 'edit.php?post_type=acf-field-group&page=validated-field-settings' );
-		});
+	public function admin_settings_url(){
+		global $pagenow;
+		if ( $pagenow == 'admin.php' ){
+			return admin_url( 'admin.php?page=validated-field-settings' );
+		}
+		return admin_url( 'edit.php?post_type=acf-field-group&page=validated-field-settings' );
 	}
 
 	public function acf_vf_head(){
