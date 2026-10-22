@@ -36,10 +36,98 @@
     query: { page: 1, per_page: 20 },
     rows: [],
     columns: [],
+    availableColumns: [],
+    stickyHeader: true,
     views: [],
     selected: new Set(),
     generation: 0,
   };
+  let refreshGeneration = 0;
+  let navigationGeneration = 0;
+  let refreshing = false;
+  let tableGeneration = 0;
+  const abandoned = Symbol("abandoned workspace operation");
+  function captureNavigation() {
+    const refresh = refreshGeneration, navigation = navigationGeneration, object = state.object;
+    return () => !!object && !refreshing && refresh === refreshGeneration && navigation === navigationGeneration && object === state.object;
+  }
+  function captureTable() {
+    const current = captureNavigation(), generation = tableGeneration;
+    return () => current() && generation === tableGeneration;
+  }
+  function beginTable(current = captureNavigation()) {
+    if (!current()) return current;
+    const generation = ++tableGeneration;
+    $("#vf-content").setAttribute("aria-busy", "false");
+    return () => current() && generation === tableGeneration;
+  }
+  function owned(current) {
+    const owner = current, independent = dialogSession?.independent;
+    const refresh = refreshGeneration, navigation = navigationGeneration, intent = dialogGeneration;
+    current = () => owner() && intent === dialogGeneration && (independent || (refresh === refreshGeneration && navigation === navigationGeneration));
+    const table = captureTable();
+    const check = () => { if (!current()) throw abandoned; };
+    check();
+    const wait = async (promise, valid = current) => {
+      const check = () => { if (!valid()) throw abandoned; };
+      try { const value = await promise; check(); return value; }
+      catch (error) { check(); throw error; }
+    };
+    return {
+      current, wait,
+      openDialog: (...args) => { check(); openDialog(...args); },
+      request: (operation, data) => { check(); return wait(request(operation, data)); },
+      load: () => wait(load(() => current() && table()), () => current() && table()),
+    };
+  }
+  const navigationAction = (action, current = captureNavigation()) => safe((...args) => {
+    if (current()) return action(...args);
+  });
+  const dialogAction = action => safe(event => {
+    const current = fieldOwner(event.currentTarget);
+    if (!current() || action.busy) throw abandoned;
+    pendingDialog = null; ++dialogGeneration;
+    return action({ ...owned(current), control: event.currentTarget }, event);
+  });
+  // A toolbar lookup reserves replacement intent without abandoning the visible draft.
+  const dialogIntent = action => navigationAction(async event => {
+    if (action.busy) throw abandoned;
+    const current = beginDialog();
+    try { return await action({ ...owned(current), control: event.currentTarget }); }
+    catch (error) { if (current()) pendingDialog = null; throw error; }
+  });
+  function mutation(write, complete, table = false) {
+    let committed = false, result, running = false;
+    const recover = async function(initial) {
+      if (running || !initial.current()) throw abandoned;
+      running = true;
+      const operation = table ? { ...owned(beginTable(initial.current)), control: initial.control } : initial;
+      const control = operation.control, title = control?.textContent;
+      try {
+        if (control) control.disabled = true;
+        if (!committed) { result = await write(operation); committed = true; }
+        if (!operation.current()) throw abandoned;
+        if (control) {
+          control.disabled = true;
+          control.textContent = control === $("#vf-dialog-submit") ? "Retry refresh" : "Retry";
+          if (control === $("#vf-dialog-submit")) $("#vf-dialog-body").querySelectorAll("input,select,textarea,button").forEach(node => { node.disabled = true; });
+        }
+        if (await complete(operation, result) === false) throw abandoned;
+        committed = false; result = undefined;
+        if (!control && operation.current()) $("#vf-feedback").replaceChildren();
+        if (control && operation.current()) control.textContent = title;
+      } catch (error) {
+        if (error === abandoned || !committed || control) throw error;
+        notify(error.message, true);
+        $("#vf-feedback").append(button("Retry refresh", safe(() => committed && !running && recover(initial))));
+      } finally {
+        running = false;
+        if (control && operation.current()) control.disabled = false;
+      }
+    };
+    Object.defineProperty(recover, "busy", { get: () => running });
+    return recover;
+  }
   const notify = (message, error = false) =>
     $("#vf-feedback").replaceChildren(
       el("div", {
@@ -89,7 +177,7 @@
       try {
         await action(...args);
       } catch (error) {
-        notify(error.message, true);
+        if (error !== abandoned) notify(error.message, true);
       }
     };
   const label = (name, control, help = "") =>
@@ -124,16 +212,82 @@
         : String(value);
   let dialogSubmit = null;
   let returnFocus = null;
-  function openDialog(title, body, submit, saveLabel = "Save") {
+  let initialized = false;
+  let dialogGeneration = 0;
+  let dialogSession = null;
+  let pendingDialog = null;
+  const fieldOwners = new WeakMap();
+  function fieldOwner(node) {
+    const initial = captureDialog();
+    return () => (fieldOwners.get(node) || initial)();
+  }
+  function captureDialogIntent() {
+    const generation = dialogGeneration;
+    return () => generation === dialogGeneration;
+  }
+  function captureDialog() {
+    const generation = dialogGeneration, session = dialogSession;
+    const refresh = refreshGeneration, navigation = navigationGeneration;
+    return () => session
+      ? session === dialogSession && (session.independent || (session.refresh === refreshGeneration && session.navigation === navigationGeneration))
+      : generation === dialogGeneration && refresh === refreshGeneration && navigation === navigationGeneration;
+  }
+  function beginDialog(independent = false) {
+    const generation = ++dialogGeneration;
+    const session = pendingDialog = { independent, refresh: refreshGeneration, navigation: navigationGeneration };
+    return () => pendingDialog === session && generation === dialogGeneration && (independent || (session.refresh === refreshGeneration && session.navigation === navigationGeneration));
+  }
+  function rebindDialog(session) {
+    if (session && session === dialogSession) {
+      session.refresh = refreshGeneration;
+      session.navigation = navigationGeneration;
+    }
+  }
+  function clearDialog() {
+    closeDialog();
+    $("#vf-dialog-title").textContent = "";
+    $("#vf-dialog-body").replaceChildren();
+    $("#vf-dialog-submit").hidden = true;
+  }
+  function clearObsoleteDialog() {
+    if (pendingDialog && !pendingDialog.independent && (pendingDialog.refresh !== refreshGeneration || pendingDialog.navigation !== navigationGeneration)) pendingDialog = null;
+    if (dialogSession && !dialogSession.independent && !captureDialog()()) {
+      if (pendingDialog?.independent) {
+        dialogSession = null; dialogSubmit = null;
+        $("#vf-dialog").close(); $("#vf-dialog-body").replaceChildren();
+      } else clearDialog();
+    }
+  }
+  async function refreshDialog(message) {
+    const session = dialogSession, current = captureDialogIntent();
+    $("#vf-dialog-submit").textContent = "Retry refresh";
+    $("#vf-dialog-body").querySelectorAll("input,select,textarea,button").forEach(node => { node.disabled = true; });
+    return init(() => { if (current()) notify(message); }, session);
+  }
+  async function dialogRequest(operation, data, ownsDialog) {
+    try { return await request(operation, data); }
+    catch (error) { if (ownsDialog()) { pendingDialog = null; throw error; } }
+  }
+  function openDialog(title, body, submit, saveLabel = "Save", independent = false) {
+    beginDialog(independent);
+    dialogSession = pendingDialog; pendingDialog = null;
+    const generation = dialogGeneration;
     returnFocus = document.activeElement;
     $("#vf-dialog-title").textContent = title;
     $("#vf-dialog-body").replaceChildren(body);
+    const current = captureDialog();
+    [body, ...body.querySelectorAll("*")].forEach(node => fieldOwners.set(node, current));
     $("#vf-dialog-submit").textContent = saveLabel;
     $("#vf-dialog-submit").hidden = !submit;
-    dialogSubmit = submit;
+    $("#vf-dialog-submit").disabled = false;
+    dialogSubmit = submit ? () => {
+      if (!current() || submit.busy) throw abandoned;
+      pendingDialog = null; ++dialogGeneration;
+      return submit({ ...owned(current), control: $("#vf-dialog-submit") });
+    } : null;
     $("#vf-dialog").showModal();
     setTimeout(
-      () =>
+      () => generation === dialogGeneration &&
         $("#vf-dialog-body")
           .querySelector("input,select,textarea,button")
           ?.focus(),
@@ -141,22 +295,34 @@
     );
   }
   function closeDialog() {
+    ++dialogGeneration;
+    dialogSession = null; pendingDialog = null;
+    dialogSubmit = null;
     $("#vf-dialog").close();
     returnFocus?.focus();
   }
+  $("#vf-dialog").addEventListener("cancel", event => {
+    event.preventDefault();
+    closeDialog();
+  });
   $("#vf-dialog")
     .querySelectorAll("[data-close]")
     .forEach((node) => node.addEventListener("click", closeDialog));
   $("#vf-dialog-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!dialogSubmit) return;
+    const session = dialogSession;
+    let generation;
     const submit = $("#vf-dialog-submit");
     submit.disabled = true;
     $("#vf-dialog-body").querySelector(".vf-dialog-error")?.remove();
     try {
-      await dialogSubmit();
-      closeDialog();
+      const completion = dialogSubmit();
+      generation = dialogGeneration;
+      await completion;
+      if (generation === dialogGeneration && session === dialogSession) closeDialog();
     } catch (error) {
+      if (error === abandoned || generation !== dialogGeneration) return;
       $("#vf-dialog-body").prepend(
         el("div", {
           class: "vf-alert vf-error vf-dialog-error",
@@ -165,11 +331,28 @@
         }),
       );
     } finally {
-      submit.disabled = false;
+      if (generation !== undefined && session === dialogSession) submit.disabled = false;
     }
   });
-  async function init() {
-    state.objects = await request("objects");
+  async function init(onApplied = null, sourceDialog = null) {
+    const generation = ++refreshGeneration;
+    const dialogIntent = dialogGeneration;
+    ++navigationGeneration;
+    ++state.generation;
+    rebindDialog(sourceDialog);
+    refreshing = true;
+    let objects;
+    try { objects = await request("objects"); }
+    catch (error) {
+      if (generation !== refreshGeneration) return false;
+      refreshing = false;
+      $("#vf-content").setAttribute("aria-busy", "false");
+      throw error;
+    }
+    if (generation !== refreshGeneration) return false;
+    refreshing = false;
+    state.objects = objects;
+    clearObsoleteDialog();
     const nav = $("#vf-objects");
     nav.replaceChildren(
       ...state.objects.map((object) =>
@@ -186,22 +369,34 @@
       );
     if (config.configure)
       nav.append(
-        button("Background jobs", safe(jobsDialog)),
+        button("Background jobs", safe(() => jobsDialog())),
         button("Field indexes", safe(indexDialog)),
         button("Configuration transfer", safe(() => premium.configuration ? premium.configuration() : configurationExport())),
       );
     $("#vf-create-object").hidden = !config.configure;
     if (state.objects.length) {
       const params = new URLSearchParams(location.search);
-      await choose(
-        state.object?.slug || params.get("object") || state.objects[0].slug,
+      const candidates = initialized
+        ? [state.object?.slug, params.get("object")]
+        : [params.get("object"), state.object?.slug];
+      const startup = !initialized;
+      initialized = true;
+      const target = candidates.find(
+        slug => state.objects.some(object => object.slug === slug),
       );
-      if (params.has("record")) {
-        const record = await request("record", {
-          id: Number(params.get("record")),
-        });
-        if (record.object !== state.object.slug) await choose(record.object);
-        await recordDialog(record);
+      let current = await choose(target || state.objects[0].slug, sourceDialog);
+      if (!current) return true;
+      if (startup && params.has("record") && dialogIntent === dialogGeneration) {
+        let record;
+        try { record = await request("record", { id: Number(params.get("record")) }); }
+        catch (error) { if (!current() || dialogIntent !== dialogGeneration) return true; throw error; }
+        if (!current() || dialogIntent !== dialogGeneration) return true;
+        if (!state.objects.some(object => object.slug === record.object))
+          throw new Error("The linked record is no longer available in this workspace.");
+        if (record.object !== state.object.slug) current = await choose(record.object);
+        if (!current || dialogIntent !== dialogGeneration) return true;
+        const recordOwner = await recordDialog(record, {}, current);
+        if (!recordOwner || !recordOwner()) return true;
         history.replaceState(
           null,
           "",
@@ -209,6 +404,20 @@
         );
       }
     } else {
+      initialized = true;
+      state.object = null;
+      state.query = { page: 1, per_page: 20 };
+      state.rows = [];
+      state.columns = [];
+      state.availableColumns = [];
+      state.views = [];
+      state.view = "";
+      state.selected.clear();
+      $("#vf-title").textContent = "";
+      $("#vf-subtitle").textContent = "";
+      $("#vf-header-actions").replaceChildren();
+      if (onApplied) onApplied();
+      if ((!dialogSession?.independent && !pendingDialog?.independent) || (sourceDialog && dialogSession === sourceDialog)) clearDialog();
       $("#vf-content").setAttribute("aria-busy", "false");
       $("#vf-content").replaceChildren(
         el("div", { class: "vf-empty" }, [
@@ -224,11 +433,18 @@
         ]),
       );
     }
+    if (state.object && onApplied) onApplied();
+    return true;
   }
-  async function choose(slug) {
-    const navigation = ++state.generation;
-    state.object = state.objects.find((object) => object.slug === slug);
-    if (!state.object) return;
+  async function choose(slug, sourceDialog = null) {
+    const object = state.objects.find((object) => object.slug === slug);
+    if (!object) return false;
+    ++navigationGeneration;
+    ++state.generation;
+    rebindDialog(sourceDialog);
+    clearObsoleteDialog();
+    state.object = object;
+    const current = beginTable();
     state.query = { page: 1, per_page: 20 };
     state.view = "";
     state.selected.clear();
@@ -241,7 +457,7 @@
         node.setAttribute("aria-current", String(node.dataset.object === slug)),
       );
     const actions = [];
-    if (config.configure)
+    if (config.configure && !state.object.native_table)
       actions.push(
         button(
           "Configure",
@@ -257,29 +473,48 @@
         ),
       );
     $("#vf-header-actions").replaceChildren(...actions);
-    const [columns, views] = await Promise.all([
+    let results;
+    try { results = await Promise.all([
       request("columns", { object: slug }),
       premium.views ? premium.views(slug) : Promise.resolve([]),
-    ]);
-    if (navigation !== state.generation) return;
-    state.columns = columns;
+      request("table_preferences", { object: slug }),
+    ]); }
+    catch (error) { if (!current()) return false; throw error; }
+    const [columns, views, preferences] = results;
+    if (!current()) return false;
+    state.availableColumns = columns;
+    state.columns = preferences.columns || columns;
+    state.stickyHeader = preferences.sticky_header !== false;
     state.views = views;
-    await load();
+    await premium.applyDefault?.(current);
+    if (!current()) return false;
+    await load(current);
+    return current() ? current : false;
   }
-  async function load() {
+  async function load(current = captureTable()) {
+    if (!current()) return false;
     const generation = ++state.generation;
     $("#vf-content").setAttribute("aria-busy", "true");
-    const result = await request("query", {
-      object: state.object.slug,
-      query: state.query,
-    });
-    if (generation !== state.generation) return;
-    state.rows = result.items;
-    state.selected.clear();
-    renderList(result);
-    $("#vf-content").setAttribute("aria-busy", "false");
+    try {
+      const result = await request("query", {
+        object: state.object.slug,
+        query: state.query,
+        columns: state.columns.map(({ field, label, width, formatter }) => ({ field, ...(label ? { label } : {}), ...(width ? { width } : {}), ...(formatter ? { formatter } : {}) })),
+      });
+      if (generation !== state.generation || !current()) return false;
+      state.rows = result.items;
+      state.selected.clear();
+      renderList(result);
+      return true;
+    } catch (error) {
+      if (generation === state.generation && current()) throw error;
+    } finally {
+      if (generation === state.generation && current()) $("#vf-content").setAttribute("aria-busy", "false");
+    }
+    return false;
   }
   function renderList(result) {
+    const current = captureNavigation();
     const search = input(state.query.search || "", "search", {
       "aria-label": "Search records",
       placeholder: "Search records…",
@@ -287,26 +522,31 @@
     let timer;
     search.addEventListener("input", () => {
       clearTimeout(timer);
+      const intent = beginTable(current);
       timer = setTimeout(
         safe(async () => {
+          if (!intent()) return;
           state.query.search = search.value;
           state.query.page = 1;
-          await load();
+          await load(intent);
         }),
         350,
       );
     });
     const toolbar = el("div", { class: "vf-toolbar" }, [
       search,
-      button("Filters", filtersDialog),
+      button("Filters", navigationAction(filtersDialog)),
     ]);
-    if (config.configure) toolbar.append(button("Columns", columnsDialog));
+    toolbar.append(button("Columns", navigationAction(columnsDialog)));
+    if (state.object.can_create) toolbar.append(button("Quick Add", navigationAction(quickAdd)));
     premium.toolbar?.(toolbar);
     if (state.object.can_export)
       toolbar.append(
         button(
           "Export CSV",
           safe(async () => {
+            const table = captureTable(), dialog = captureDialog();
+            const { request } = owned(() => current() && table() && dialog());
             const file = await request("export_csv", {
               object: state.object.slug,
               query: state.query,
@@ -325,6 +565,8 @@
         .querySelectorAll("[data-row-select]")
         .forEach((node) => (node.checked = all.checked));
     });
+    const primarySort = Array.isArray(state.query.sort) ? state.query.sort[0] : state.query.sort;
+    const ascending = primarySort?.direction?.toLowerCase() === "asc";
     const head = el("tr", {}, [
       el("th", {}, [all]),
       ...state.columns.map((column) => {
@@ -334,32 +576,38 @@
               type: "button",
               text:
                 column.label +
-                (state.query.sort?.field === column.field
-                  ? state.query.sort.direction === "asc"
+                (primarySort?.field === column.field
+                  ? ascending
                     ? " ↑"
                     : " ↓"
                   : ""),
               onclick: safe(async () => {
+                const intent = beginTable(current);
+                if (!intent()) return;
                 state.query.sort = {
                   field: column.field,
                   direction:
-                    state.query.sort?.field === column.field &&
-                    state.query.sort.direction === "asc"
+                    primarySort?.field === column.field && ascending
                       ? "desc"
                       : "asc",
                 };
-                await load();
+                await load(intent);
               }),
             })
           : el("span", { text: column.label });
-        return el(
+        const header = el(
           "th",
           {
             scope: "col",
+            "aria-sort": primarySort?.field === column.field ? (ascending ? "ascending" : "descending") : "none",
+            "data-field": column.field,
+            draggable: "true",
             ...(column.width ? { style: `width:${column.width}` } : {}),
           },
           [title],
         );
+        columnHeader(header, column, current);
+        return header;
       }),
       el("th", { scope: "col", text: "Actions" }),
     ]);
@@ -391,26 +639,27 @@
                   type: "button",
                   class: "vf-cell",
                   text: textValue(value) || "(Untitled)",
-                  onclick: safe(() => recordDialog(row)),
+                  onclick: navigationAction(() => recordDialog(row)),
                 }),
               );
-            else if (column.editable && premium.inline)
+            else if (column.editable && (freeScalar(state.object.fields[column.field]) || premium.inline))
               cell.append(
                 el("button", {
                   type: "button",
                   class: "vf-cell",
                   text: display || "—",
                   title: "Edit value",
-                  onclick: safe(() => premium.inline(row, column)),
+                  onclick: navigationAction(() => freeScalar(state.object.fields[column.field]) ? scalarEdit(row, column) : premium.inline(row, column)),
                 }),
               );
             else cell.textContent = display || "—";
+            premium.formatCell?.(cell, row, column);
             return cell;
           }),
           el("td", {}, [
             button(
               "Open",
-              safe(() => recordDialog(row)),
+              navigationAction(() => recordDialog(row)),
             ),
           ]),
         ]);
@@ -430,23 +679,27 @@
     const previous = button(
       "Previous",
       safe(async () => {
+        const intent = beginTable(current);
+        if (!intent()) return;
         state.query.page--;
-        await load();
+        await load(intent);
       }),
     );
     previous.disabled = result.page <= 1;
     const next = button(
       "Next",
       safe(async () => {
+        const intent = beginTable(current);
+        if (!intent()) return;
         state.query.page++;
-        await load();
+        await load(intent);
       }),
     );
     next.disabled = result.page >= result.total_pages;
     $("#vf-content").replaceChildren(
       toolbar,
       el("div", { class: "vf-table-wrap" }, [
-        el("table", { class: "vf-table" }, [el("thead", {}, [head]), tbody]),
+        el("table", { class: `vf-table${state.stickyHeader ? " vf-sticky-header" : ""}` }, [el("thead", {}, [head]), tbody]),
       ]),
       el("div", { class: "vf-pagination" }, [
         el("span", { text: `${result.total} records` }),
@@ -458,7 +711,84 @@
           next,
         ]),
       ]),
+      ...(premium.metrics ? [premium.metrics(result)] : []),
     );
+  }
+  function freeScalar(definition) {
+    if (!definition) return false;
+    const field = ["validated_field", "validated"].includes(definition.type) ? { ...definition, ...definition.sub_field } : definition;
+    return !definition.formula && !definition.rollup && !field.multiple && !field.relationship && ["text", "textarea", "number", "range", "email", "url", "password", "true_false", "date_picker", "date_time_picker", "time_picker", "color_picker"].includes(field.type);
+  }
+  function scalarEdit(row, column) {
+    const definition = state.object.fields[column.field];
+    const field = ["validated_field", "validated"].includes(definition.type) ? { ...definition, ...definition.sub_field } : definition;
+    const control = fieldControl(field, row.fields[column.field]);
+    openDialog(`Edit ${column.label}`, label(column.label, control.node), mutation(({ request }) => request("inline_update", { id: row.id, field: column.field, value: control.read(), version: row.version }), async ({ load }) => { await load(); notify("Value updated."); }));
+  }
+  function quickAdd() {
+    const title = input("", "text", { "aria-label": "Title" });
+    const body = el("div", {}, [label("Title", title)]);
+    const controls = {};
+    const changed = new Set();
+    Object.entries(state.object.fields).forEach(([name, field]) => {
+      if (!freeScalar(field) || field.editable === false || field.readonly || field.disabled) return;
+      const native = ["validated_field", "validated"].includes(field.type) ? { ...field, ...field.sub_field } : field;
+      const control = fieldControl(native, field.default_value ?? null);
+      controls[name] = control;
+      for (const type of ["input", "change"]) control.node.addEventListener(type, () => changed.add(name));
+      body.append(label(field.label || name, control.node));
+    });
+    body.append(el("p", { class: "vf-help", text: "Every value is validated before saving. Use the full record form for media, choices and structured fields." }));
+    openDialog("Quick Add", body, mutation(async ({ request }) => {
+      const fields = Object.fromEntries([...changed].map(name => [name, controls[name].read()]));
+      return request("quick_add", { object: state.object.slug, payload: { title: title.value, fields } });
+    }, async ({ load }) => { await load(); notify("Record added."); }), "Add record");
+  }
+  const writePersonalColumns = (columns, sticky, { request }) => request("save_table_preferences", { object: state.object.slug, preferences: { columns: columns.map(({ field, width }) => ({ field, ...(width ? { width } : {}) })), sticky_header: sticky } });
+  async function applyPersonalColumns({ load }, saved) {
+    state.columns = saved.columns;
+    state.stickyHeader = saved.sticky_header;
+    await load();
+  }
+  async function savePersonalColumns(columns, sticky, current) {
+    if (!current()) return;
+    await mutation(operation => writePersonalColumns(columns, sticky, operation), applyPersonalColumns)(owned(current));
+  }
+  let draggedColumn = "";
+  function columnHeader(header, column, current) {
+    header.addEventListener("dragstart", event => { draggedColumn = column.field; event.dataTransfer?.setData("text/plain", column.field); });
+    header.addEventListener("dragover", event => event.preventDefault());
+    header.addEventListener("drop", safe(async event => {
+      event.preventDefault();
+      if (!current()) return;
+      const from = state.columns.findIndex(item => item.field === draggedColumn);
+      const to = state.columns.findIndex(item => item.field === column.field);
+      draggedColumn = "";
+      if (from < 0 || to < 0 || from === to) return;
+      const columns = [...state.columns]; const [moved] = columns.splice(from, 1); columns.splice(to, 0, moved);
+      await savePersonalColumns(columns, state.stickyHeader, beginTable(current));
+    }));
+    const initialWidth = () => Math.min(1200, Math.max(40, Math.round(header.getBoundingClientRect().width || parseInt(column.width, 10) || 160)));
+    const handle = el("span", { class: "vf-column-resize", role: "separator", tabindex: 0, "aria-orientation": "vertical", "aria-label": `Resize ${column.label}`, "aria-valuemin": 40, "aria-valuemax": 1200, "aria-valuenow": initialWidth() });
+    const resize = async (width, intent) => {
+      width = Math.min(1200, Math.max(40, width));
+      await savePersonalColumns(state.columns.map(item => item.field === column.field ? { ...item, width: `${width}px` } : item), state.stickyHeader, intent);
+    };
+    handle.addEventListener("keydown", safe(async event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation();
+      await resize(event.key === "Home" ? 40 : event.key === "End" ? 1200 : initialWidth() + (event.key === "ArrowRight" ? 10 : -10), beginTable(current));
+    }));
+    handle.addEventListener("pointerdown", event => {
+      event.preventDefault(); event.stopPropagation();
+      const intent = beginTable(current);
+      const x = event.clientX, start = initialWidth(); let width = start;
+      const move = e => { width = Math.min(1200, Math.max(40, start + e.clientX - x)); header.style.width = `${width}px`; handle.setAttribute("aria-valuenow", width); };
+      const end = safe(async () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", end); document.removeEventListener("pointercancel", cancel); await resize(width, intent); });
+      const cancel = () => { document.removeEventListener("pointermove", move); document.removeEventListener("pointerup", end); document.removeEventListener("pointercancel", cancel); header.style.width = column.width || ""; };
+      document.addEventListener("pointermove", move); document.addEventListener("pointerup", end); document.addEventListener("pointercancel", cancel);
+    });
+    header.append(handle);
   }
   function fieldControl(field, value) {
     const type = field.type;
@@ -484,6 +814,7 @@
         node.append(el("option", { value: "", text: "Choose a record…", selected: !selected.length }));
       // Keep known IDs even while choices load or a selected record is unreadable.
       // Titles come only from permission-checked query/read responses.
+      const ownsField = fieldOwner(container);
       let options = new Map();
       selected.forEach((id) => {
         const option = el("option", { value: id, text: "Selected record #" + id, selected: true });
@@ -494,13 +825,14 @@
       let timer;
       const lookedUp = new Set();
       const loadChoices = (term, current) => {
+        if (current !== generation || !ownsField()) return;
         feedback.textContent = "Searching records…";
         request("query", {
           object: field.relationship.object,
           query: { per_page: 100, ...(term ? { search: term } : {}) },
         })
         .then(async (result) => {
-          if (current !== generation) return;
+          if (current !== generation || !ownsField()) return;
           // Take selection at response time, including edits made during the request.
           options = new Map([...node.selectedOptions]
             .filter((option) => option.value)
@@ -525,12 +857,12 @@
           await Promise.allSettled(selected.filter((id) => !returned.has(id) && !lookedUp.has(id)).map(async (id) => {
             lookedUp.add(id);
             const record = await request("record", { id });
-            if (record.id === id && record.object === field.relationship.object)
+            if (current === generation && ownsField() && record.id === id && record.object === field.relationship.object)
               if (options.has(id)) options.get(id).textContent = record.title || "#" + id;
           }));
         })
         .catch((error) => {
-          if (current !== generation) return;
+          if (current !== generation || !ownsField()) return;
           feedback.textContent = "Records could not load. Selected records are kept.";
           notify(error.message, true);
         });
@@ -558,12 +890,15 @@
       const summary = el("span", {class:"vf-help", text:attachment ? "Selected attachment #" + attachment : "No file selected"});
       const node = el("div", {class:"vf-toolbar"}, [summary]);
       const choose = button("Choose " + (type === "image" ? "image" : "file"), () => {
+        const current = fieldOwner(node);
+        if (!current()) return;
         if (!window.wp?.media) { notify("The WordPress media library could not load.", true); return; }
         const frame = window.wp.media({title:"Choose " + field.label, multiple:false, ...(type === "image" ? {library:{type:"image"}} : {})});
-        frame.on("select", () => {const selected = frame.state().get("selection").first().toJSON();attachment=selected.id;summary.textContent=selected.filename || selected.title;node.dispatchEvent(new Event("change",{bubbles:true}));});
-        frame.on("close", () => {if (!$("#vf-dialog").open) $("#vf-dialog").showModal();});
+        frame.on("select", () => {if (!current()) return; const selected = frame.state().get("selection").first().toJSON();attachment=selected.id;summary.textContent=selected.filename || selected.title;node.dispatchEvent(new Event("change",{bubbles:true}));});
+        frame.on("close", () => setTimeout(() => {if (current() && !$("#vf-dialog").open) $("#vf-dialog").showModal();}, 0));
         $("#vf-dialog").close(); frame.open();
       });
+      choose.setAttribute("aria-label", "Choose " + (type === "image" ? "image" : "file"));
       node.append(choose, button("Remove",()=>{attachment=0;summary.textContent="No file selected";node.dispatchEvent(new Event("change",{bubbles:true}));}));
       return {node,read:()=>attachment || null};
     }
@@ -576,7 +911,7 @@
       !field.multiple &&
       field.choices
     ) {
-      const node = select({ "": "Choose…", ...field.choices }, value);
+      const node = select({ "": "Choose…", ...field.choices }, value ?? "");
       return { node, read: () => node.value };
     }
     if (type === "group") {
@@ -737,12 +1072,21 @@
           : node.value,
     };
   }
-  async function recordDialog(record = null, initialFields = {}) {
-    if (record) record = await request("record", { id: record.id });
-    const descriptor = await request("form", {
-      object: state.object.slug,
-      id: record?.id || 0,
-    });
+  async function recordDialog(record = null, initialFields = {}, current = captureNavigation()) {
+    if (!current()) return false;
+    const pending = beginDialog();
+    let presentation = null;
+    const ownsDialog = () => current() && (presentation ? presentation() : pending());
+    const object = state.object;
+    let descriptor;
+    try {
+      if (record) {
+        record = await request("record", { id: record.id });
+        if (!ownsDialog()) return false;
+      }
+      descriptor = await request("form", { object: object.slug, id: record?.id || 0 });
+    } catch (error) { if (!ownsDialog()) return false; throw error; }
+    if (!ownsDialog()) return false;
     const body = el("div");
     const title = input(record?.title || "");
     const status = select(
@@ -793,31 +1137,31 @@
       body.append(related);
       request("related", { id: record.id })
         .then((groups) => {
+          if (!ownsDialog()) return;
           groups.forEach((group) => {
             const section = el("section", { class: "vf-designer-row" }, [
               el("h3", { text: `${group.label} · ${group.result.total}` }),
             ]);
             const target = state.objects.find(object => object.slug === group.object);
-            if (target?.can_create) section.append(button("+ New " + target.singular, safe(async () => {
-              closeDialog(); await choose(group.object);
-              await recordDialog(null, {[group.field]: group.multiple ? [record.id] : record.id});
-            })));
+            const navigate = async (slug, item, fields) => {
+              if (!ownsDialog()) return;
+              closeDialog();
+              const dialogIntent = dialogGeneration;
+              let next;
+              try { next = await choose(slug); }
+              catch (error) { if (dialogIntent === dialogGeneration) throw error; return; }
+              if (!next || dialogIntent !== dialogGeneration) return;
+              await recordDialog(item, fields, next);
+            };
+            if (target?.can_create) section.append(button("+ New " + target.singular, safe(() =>
+              navigate(group.object, null, {[group.field]: group.multiple ? [record.id] : record.id}))));
             group.result.items.forEach((item) =>
-              section.append(
-                button(
-                  item.title || "#" + item.id,
-                  safe(async () => {
-                    await choose(item.object);
-                    closeDialog();
-                    await recordDialog(item);
-                  }),
-                ),
-              ),
+              section.append(button(item.title || "#" + item.id, safe(() => navigate(item.object, item, {})))),
             );
             related.append(section);
           });
         })
-        .catch((error) => notify(error.message, true));
+        .catch((error) => { if (ownsDialog()) notify(error.message, true); });
       const actions = el("div", { class: "vf-toolbar" }, [
         button(
           "History",
@@ -830,11 +1174,9 @@
           openDialog(
             "Delete record",
             confirmation,
-            async () => {
-              await request("delete_record", { id: record.id });
-              await load();
-              notify("Record deleted.");
-            },
+            mutation(({ request }) => request("delete_record", { id: record.id }), async ({ load }) => {
+              await load(); notify("Record deleted.");
+            }),
             "Delete record",
           );
         }) : null,
@@ -844,13 +1186,13 @@
     openDialog(
       record ? `${descriptor.can_update ? "Edit" : "View"} ${state.object.singular}` : `New ${state.object.singular}`,
       body,
-      (record ? descriptor.can_update : descriptor.can_create) ? async () => {
+      (record ? descriptor.can_update : descriptor.can_create) ? mutation(async ({ request }) => {
         const fields = {};
         Object.entries(controls).forEach(([name, control]) => {
           if (!control.node.disabled && control.dirty) fields[name] = control.read();
         });
-        await request("save_record", {
-          object: state.object.slug,
+        return request("save_record", {
+          object: object.slug,
           id: record?.id || 0,
           payload: {
             title: title.value,
@@ -859,12 +1201,13 @@
             ...(record ? { version: record.version } : {}),
           },
         });
-        await load();
-        notify("Record saved.");
-      } : null,
+      }, async ({ load }) => { await load(); notify("Record saved."); }) : null,
     );
+    presentation = captureDialog();
+    return ownsDialog;
   }
   function filtersDialog() {
+    if (premium.filters) { premium.filters(); return; }
     const body = el("div");
     const rows = el("div");
     const current = structuredClone(state.query.filters || []);
@@ -931,15 +1274,38 @@
     openDialog(
       "Filter records",
       body,
-      async () => {
+      async ({ current }) => {
+        const intent = beginTable(current);
         state.query.filters = [...rows.children].map((row) => row.read());
         state.query.page = 1;
-        await load();
+        await load(intent);
       },
       "Apply filters",
     );
   }
   function columnsDialog() {
+    const rows = el("div");
+    const sticky = input("", "checkbox", { checked: state.stickyHeader });
+    const known = new Map(state.columns.map(column => [column.field, column]));
+    [...state.availableColumns, { field: "id", label: "ID" }, { field: "title", label: "Title" }, { field: "status", label: "Status" }, { field: "version", label: "Version" }, ...Object.entries(state.object.fields).map(([field, definition]) => ({ field, label: definition.label || field }))].forEach(column => { if (!known.has(column.field)) known.set(column.field, column); });
+    const selected = new Set(state.columns.map(column => column.field));
+    for (const column of known.values()) {
+      const visible = input("", "checkbox", { checked: selected.has(column.field), "aria-label": `Show ${column.label}` });
+      const width = input(column.width || "", "text", { "aria-label": `Width of ${column.label}`, placeholder: "160px or 20%" });
+      const row = el("div", { class: "vf-column-control", "data-column": column.field });
+      const up = button("↑", () => { if (row.previousElementSibling) rows.insertBefore(row, row.previousElementSibling); });
+      up.setAttribute("aria-label", `Move ${column.label} up`);
+      const down = button("↓", () => { if (row.nextElementSibling) rows.insertBefore(row.nextElementSibling, row); });
+      down.setAttribute("aria-label", `Move ${column.label} down`);
+      row.append(label(column.label, visible), width, up, down);
+      row.read = () => visible.checked ? { field: column.field, ...(width.value ? { width: width.value } : {}) } : null;
+      rows.append(row);
+    }
+    const body = el("div", {}, [el("p", { class: "vf-help", text: "Choose your columns, their order and widths. Drag table headers to reorder, or use these arrow buttons." }), rows, label("Keep table headers visible while scrolling", sticky)]);
+    if (config.configure) body.append(button("Site column defaults", siteColumnsDialog));
+    openDialog("Your columns", body, mutation(operation => writePersonalColumns([...rows.children].map(row => row.read()).filter(Boolean), sticky.checked, operation), applyPersonalColumns, true));
+  }
+  function siteColumnsDialog() {
     const choices = {
       id: "ID",
       title: "Title",
@@ -980,16 +1346,15 @@
       rows,
       button("+ Add column", () => add()),
     );
-    openDialog("Configure columns", body, async () => {
-      state.columns = await request("configure_columns", {
+    openDialog("Configure columns", body, mutation(({ request }) => request("configure_columns", {
         object: state.object.slug,
         columns: [...rows.children].map((row) => row.read()),
-      });
-      await load();
-    });
+      }), async ({ load }, columns) => { state.columns = columns; await load(); }, true));
   }
   async function auditDialog(record) {
-    const result = await request("audit", { id: record.id });
+    const ownsDialog = beginDialog(), current = captureNavigation();
+    const result = await dialogRequest("audit", { id: record.id }, ownsDialog);
+    if (!ownsDialog() || !current()) return;
     const rows = Array.isArray(result) ? result : result.items || [];
     const body = el(
       "div",
@@ -1021,6 +1386,7 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   async function indexDialog() {
+    const ownsDialog = beginDialog();
     const body = el("div", {}, [
       el("p", {
         class: "vf-help",
@@ -1029,7 +1395,8 @@
     ]);
     await Promise.all(
       state.objects.map(async (object) => {
-        const status = await request("index_status", { object: object.slug });
+        const status = await dialogRequest("index_status", { object: object.slug }, ownsDialog);
+        if (!ownsDialog()) return;
         const feedback = el("p", {
           text: status.complete
             ? "Ready"
@@ -1037,19 +1404,9 @@
         });
         const rebuild = button(
           "Rebuild next batch",
-          safe(async () => {
-            rebuild.disabled = true;
-            try {
-              const next = await request("index_rebuild", {
-                object: object.slug,
-              });
-              feedback.textContent = next.complete
-                ? "Ready"
-                : `Rebuilding. Last record: ${next.cursor}. Continue with the next batch.`;
-            } finally {
-              rebuild.disabled = false;
-            }
-          }),
+          dialogAction(mutation(({ request }) => request("index_rebuild", { object: object.slug }), (_operation, next) => {
+            feedback.textContent = next.complete ? "Ready" : `Rebuilding. Last record: ${next.cursor}. Continue with the next batch.`;
+          })),
         );
         body.append(
           el("section", { class: "vf-designer-row" }, [
@@ -1060,10 +1417,12 @@
         );
       }),
     );
-    openDialog("Field indexes", body, null);
+    if (ownsDialog()) openDialog("Field indexes", body, null);
   }
-  async function jobsDialog() {
-    const data = await request("jobs");
+  async function jobsDialog(operation = null) {
+    const ownsDialog = operation ? operation.current : beginDialog();
+    const data = operation ? await operation.request("jobs", {}) : await dialogRequest("jobs", {}, ownsDialog);
+    if (!ownsDialog()) return false;
     const items = Array.isArray(data) ? data : data.items || [];
     const body = el("div");
     if (!items.length)
@@ -1083,11 +1442,7 @@
           ["failed", "retry"].includes(job.status)
             ? button(
                 "Retry",
-                safe(async () => {
-                  await request("retry_job", { id: Number(job.id) });
-                  closeDialog();
-                  await jobsDialog();
-                }),
+                dialogAction(mutation(({ request }) => request("retry_job", { id: Number(job.id) }), operation => jobsDialog(operation))),
               )
             : null,
         ]),
@@ -1096,7 +1451,9 @@
     openDialog("Automation jobs", body, null);
   }
   async function designer(slug = "") {
-    const schema = await request("schema");
+    const ownsDialog = beginDialog(!slug);
+    const schema = await dialogRequest("schema", {}, ownsDialog);
+    if (!ownsDialog()) return;
     const definition = schema.objects[slug] || {
       slug: "",
       label: "",
@@ -1114,13 +1471,16 @@
     openDialog(
       slug ? "Configure object" : "Create object",
       editor.element,
-      async () => {
+      mutation(async ({ request }) => {
         const proposed = editor.read();
         await request("save_object", { definition: proposed });
+        return proposed;
+      }, async (_operation, proposed) => {
         state.object = { slug: proposed.slug };
-        await init();
-        notify("Object configuration saved.");
-      },
+        return refreshDialog("Object configuration saved.");
+      }),
+      "Save",
+      !slug,
     );
   }
   $("#vf-create-object").addEventListener(
@@ -1128,7 +1488,7 @@
     safe(() => designer()),
   );
   const premium = {};
-  for (const entry of window.vfWorkspaceExtensions?.actions() || []) Object.assign(premium, entry.factory({ $, el, button, state, notify, request, safe, label, input, select, textValue, openDialog, closeDialog, fieldControl, load, download, config }));
-  async function configurationExport() { download({ filename: 'vf-configuration.json', content: JSON.stringify(await request('configuration_export'), null, 2), mime_type: 'application/json' }); }
+  for (const entry of window.vfWorkspaceExtensions?.actions() || []) Object.assign(premium, entry.factory({ $, el, button, state, notify, request, safe, label, input, select, textValue, openDialog, closeDialog, fieldControl, captureNavigation, navigationAction, captureDialogIntent, captureTable, beginTable, owned, dialogAction, dialogIntent, beginDialog, dialogRequest, mutation, refreshDialog, init, load, download, config }));
+  async function configurationExport() { const { request } = owned(captureDialog()); download({ filename: 'vf-configuration.json', content: JSON.stringify(await request('configuration_export'), null, 2), mime_type: 'application/json' }); }
   safe(init)();
 })();

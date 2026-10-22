@@ -18,6 +18,9 @@
 .vf-workspace * {
   box-sizing: border-box;
 }
+.vf-workspace [hidden] {
+  display: none !important;
+}
 .vf-sidebar {
   padding: 30px 20px;
   background: #fff;
@@ -175,6 +178,7 @@
   background: #fff;
   border: 1px solid var(--vf-line);
   border-top: 0;
+  max-height: 70vh;
 }
 .vf-table {
   width: 100%;
@@ -189,7 +193,14 @@
   letter-spacing: 0.7px;
   color: var(--vf-muted);
   font-weight: 600;
+  position: relative;
 }
+.vf-sticky-header th { position: sticky; top: 0; z-index: 2; }
+.vf-table th[data-field] { padding-right: 26px; min-width: 40px; }
+.vf-column-resize { position: absolute; inset: 0 0 0 auto; width: 12px; cursor: col-resize; touch-action: none; }
+.vf-column-resize:hover, .vf-column-resize:focus-visible { background: #235dd533; }
+.vf-column-control { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(90px, 160px) auto auto; gap: 8px; align-items: center; margin: 8px 0; }
+.vf-column-control .vf-field { margin: 0; flex-direction: row; align-items: center; }
 .vf-table th,
 .vf-table td {
   padding: 13px 16px;

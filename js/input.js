@@ -9,14 +9,14 @@
                     var $input = $(this);
                     if ($input.data('vfReadonly')) return;
                     $input.data('vfReadonly', true);
-                    if ($input.is('textarea,input[type="text"],input[type="email"],input[type="url"],input[type="tel"],input[type="number"],input[type="password"]')) {
+                    if ($input.is('textarea') || ($input.is('input') && ['text', 'email', 'url', 'tel', 'number', 'password'].indexOf(this.type) !== -1)) {
                         $input.prop('readonly', true);
                     } else {
                         var name = $input.attr('name');
                         if (name && (!$input.is(':checkbox,:radio') || $input.prop('checked'))) {
-                            var values = $input.val();
+                            var values = $input.val(), $after = $input;
                             $.each(Array.isArray(values) ? values : [values], function (_, value) {
-                                $('<input>', {type: 'hidden', name: name, value: value}).insertAfter($input);
+                                $after = $('<input>', {type: 'hidden', name: name, value: value}).insertAfter($after);
                             });
                         }
                         $input.prop('disabled', true);

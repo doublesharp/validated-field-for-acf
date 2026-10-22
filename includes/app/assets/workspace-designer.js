@@ -19,8 +19,8 @@ function clone(value) {
 function same(a, b) {
   if (Object.is(a, b)) return true;
   if (Array.isArray(a) !== Array.isArray(b) || !a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
-  const keys = Object.keys(a);
-  return keys.length === Object.keys(b).length && keys.every(key => own(b, key) && same(a[key], b[key]));
+  const keys = Object.keys(a), otherKeys = Object.keys(b);
+  return keys.length === otherKeys.length && keys.every((key, index) => key === otherKeys[index] && same(a[key], b[key]));
 }
 
 function mergeSettings(base, changes = {}, removed = []) {
@@ -531,7 +531,7 @@ function buildDesigner({ definition = {}, schema = {}, roles = {} } = {}) {
   }
 
   const premium = {};
-  const extensionContext = { source, metadata: schema.metadata || {}, operators, own, object, clone, same, mergeSettings, parseTyped, serializeCondition, serializeRoleAccess, validateCondition, validateLayout, validateRecordTypes, node, button, help, grid, details, legend, label, input, choose, fail, scalarControl, model, property, fieldReference, objectReference, optional, collection, typedValue, extensions, finish, textList, rolePicker, schema, readFieldChoices: () => readFieldChoices() };
+  const extensionContext = { source, metadata: schema.metadata || {}, operators, own, object, clone, same, mergeSettings, parseTyped, serializeCondition, serializeRoleAccess, validateCondition, validateLayout, validateRecordTypes, node, button, help, grid, details, legend, label, input, choose, fail, scalarControl, model, property, fieldReference, objectReference, optional, collection, typedValue, extensions, finish, textList, rolePicker, editorNumber, schema, readFieldChoices: () => readFieldChoices() };
   for (const entry of global?.vfWorkspaceExtensions?.designerSections() || []) Object.assign(premium, entry.factory(extensionContext));
   const nativeTypes = {
     text: 'Text', textarea: 'Long text', number: 'Number', range: 'Range', email: 'Email', url: 'URL', password: 'Password',
