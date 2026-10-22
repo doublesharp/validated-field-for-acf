@@ -30,6 +30,14 @@
       text,
       onclick: action,
     });
+  const toolbarViewport = window.matchMedia?.("(max-width: 600px)");
+  toolbarViewport?.addEventListener("change", ({ matches }) => {
+    const more = $("#vf-content .vf-toolbar-more");
+    if (!more) return;
+    const focused = more.contains(document.activeElement);
+    more.open = !matches;
+    if (focused) (matches ? more.querySelector("summary") : $("#vf-content input[type=search]")).focus();
+  });
   const state = {
     objects: [],
     object: null,
@@ -533,15 +541,16 @@
         350,
       );
     });
-    const toolbar = el("div", { class: "vf-toolbar" }, [
-      search,
+    const primary = el("div", { class: "vf-toolbar-primary" }, [
       button("Filters", navigationAction(filtersDialog)),
+      button("Columns", navigationAction(columnsDialog)),
     ]);
-    toolbar.append(button("Columns", navigationAction(columnsDialog)));
-    if (state.object.can_create) toolbar.append(button("Quick Add", navigationAction(quickAdd)));
-    premium.toolbar?.(toolbar);
+    if (state.object.can_create) primary.append(button("Quick Add", navigationAction(quickAdd)));
+    const toolbar = el("div", { class: "vf-toolbar" }, [search, primary]);
+    const secondary = el("div", { class: "vf-toolbar-secondary" });
+    premium.toolbar?.(secondary);
     if (state.object.can_export)
-      toolbar.append(
+      secondary.append(
         button(
           "Export CSV",
           safe(async () => {
@@ -557,6 +566,18 @@
           }),
         ),
       );
+    const savedView = secondary.querySelector('select[aria-label="Saved view"]');
+    if (savedView) toolbar.insertBefore(savedView, primary);
+    if (secondary.childElementCount) {
+      const more = el("details", { class: "vf-toolbar-more" }, [
+        el("summary", { class: "vf-button", text: "More actions", onblur: () => {
+          // Native CSS hiding can blur the summary before the media change event.
+          if (toolbarViewport && !toolbarViewport.matches) search.focus();
+        } }), secondary,
+      ]);
+      more.open = !toolbarViewport?.matches;
+      toolbar.append(more);
+    }
     const all = input("", "checkbox", { "aria-label": "Select current page" });
     all.addEventListener("change", () => {
       state.selected.clear();
