@@ -24,8 +24,8 @@ class acf_field_validated_field extends acf_field {
 		add_action( 'init', array( $this, 'detect_frontend_context' ), 20 );
 		add_action( 'acf/save_post', array( 'ACF_VF_Validation', 'begin_save' ), 1 );
 		add_action( 'acf/save_post', array( 'ACF_VF_Validation', 'end_save' ), 999 );
-		if ( file_exists( __DIR__ . '/includes/class-acf-vf-rest.php' ) ) {
-			require_once __DIR__ . '/includes/class-acf-vf-rest.php';
+		if ( file_exists( __DIR__ . '/class-acf-vf-rest.php' ) ) {
+			require_once __DIR__ . '/class-acf-vf-rest.php';
 			new ACF_VF_REST();
 		}
 	}
@@ -226,13 +226,13 @@ class acf_field_validated_field extends acf_field {
 	}
 
 	public function input_admin_enqueue_scripts() {
-		wp_enqueue_script( 'acf-vf-mask', plugins_url( 'js/jquery.maskedinput.js', __FILE__ ), array( 'jquery' ), ACF_VF_VERSION, true );
-		wp_enqueue_script( 'acf-vf-input', plugins_url( 'js/input.js', __FILE__ ), array( 'acf-input', 'acf-vf-mask' ), ACF_VF_VERSION, true );
+		wp_enqueue_script( 'acf-vf-mask', plugins_url( 'js/jquery.maskedinput.js', ACF_VF_PLUGIN_FILE ), array( 'jquery' ), ACF_VF_VERSION, true );
+		wp_enqueue_script( 'acf-vf-input', plugins_url( 'js/input.js', ACF_VF_PLUGIN_FILE ), array( 'acf-input', 'acf-vf-mask' ), ACF_VF_VERSION, true );
 		if ( ! is_admin() && ! ACF_VF_Validation::is_true( get_option( 'acf_vf_frontend_css', true ) ) ) { wp_dequeue_style( 'colors' ); }
 	}
 	public function field_group_admin_enqueue_scripts() {
 		$editor = wp_enqueue_code_editor( array( 'type' => 'text/x-php' ) );
-		wp_enqueue_script( 'acf-vf-admin', plugins_url( 'js/admin.js', __FILE__ ), array( 'acf-field-group', 'jquery' ), ACF_VF_VERSION, true );
+		wp_enqueue_script( 'acf-vf-admin', plugins_url( 'js/admin.js', ACF_VF_PLUGIN_FILE ), array( 'acf-field-group', 'jquery' ), ACF_VF_VERSION, true );
 		wp_localize_script( 'acf-vf-admin', 'acfVfSettings', array( 'nonce' => wp_create_nonce( 'acf-vf-settings' ), 'editor' => $editor ) );
 	}
 	public function register_options() {

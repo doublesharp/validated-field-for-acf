@@ -31,7 +31,7 @@ function include_acf_validated_field() {
 		return;
 	}
 	require_once __DIR__ . '/includes/class-acf-vf-validation.php';
-	require_once __DIR__ . '/validated_field_v5.php';
+	require_once __DIR__ . '/includes/class-acf-field-validated-field.php';
 	acf_register_field_type( 'acf_field_validated_field' );
 	require_once __DIR__ . '/includes/class-acf-vf-polylang.php';
 	new ACF_VF_Polylang();

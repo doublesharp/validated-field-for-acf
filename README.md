@@ -15,3 +15,5 @@ The plugin folder and WordPress.org slug remain `validated-field-for-acf`; the b
 [WordPress.org](https://wordpress.org/plugins/validated-field-for-acf/) | [Doublesharp](https://doublesharp.com/)
 
 See `readme.txt` for the feature description and compatibility details. Licensed under GPL-2.0-or-later; see `LICENSE`.
+
+The current ACF 6+ field adapter is `includes/class-acf-field-validated-field.php`. The old `validated_field_v4.php` stub and `validated_field_v5.php` filename have been removed. Field type names, saved settings and the WordPress plugin entry point remain unchanged.
