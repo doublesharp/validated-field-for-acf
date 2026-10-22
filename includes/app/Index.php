@@ -27,6 +27,7 @@ final class Index {
         $row = $wpdb->get_row($wpdb->prepare('SELECT schema_revision,value_text FROM ' . Storage::table('index') . ' WHERE object_key=%s AND record_id=0 AND field_key=%s', $object, '__state'), ARRAY_A);
         $state = $row ? json_decode($row['value_text'], true) : null;
         if (!$state || $row['schema_revision'] !== $revision) { return ['revision' => $revision, 'cursor' => 0, 'complete' => false]; }
+        if (NativeTables::enabled($object) && (NativeTables::pending($object) || ($state['native_generation'] ?? '') !== NativeTables::generation($object))) { return ['revision' => $revision, 'cursor' => 0, 'complete' => false]; }
         return ['revision' => $revision, 'cursor' => (int) ($state['cursor'] ?? 0), 'complete' => !empty($state['complete'])];
     }
 
@@ -75,6 +76,17 @@ final class Index {
             if (is_wp_error($current)) { Storage::rollback(); return $current; }
             $lock = Storage::lock('index:' . $object);
             if (is_wp_error($lock)) { Storage::rollback(); return $lock; }
+            $native = NativeTables::enabled($object);
+            if ($native) {
+                $settled = NativeTables::prepare_backfill($object);
+                if (is_wp_error($settled)) { Storage::rollback(); return $settled; }
+                if (NativeTables::pending($object)) {
+                    $state = ['revision'=>Schema::object($object)['_revision'],'cursor'=>0,'complete'=>false];
+                    if (!Storage::commit()) { return self::error(); }
+                    return $state;
+                }
+                $generation = NativeTables::generation($object);
+            }
             $state = self::state($object);
             if ($state['complete']) { Storage::commit(); return $state; }
             global $wpdb;
@@ -91,6 +103,17 @@ final class Index {
                 $state['cursor'] = (int) $id;
             }
             $state['complete'] = count($ids) < $batch_size;
+            if ($native) {
+                // A nested public mutation is durable work, not a reason to roll it
+                // back. Commit it, but restart the projection under its new generation.
+                if ($generation !== NativeTables::generation($object) || NativeTables::pending($object)) {
+                    if ($wpdb->delete(Storage::table('index'), ['object_key'=>$object,'record_id'=>0]) === false) { throw new \RuntimeException('Native readiness reset failed.'); }
+                    $state = ['revision'=>$state['revision'],'cursor'=>0,'complete'=>false];
+                    if (!Storage::commit()) { return self::error(); }
+                    return $state;
+                }
+                $state['native_generation'] = $generation;
+            }
             self::put($object, 0, '__state', $state['revision'], 'state', wp_json_encode($state), null);
             if (!Storage::commit()) { return self::error(); }
             return $state;
@@ -130,7 +153,7 @@ final class Index {
     }
 
     /** Null means use the authoritative scan. IDs are an indexed candidate superset. */
-    public static function candidates(string $object, array $filters, array $types, int $limit, array $used = []) {
+    public static function candidates(string $object, array $filters, array $types, int $limit, array $used = [], ?array $statuses = null, ?callable $consume_work = null) {
         if (!$filters || !self::state($object)['complete']) { return null; }
         global $wpdb;
         $clauses = []; $joins = []; $n = 0;
@@ -145,13 +168,19 @@ final class Index {
             $n++;
         }
         if (!$n) { return null; }
-        $base = 'SELECT vfi0.record_id FROM ' . Storage::table('index') . ' vfi0 JOIN ' . $wpdb->posts . " vfp ON vfp.ID=vfi0.record_id AND vfp.post_type=vfi0.object_key AND vfp.post_status IN ('publish','private','draft','pending') " . implode(' ', $joins) . ' WHERE ' . $wpdb->prepare('vfi0.object_key=%s', $object) . ' AND ' . implode(' AND ', $clauses);
-        $ids = []; $cursor = 0;
+        $statuses=Query::statuses($object,!empty(Schema::object($object)['native_table'])?$statuses:null);
+        // Managed callers retain their fixed status set; only native tables accept context.
+        if (is_wp_error($statuses)) { return $statuses; }
+        $status_sql=$wpdb->prepare(implode(',',array_fill(0,count($statuses),'%s')),$statuses);
+        $base = 'SELECT vfi0.record_id FROM ' . Storage::table('index') . ' vfi0 JOIN ' . $wpdb->posts . " vfp ON vfp.ID=vfi0.record_id AND vfp.post_type=vfi0.object_key AND vfp.post_status IN ($status_sql) " . implode(' ', $joins) . ' WHERE ' . $wpdb->prepare('vfi0.object_key=%s', $object) . ' AND ' . implode(' AND ', $clauses);
+        $ids = []; $cursor = 0; $work=0;
+        $work_limit=max(1,min(10000,(int)apply_filters('acf_vf/app/query_work_limit',10000,$object)));
         do {
             $batch = $wpdb->get_col($base . ' AND vfi0.record_id>' . $cursor . ' ORDER BY vfi0.record_id ASC LIMIT 200');
             if ($wpdb->last_error) { return self::error(); }
             foreach ($batch as $id) {
                 $cursor = (int) $id;
+                if ($consume_work?!$consume_work():++$work>$work_limit) { return new \WP_Error('query_work_capacity','This query exceeds the execution work limit. Narrow the query.',['status'=>413]); }
                 $record = Records::read($cursor);
                 if (is_wp_error($record)) { continue; }
                 foreach (array_unique(array_merge($used, array_column($filters, 'field'))) as $name) {

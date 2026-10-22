@@ -26,14 +26,14 @@ final class Plugin {
 		if (self::$started) { return; } self::$started = true;
         do_action('acf_vf/app/register_extensions');
         Extensions::finish();
-		foreach ( array( 'NativeGuard', 'Rules', 'NativeFields', 'BusinessFields', 'Relationships', 'Audit', 'Jobs', 'Index', 'Localization', 'Lists', 'Rest', 'GraphQL', 'Admin', 'Schema' ) as $name ) {
+		foreach ( array( 'NativeGuard', 'Rules', 'NativeFields', 'BusinessFields', 'Relationships', 'Audit', 'Jobs', 'Index', 'Localization', 'NativeTables', 'Lists', 'Rest', 'GraphQL', 'Admin', 'Schema' ) as $name ) {
 			$class = __NAMESPACE__ . '\\' . $name;
 			if ( class_exists( $class ) && is_callable( array( $class, 'boot' ) ) ) { $class::boot(); }
 		}
         // Generic handlers may register later in the request. Only known absent
         // providers can be parked at bootstrap; the worker checks all other kinds.
         $missing=[];
-        foreach (['email'=>'automation.actions','webhook'=>'automation.actions','record_action'=>'automation.actions','rollup'=>'calculations.rollup'] as $kind=>$feature) {
+        foreach (['email'=>'automation.actions','webhook'=>'automation.actions','record_action'=>'automation.actions','rollup'=>'calculations.rollup','table_work'=>'lists.advanced_filters'] as $kind=>$feature) {
             if (!Extensions::has($feature)) { $missing[]=$kind; }
         }
         if ($missing) { Jobs::park_unavailable($missing); }

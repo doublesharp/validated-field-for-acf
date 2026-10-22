@@ -26,11 +26,11 @@ final class Lists {
         add_action('restrict_manage_posts', [__CLASS__, 'native_filters'], 20, 2);
         add_action('admin_head-edit.php', [__CLASS__, 'native_widths']);
         add_action('admin_notices', [__CLASS__, 'native_notice']);
-        add_filter('disable_months_dropdown', static function ($disabled, $object) { return Schema::object($object) ? true : $disabled; }, 10, 2);
+        add_filter('disable_months_dropdown', static function ($disabled, $object) { return Schema::managed_object($object) ? true : $disabled; }, 10, 2);
     }
 
     public static function register_hooks(string $object): void {
-        if (isset(self::$hooked[$object]) || !Schema::object($object)) { return; }
+        if (isset(self::$hooked[$object]) || !Schema::object($object) || !empty(Schema::object($object)['native_table'])) { return; }
         self::$hooked[$object] = true;
         add_filter('manage_' . $object . '_posts_columns', static function ($columns) use ($object) {
             $configured = self::native_columns($object);
@@ -122,7 +122,7 @@ final class Lists {
             $scalar = self::scalar_field($definition);
             $result[] = ['field'=>$name, 'label'=>sanitize_text_field($label), 'width'=>$width, 'formatter'=>$formatter, 'type'=>$type,
                 'sortable'=>self::builtin($name) || (empty($native['multiple']) && !self::relationship($native) && in_array($type, ['text','textarea','number','range','email','url','password','true_false','select','radio','button_group','date_picker','date_time_picker','time_picker','color_picker'], true)),
-                'editable'=>Extensions::has('lists.inline') && !self::builtin($name) && $scalar && Permissions::can('update', $object, 0, $name)];
+                'editable'=>!self::builtin($name) && (ListEditing::supports($definition) || apply_filters('acf_vf/app/inline_supported', false, $definition)) && Permissions::can('update', $object, 0, $name)];
         }
         return $result;
     }
@@ -271,6 +271,7 @@ final class Lists {
         if (self::$querying || !is_admin() || !$query->is_main_query() || !is_string($query->get('post_type')) || !Schema::object($query->get('post_type'))) { return $posts; }
         global $pagenow;
         if ($pagenow !== 'edit.php') { return $posts; }
+        if (!empty(Schema::object($query->get('post_type'))['native_table']) && self::request('vf_view') === '' && self::request('vf_filter_field') === '' && (!is_string($query->get('orderby')) || strpos($query->get('orderby'), 'vf_') !== 0)) { return $posts; }
         self::$querying = true;
         try {
             $object = $query->get('post_type');
@@ -287,11 +288,11 @@ final class Lists {
             $field = self::request('vf_filter_field');
             if ($field !== '') {
                 $filter = ['field'=>$field, 'operator'=>self::request('vf_filter_operator'), 'value'=>self::request('vf_filter_value')];
-                $args['filters'][] = $filter;
+                $args['filters'] = self::and_filter($args['filters'] ?? [], $filter);
             }
             $status = $query->get('post_status');
-            if (is_string($status) && $status !== '' && $status !== 'all' && $status !== 'any') { $args['filters'][] = ['field'=>'status','operator'=>'eq','value'=>$status]; }
-            $result = Query::run($object, $args);
+            if (is_string($status) && $status !== '' && $status !== 'all' && $status !== 'any') { $args['filters'] = self::and_filter($args['filters'] ?? [], ['field'=>'status','operator'=>'eq','value'=>$status]); }
+            $result = !empty(Schema::object($object)['native_table']) ? NativeTables::query($object, $args, $query) : Query::run($object, $args);
             if (is_wp_error($result)) { self::$notice = __('The list query is invalid or unavailable.', 'validated-field-for-acf'); $query->found_posts = 0; $query->max_num_pages = 0; return []; }
             $query->found_posts = $result['total']; $query->max_num_pages = $result['total_pages'];
             $query->set('posts_per_page', $args['per_page']);
@@ -303,7 +304,7 @@ final class Lists {
     /** Core falls back to wp_count_posts on empty later pages; its cache is unscoped. */
     public static function native_counts($counts, string $object, string $permission = '') {
         global $pagenow;
-        if (!is_admin() || $pagenow !== 'edit.php' || !Schema::object($object)) { return $counts; }
+        if (!is_admin() || $pagenow !== 'edit.php' || !Schema::object($object) || !empty(Schema::object($object)['native_table'])) { return $counts; }
         $empty = (object)array_fill_keys(get_post_stati(), 0);
         if (self::$counting) { return $empty; }
         $key = get_current_user_id() . '|' . $object . '|' . $permission;
@@ -348,6 +349,11 @@ final class Lists {
     }
     public static function native_notice(): void { if (self::$notice !== '') { echo '<div class="notice notice-error" role="alert"><p>' . esc_html(self::$notice) . '</p></div>'; } }
     private static function request(string $key): string { return isset($_GET[$key]) && is_string($_GET[$key]) ? wp_unslash($_GET[$key]) : ''; }
+    private static function and_filter(array $filters, array $leaf): array {
+        if (isset($filters['relation'])) { return ['relation'=>'AND', 'conditions'=>[$filters,$leaf]]; }
+        $filters[] = $leaf;
+        return $filters;
+    }
 
 
 }

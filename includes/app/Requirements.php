@@ -29,7 +29,7 @@ final class Requirements {
         return $sources;
     }
     public static function for_object(string $object): array {
-        $objects = Schema::objects(); $visited = []; $result = [];
+        $objects = Schema::table_objects(); $visited = []; $result = [];
         $visit = static function ($slug) use (&$visit, &$visited, &$result, $objects): void {
             if (isset($visited[$slug])) { return; }
             if (count($visited) >= 1000 || !isset($objects[$slug])) { $result[]='configuration.unknown'; return; }

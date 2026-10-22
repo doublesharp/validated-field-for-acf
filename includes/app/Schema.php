@@ -12,14 +12,14 @@ final class Schema {
     }
 
     public static function private_registration(array $args, string $slug): array {
-        if (!self::object($slug)) { return $args; }
+        if (!self::managed_object($slug)) { return $args; }
         foreach (['public','publicly_queryable','show_in_rest','show_in_graphql','query_var','rewrite'] as $flag) { $args[$flag] = false; }
         $args['exclude_from_search'] = true;
         return $args;
     }
 
     public static function registered_type(string $slug, $type): void {
-        $definition = self::object($slug);
+        $definition = self::managed_object($slug);
         if (!$definition) { return; }
         foreach (self::private_registration([], $slug) as $flag => $value) { $type->$flag = $value; }
         if (did_action('acf/init') && function_exists('acf_add_local_field_group')) { self::register_fields($slug, Localization::definition($definition)); }
@@ -40,8 +40,12 @@ final class Schema {
 
     public static function object(string $slug): ?array {
         $objects = self::objects();
-        return isset($objects[$slug]) && is_array($objects[$slug]) ? $objects[$slug] : null;
+        return isset($objects[$slug]) && is_array($objects[$slug]) ? $objects[$slug] : NativeTables::definition($slug);
     }
+
+    /** Managed objects alone own registration and native access guards. */
+    public static function managed_object(string $slug): ?array { $objects=self::objects(); return isset($objects[$slug]) && is_array($objects[$slug])?$objects[$slug]:null; }
+    public static function table_objects(): array { return self::objects()+NativeTables::objects(); }
 
     public static function fields(string $slug): array {
         return self::object($slug)['fields'] ?? [];
@@ -230,6 +234,7 @@ final class Schema {
     /** Every configuration writer uses this full-map compare-and-swap. */
     /** All dependencies share one configuration snapshot, including cross-object permissions. */
     public static function assert_current(string $object) {
+        if (!self::managed_object($object) && NativeTables::enabled($object)) { return NativeTables::assert_current($object); }
         global $wpdb;
         $cached = self::objects();
         $raw = maybe_unserialize($wpdb->get_var($wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name=%s", 'acf_vf_objects')));

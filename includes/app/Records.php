@@ -139,6 +139,8 @@ final class Records {
     }
 
     public static function flush_cache(int $id): void {
+        // Reconcile earlier external persistence before native_write can own this ID.
+        if (class_exists(NativeTables::class)) { NativeTables::observe($id); }
         clean_post_cache($id);
         wp_cache_delete($id, 'post_meta');
         if (function_exists('acf_get_store')) {
@@ -170,7 +172,8 @@ final class Records {
         if (isset($payload['title']) && !is_string($payload['title'])) { return self::error('payload', 'Title must be text.'); }
         if ($id && (!array_key_exists('version', $payload) || filter_var($payload['version'], FILTER_VALIDATE_INT) === false || $payload['version'] < 0)) { return self::error('version_required', 'An integer version is required for updates.', 409); }
         $status = $payload['status'] ?? ($id ? get_post_status($id) : 'private');
-        if (!in_array($status, ['draft', 'pending', 'private', 'publish'], true)) { return self::error('status', 'Unsupported record status.'); }
+        $preserve_native=$id && !empty(Schema::object($object)['native_table']) && is_string($status) && get_post_status_object($status) && !in_array($status,['trash','auto-draft','inherit'],true) && $status===get_post_status($id);
+        if (!in_array($status, ['draft', 'pending', 'private', 'publish'], true) && !$preserve_native) { return self::error('status', 'Unsupported record status.'); }
         $type = get_post_type_object($object);
         if (in_array($status, ['private', 'publish'], true) && !current_user_can($type->cap->publish_posts)) { return self::error('forbidden', 'Publishing this record is not permitted.', 403); }
         $transaction = Storage::begin();
@@ -189,6 +192,7 @@ final class Records {
             }
             $before = $id ? self::raw($id) : null;
             if ($id && (int) $payload['version'] !== $before['version']) { Storage::rollback(); return self::error('version_conflict', 'The record changed. Reload before saving.', 409); }
+            if ($preserve_native && $before['status']!==$status) { Storage::rollback(); return self::error('status','Native status changed. Reload before saving.',409); }
             $input = $payload['fields'] ?? [];
             $access = self::field_access($object, $input, $id);
             if (is_wp_error($access)) { Storage::rollback(); return $access; }
@@ -211,7 +215,8 @@ final class Records {
             $post = ['post_type' => $object, 'post_status' => $status, 'post_title' => $payload['title'] ?? ($before['title'] ?? '')];
             if ($id) { $post['ID'] = $id; Storage::touch($id); }
             else { $post['post_author'] = get_current_user_id(); }
-            $saved_id = self::native_write($id, $object, static function () use ($post) { return wp_insert_post(wp_slash($post), true); });
+            $native_update=$id && !empty(Schema::object($object)['native_table']);
+            $saved_id = self::native_write($id, $object, static function () use ($post,$native_update) { return $native_update?wp_update_post(wp_slash($post),true):wp_insert_post(wp_slash($post), true); });
             if (is_wp_error($saved_id)) { Storage::rollback(); return self::error('record_write', 'Record could not be saved.', 500); }
             $id = (int) $saved_id;
             Storage::touch($id);

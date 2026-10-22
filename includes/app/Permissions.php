@@ -14,7 +14,8 @@ final class Permissions {
         $type = get_post_type_object($object);
         if (!$schema || !$type || !in_array($action, ['read', 'create', 'update', 'delete', 'export'], true)) { return false; }
         $post = $id ? get_post($id) : null;
-        if ($id && (!$post || $post->post_type !== $object || $post->post_status === 'trash')) { return false; }
+        if ($id && (!$post || $post->post_type !== $object)) { return false; }
+        if ($post && $post->post_status === 'trash' && (empty($schema['native_table']) || !in_array($action,['read','export'],true) || !user_can($user_id,'edit_post',$id))) { return false; }
         $native = ['read' => 'read_post', 'export' => 'read_post', 'update' => 'edit_post', 'delete' => 'delete_post'];
         self::$native_depth++;
         try {

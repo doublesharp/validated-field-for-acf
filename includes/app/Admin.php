@@ -51,8 +51,10 @@ final class Admin {
         check_ajax_referer('acf-vf-workspace', 'nonce');
         $raw = isset($_POST['data']) && is_string($_POST['data']) ? wp_unslash($_POST['data']) : '{}';
         if (strlen($raw) > 1048576) { wp_send_json_error(['message' => 'Request exceeds 1 MiB.'], 413); }
-        $data = json_decode($raw, true, 12);
-        if (!is_array($data)) { wp_send_json_error(['message' => 'Expected a JSON object.'], 400); }
+        $decoded = json_decode($raw, false, Rest::JSON_DEPTH);
+        if (!is_object($decoded)) { wp_send_json_error(['message' => 'Expected a JSON object.'], 400); }
+        $data = json_decode($raw, true, Rest::JSON_DEPTH);
+        if (!Rest::bounded($data)) { wp_send_json_error(['message' => 'Input nesting or size exceeds limits.'], 400); }
         $operation = isset($_POST['operation']) && is_string($_POST['operation']) ? sanitize_key($_POST['operation']) : '';
         $result = self::dispatch($operation, $data);
         if (is_wp_error($result)) {
@@ -68,13 +70,13 @@ final class Admin {
         $id = filter_var($data['id'] ?? 0, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
         if ($id === false) { return self::error('invalid_id', 'Record ID must be a nonnegative integer.'); }
         // Avoid PHP type errors for malformed requests before calling typed service APIs.
-        foreach (['payload', 'query', 'columns', 'fields', 'ids', 'definition'] as $key) {
+        foreach (['payload', 'query', 'columns', 'fields', 'ids', 'definition', 'preferences'] as $key) {
             if (isset($data[$key]) && !is_array($data[$key])) { return self::error('invalid_payload', "$key must be an object or array."); }
         }
         switch ($operation) {
             case 'objects':
                 $items = [];
-                foreach (Schema::objects() as $slug => $definition) {
+                foreach (Schema::table_objects() as $slug => $definition) {
                     if (!Permissions::can('read', $slug)) { continue; }
                     $descriptor = self::form_metadata($slug);
                     if (!is_wp_error($descriptor)) { $items[] = $descriptor; }
@@ -90,7 +92,7 @@ final class Admin {
             case 'query':
                 $result = Query::run($object, $data['query'] ?? []);
                 if (is_wp_error($result)) { return $result; }
-                $columns = Lists::columns($object);
+                $columns = isset($data['columns']) ? Lists::normalize_columns($object,$data['columns']) : Lists::columns($object);
                 if (is_wp_error($columns)) { return $columns; }
                 foreach ($result['items'] as &$item) {
                     $item['display'] = [];
@@ -116,6 +118,12 @@ final class Admin {
                 }
                 return $related;
             case 'save_record': return Records::save($object, $data['payload'] ?? [], $id, ['source' => 'workspace']);
+            case 'quick_add': return ListEditing::quick_add($object,$data['payload']??[]);
+            case 'inline_update':
+                if (!is_string($data['field']??null) || !is_int($data['version']??null) || !array_key_exists('value',$data)) { return self::error('inline_input','Supply field, value and an integer version.'); }
+                return ListEditing::inline_update($id,$data['field'],$data['value'],$data['version']);
+            case 'table_preferences': return TablePreferences::get($object);
+            case 'save_table_preferences': return TablePreferences::save($object,$data['preferences']??[]);
             case 'delete_record': return Records::delete($id, ['source' => 'workspace']);
             case 'columns': return Lists::columns($object);
             case 'configure_columns': return Lists::configure($object, $data['columns'] ?? []);
@@ -182,7 +190,7 @@ final class Admin {
             }
             $fields[$name] = apply_filters('acf_vf/app/field_metadata', $metadata, $field, $object, $id);
         }
-        return ['slug' => $object, 'label' => $definition['label'], 'singular' => $definition['singular'], 'fields' => $fields, 'layout' => self::layout_metadata(Extensions::has('designer.layouts') ? ($definition['layout'] ?? []) : [], $fields), 'record_types' => self::record_type_metadata(Extensions::has('designer.layouts') ? ($definition['record_types'] ?? []) : [], $fields), 'can_create' => Permissions::can('create', $object), 'can_update' => Permissions::can('update', $object, $id), 'can_delete' => Permissions::can('delete', $object, $id), 'can_export' => Permissions::can('export', $object, $id)];
+        return ['slug' => $object, 'label' => $definition['label'], 'singular' => $definition['singular'], 'native_table'=>!empty($definition['native_table']), 'fields' => $fields, 'layout' => self::layout_metadata(Extensions::has('designer.layouts') ? ($definition['layout'] ?? []) : [], $fields), 'record_types' => self::record_type_metadata(Extensions::has('designer.layouts') ? ($definition['record_types'] ?? []) : [], $fields), 'can_create' => Permissions::can('create', $object), 'can_update' => Permissions::can('update', $object, $id), 'can_delete' => Permissions::can('delete', $object, $id), 'can_export' => Permissions::can('export', $object, $id)];
     }
     private static function condition_readable($condition, string $object, int $id, int $depth = 0): bool {
         if (!is_array($condition) || $depth > 8) { return false; }

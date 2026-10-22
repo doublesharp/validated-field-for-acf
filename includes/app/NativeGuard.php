@@ -32,7 +32,7 @@ final class NativeGuard {
             if ((defined('XMLRPC_REQUEST') && XMLRPC_REQUEST) || !did_action('acf/init')) { $query->query_vars = self::native_query($query->query_vars); }
         }, PHP_INT_MAX);
         add_filter('wp_count_posts', static function ($counts, $type) {
-            if (!did_action('acf/init') && Schema::object((string) $type)) {
+            if (!did_action('acf/init') && Schema::managed_object((string) $type)) {
                 $counts = clone $counts;
                 foreach ($counts as $status => $_) { $counts->$status = 0; }
             }
@@ -48,7 +48,7 @@ final class NativeGuard {
             return $clauses;
         }, PHP_INT_MAX);
         add_filter('get_edit_post_link', static function ($url, $id) {
-            return Schema::object((string) get_post_type($id)) ? admin_url('admin.php?page=validated-field-workspace&record=' . (int) $id) : $url;
+            return Schema::managed_object((string) get_post_type($id)) ? admin_url('admin.php?page=validated-field-workspace&record=' . (int) $id) : $url;
         }, 20, 2);
         add_action('load-post-new.php', [__CLASS__, 'redirect_editor']);
         add_action('load-post.php', [__CLASS__, 'redirect_editor']);
@@ -56,15 +56,15 @@ final class NativeGuard {
     public static function redirect_editor(): void {
         $id = isset($_GET['post']) ? absint($_GET['post']) : 0;
         $type = $id ? get_post_type($id) : sanitize_key($_GET['post_type'] ?? 'post');
-        if (Schema::object((string) $type)) {
+        if (Schema::managed_object((string) $type)) {
             wp_safe_redirect(admin_url('admin.php?page=validated-field-workspace' . ($id ? '&record=' . $id : '&object=' . rawurlencode($type)))); exit;
         }
     }
     public static function block_post($empty, array $post) {
-        return Schema::object((string) ($post['post_type'] ?? get_post_type($post['ID'] ?? 0))) && !Records::permits_post_write($post) ? true : $empty;
+        return Schema::managed_object((string) ($post['post_type'] ?? get_post_type($post['ID'] ?? 0))) && !Records::permits_post_write($post) ? true : $empty;
     }
     public static function block_delete($delete, $post, $force = false) {
-        return $post instanceof \WP_Post && Schema::object($post->post_type) && !Records::is_writing((int) $post->ID) ? false : $delete;
+        return $post instanceof \WP_Post && Schema::managed_object($post->post_type) && !Records::is_writing((int) $post->ID) ? false : $delete;
     }
     public static function block_meta($check, $id, $key, $value = null, $extra = null) {
         if (current_filter() === 'delete_post_metadata' && $extra) {
@@ -78,13 +78,13 @@ final class NativeGuard {
                 if ($wpdb->get_var($wpdb->prepare($sql, array_merge([$key], $types)))) { return false; }
             }
         }
-        if (Records::is_writing((int) $id) || !Schema::object((string) get_post_type($id))) { return $check; }
+        if (Records::is_writing((int) $id) || !Schema::managed_object((string) get_post_type($id))) { return $check; }
         if (in_array($key, ['_edit_lock', '_edit_last'], true)) { return $check; }
         return false;
     }
     public static function block_meta_id($check, $mid, $value = null, $key = null) {
         $metadata = get_metadata_by_mid('post', (int) $mid);
-        return $metadata && Schema::object((string) get_post_type($metadata->post_id)) && !Records::is_writing((int) $metadata->post_id) ? false : $check;
+        return $metadata && Schema::managed_object((string) get_post_type($metadata->post_id)) && !Records::is_writing((int) $metadata->post_id) ? false : $check;
     }
     /** Native selectors have no shared field/scope policy. Use VF Query for managed data. */
     public static function native_query(array $args, $field = null, $post_id = null): array {
@@ -100,7 +100,7 @@ final class NativeGuard {
         if ($id < 1) { return false; }
         $post = get_post($id);
         if ($post && $post->post_type === 'revision') { $post = get_post($post->post_parent); }
-        return $post && Schema::object($post->post_type) !== null;
+        return $post && Schema::managed_object($post->post_type) !== null;
     }
 
     /** Legacy handlers serialize directly and never invoke xmlrpc_prepare_post. */

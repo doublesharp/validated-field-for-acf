@@ -94,7 +94,7 @@ final class GraphQL {
         $id = (int) $id;
         $object = get_post_type($id);
         $denied = false;
-        if ($object && Schema::object($object)) {
+        if ($object && Schema::managed_object($object)) {
             // Private application data never gets a second API permission model.
             $denied = !Permissions::can('read', $object, $id, $field['name'] ?? '');
         } elseif ($object) {
