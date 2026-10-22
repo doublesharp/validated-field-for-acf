@@ -1,2 +1,6 @@
-
-standards.xml
+.env
+*.log
+node_modules/
+coverage/
+.DS_Store
+*.zip
