@@ -26,6 +26,7 @@ if ( ! defined( 'ACF_VF_PRO_UPGRADE_URL' ) ) {
 	define( 'ACF_VF_PRO_UPGRADE_URL', 'https://www.doublesharp.com/' );
 }
 
+/** Register the wrapper after ACF has loaded its native field types. */
 function include_acf_validated_field() {
 	if ( ! defined( 'ACF_VERSION' ) || version_compare( ACF_VERSION, '6.0', '<' ) ) {
 		return;

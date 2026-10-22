@@ -7,6 +7,15 @@ final class Query {
     public const MAX_FILTER_DEPTH = 8;
     private const OPERATORS = ['eq','ne','contains','starts_with','in','gt','gte','lt','lte','between','empty','not_empty','relative_date'];
 
+    /**
+     * Query readable records; totals and optional metrics are calculated before pagination.
+     *
+     * @param string $object Configured object slug or opted-in native post type.
+     * @param array $args page, per_page, search, sort, filters and metrics; advanced forms require Pro.
+     * @param string[]|null $native_statuses Trusted native-adapter context, never request input.
+     * @return array|\WP_Error items, total, page, per_page, total_pages and optional metrics.
+     * @see docs/platform/table-query-implementation.md For filter, sort and metric shapes.
+     */
     public static function run(string $object, array $args = [], ?array $native_statuses = null) {
         if (!Schema::object($object)) { return self::error('Object is unavailable.',404); }
         $current = Schema::assert_current($object);

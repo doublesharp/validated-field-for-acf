@@ -6,6 +6,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class Plugin {
 	private static $started = false;
+	/** Load privacy guards immediately; defer ACF-dependent services to acf/init. */
 	public static function boot(): void {
 		spl_autoload_register( static function ( string $class ): void {
 			$prefix = __NAMESPACE__ . '\\';
@@ -22,6 +23,7 @@ final class Plugin {
         add_action( 'acf/init', array( __CLASS__, 'services' ), 30 );
 	}
 
+	/** Register installed providers before booting services that consume their features. */
 	public static function services(): void {
 		if (self::$started) { return; } self::$started = true;
         do_action('acf_vf/app/register_extensions');

@@ -80,6 +80,11 @@ final class Storage {
         update_option('acf_vf_app_storage_version', '2', false);
     }
 
+    /**
+     * Begin an InnoDB transaction, or a savepoint when nested; pair with commit()/rollback().
+     *
+     * @return true|\WP_Error Transaction readiness, including required table engines and locks.
+     */
     public static function begin() {
         global $wpdb;
         if (!self::$depth) {
@@ -116,6 +121,7 @@ final class Storage {
         return true;
     }
 
+    /** Defer side effects until the outer commit; runs immediately when no transaction is open. */
     public static function after_commit(callable $callback): void {
         if (self::$depth) { self::$callbacks[] = $callback; }
         else { $callback(); }

@@ -12,6 +12,12 @@ final class Jobs {
         add_action('init', [self::class, 'schedule']);
     }
 
+    /**
+     * Register a worker callback receiving (array $payload, int $job_id).
+     *
+     * Workers run as the enqueueing actor. Return false/WP_Error or throw to request retry.
+     * Transactional handlers commit their work together with the queue completion receipt.
+     */
     public static function register(string $kind, callable $handler, bool $transactional = false): void {
         self::$handlers[$kind] = $handler;
         self::$transactional[$kind] = $transactional;
@@ -81,6 +87,12 @@ final class Jobs {
         }
     }
 
+    /**
+     * Queue work for the current actor; enqueue inside a record transaction for atomic outbox writes.
+     *
+     * @param array $options delay in seconds and optional idempotency_key scoped to kind and actor.
+     * @return int|\WP_Error New job ID, existing idempotent job ID, or queue error.
+     */
     public static function enqueue(string $kind, array $payload, array $options = []) {
         global $wpdb;
         if (!isset(self::$handlers[$kind]) || !get_current_user_id()) { return new \WP_Error('job_kind', 'Job type or actor is unavailable.'); }
@@ -116,6 +128,11 @@ final class Jobs {
         return $id;
     }
 
+    /**
+     * Process due jobs from cron, WP-CLI or an administrator request.
+     *
+     * @return array<int,string> Claimed job IDs mapped to their resulting queue status.
+     */
     public static function run(int $limit = 10): array {
         global $wpdb;
         if (!wp_doing_cron() && !(defined('WP_CLI') && WP_CLI) && !current_user_can('manage_options')) { return []; }

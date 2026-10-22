@@ -4,6 +4,12 @@ defined('ABSPATH') || exit;
 
 /** Small synchronous batches; every write uses Records and every lookup uses Query. */
 final class ImportExport {
+    /**
+     * Build an authorized synchronous export of at most 1,000 records and 5 MiB.
+     *
+     * @param array $input format (json/csv), query without pagination, and optional field-name list.
+     * @return array|\WP_Error filename, mime_type, content and total; no HTTP output is sent here.
+     */
     public static function export(string $object, array $input = []) {
         $error = Rest::keys($input, ['format', 'query', 'fields']);
         if ($error) { return $error; }

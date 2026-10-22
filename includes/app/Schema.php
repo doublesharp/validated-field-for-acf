@@ -38,6 +38,7 @@ final class Schema {
         return $objects;
     }
 
+    /** Resolve either a managed application object or an opted-in native post type. */
     public static function object(string $slug): ?array {
         $objects = self::objects();
         return isset($objects[$slug]) && is_array($objects[$slug]) ? $objects[$slug] : NativeTables::definition($slug);
@@ -51,6 +52,13 @@ final class Schema {
         return self::object($slug)['fields'] ?? [];
     }
 
+    /**
+     * Validate and save an object definition as an administrator.
+     *
+     * @param array $definition Object settings and fields keyed by name; retain _revision when editing.
+     * @param bool $dry_run Validate and normalize without persisting the definition.
+     * @return array|\WP_Error Normalized definition or a validation/concurrency error.
+     */
     public static function save_object(array $definition, bool $dry_run = false) {
         if (!current_user_can('manage_options')) { return self::error('forbidden', 'Configuration requires manage_options.', 403); }
         $previous = self::object(is_string($definition['slug'] ?? null) ? $definition['slug'] : '');

@@ -45,6 +45,12 @@ class ACF_VF_Validation {
 	}
 
 	/** Capture original row values before ACF starts overwriting reordered destinations. */
+	/**
+	 * Capture previous values before ACF mutates repeater rows during a save.
+	 * Pair with end_save(); nested saves restore their enclosing snapshot.
+	 *
+	 * @param int|string $post_id ACF object ID, including user/term/option IDs.
+	 */
 	public static function begin_save( $post_id ) {
 		if ( self::$save_post_id !== null ) {
 			self::$save_stack[] = array( 'post_id' => self::$save_post_id, 'values' => self::$save_values, 'entries' => self::$save_entries, 'rows' => self::$submitted_rows, 'deleted' => self::$deleted_rows, 'screen' => self::$save_screen );
@@ -278,6 +284,16 @@ class ACF_VF_Validation {
 		return '~' . $escaped . '~';
 	}
 
+	/**
+	 * Apply wrapper rules without replacing an earlier ACF validation failure.
+	 *
+	 * @param bool|string $valid Existing ACF validation result.
+	 * @param mixed $value Submitted native value.
+	 * @param array $field Wrapper definition, including validation settings.
+	 * @param string $input HTML input path used to resolve the original repeater row.
+	 * @param int|string|null $post_id ACF object ID; null uses the current form context.
+	 * @return bool|string Original result, true, or a validation error message.
+	 */
 	public static function validate( $valid, $value, $field, $input, $post_id = null ) {
 		if ( true !== $valid ) {
 			return $valid;

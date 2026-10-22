@@ -63,6 +63,12 @@ final class NativeTables {
         }
         return false;
     }
+    /**
+     * Opt an existing post type into tables without replacing its native editor or visibility.
+     *
+     * @param string[] $keys One to 49 distinct top-level ACF field keys applicable to the post type.
+     * @return array|\WP_Error Table definition; configuration requires manage_options.
+     */
     public static function configure(string $object,array $keys) {
         if (!current_user_can('manage_options')) { return Rest::error('native_tables_forbidden','Table configuration requires administrator access.',403); }
         $type=get_post_type_object($object);
@@ -353,7 +359,15 @@ final class NativeTables {
         self::observe((int)$post->ID,$old==='new'?null:$before,null,$old==='new',(array)$post);
     }
     public static function updated_post(int $id,$after,$before): void { self::changed_post($id,$after,$before); }
-    /** Bare set_post_type callers must explicitly forward their before/after snapshots. */
+    /**
+     * Notify VF after a post-type change made with bare set_post_type(), which emits no save hook.
+     *
+     * wp_update_post() is observed automatically. Capture the old post before changing its type.
+     *
+     * @param int $id Native post ID.
+     * @param \WP_Post $after Post snapshot after persistence.
+     * @param \WP_Post $before Post snapshot before persistence.
+     */
     public static function changed_post(int $id,$after,$before): void {
         $objects=array_values(array_filter([(string)$before->post_type,(string)$after->post_type],[self::class,'enabled']));
         if ($objects) { self::observe($id,(array)$before,self::enabled((string)$after->post_type)?(string)$after->post_type:$objects[0],false,(array)$after); }

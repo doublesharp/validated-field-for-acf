@@ -2,6 +2,7 @@
 /** Current ACF integration. Field definitions retain their legacy names/settings. */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
+/** Delegate native ACF behavior while retaining the wrapper's stored field identity. */
 class acf_field_validated_field extends acf_field {
 	public function initialize() {
 		$this->name = 'validated_field';
@@ -47,7 +48,14 @@ class acf_field_validated_field extends acf_field {
 		}
 	}
 
-	/** Build the native definition without preparing its persistent name for HTML. */
+	/**
+	 * Build the native definition while retaining the wrapper's key and meta name.
+	 *
+	 * Use this for ACF callbacks; prepare_field() adds HTML-only input names later.
+	 *
+	 * @param array $field Validated Field definition, with native settings in sub_field.
+	 * @return array Native ACF field definition.
+	 */
 	public function native_field( $field ) {
 		$sub = isset( $field['sub_field'] ) && is_array( $field['sub_field'] ) ? $field['sub_field'] : array();
 		$type = ! empty( $sub['type'] ) ? $sub['type'] : 'text';

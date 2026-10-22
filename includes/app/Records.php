@@ -125,6 +125,11 @@ final class Records {
         try { return $write(); }
         finally { array_pop(self::$native_writes); self::$writing--; }
     }
+    /**
+     * Read as the current WordPress user; unreadable fields are omitted.
+     *
+     * @return array|\WP_Error Record with id, object, title, status, version and fields.
+     */
     public static function read(int $id) {
         self::flush_cache($id);
         $post = get_post($id);
@@ -162,6 +167,16 @@ final class Records {
         return $context;
     }
 
+    /**
+     * Create or update through the shared permissions, validation and transaction path.
+     *
+     * @param string $object Configured object slug or opted-in native post type.
+     * @param array $payload Optional title/status/fields; updates must include the last-read version.
+     * @param int $id Existing record ID, or zero to create.
+     * @param array $context source labels the write; dry_run validates and rolls back a preview.
+     * @return array|\WP_Error Saved or previewed record; stale versions return version_conflict.
+     * @example Records::save('invoice', ['fields' => ['amount' => 125]]);
+     */
     public static function save(string $object, array $payload, int $id = 0, array $context = []) {
         $context = self::context($context);
         if ($context['depth'] > 8) { return self::error('recursion', 'Application write depth exceeded.', 409); }
@@ -236,6 +251,7 @@ final class Records {
             $unique_saved = Unique::finish($object, $claims, $id);
             if (is_wp_error($unique_saved)) { Storage::rollback(); return $unique_saved; }
             $record = self::raw($id);
+            // Durable audit/outbox work belongs here; external side effects belong in record_saved after commit.
             do_action('acf_vf/app/record_persisted', $record, $before, $context);
             Storage::after_commit(static function () use ($record, $before, $context) { do_action('acf_vf/app/record_saved', $record, $before, $context); });
             if (!Storage::commit()) { return self::error('commit_failed', 'Record transaction could not be committed.', 500); }
@@ -249,6 +265,11 @@ final class Records {
         }
     }
 
+    /**
+     * Validate proposed fields against defaults or an existing record without saving values.
+     *
+     * @return true|\WP_Error Validation result; use save() for authoritative write-time checks.
+     */
     public static function validate(string $object, array $fields, int $id = 0, array $context = []) {
         if (!Schema::object($object)) { return self::error('object_unavailable', 'Object is unavailable.', 404); }
         if (!Permissions::can($id ? 'update' : 'create', $object, $id)) { return self::error('forbidden', 'This record cannot be changed.', 403); }
@@ -422,6 +443,11 @@ final class Records {
         return array_diff(array_keys($row), $allowed) ? 'Unknown nested field.' : true;
     }
 
+    /**
+     * Permanently delete through application policies, unique-claim cleanup and audit hooks.
+     *
+     * @return true|\WP_Error Result for the current WordPress user.
+     */
     public static function delete(int $id, array $context = []) {
         $requirements = Requirements::assert_operation('delete', (string)get_post_type($id), $id, $context);
         if (is_wp_error($requirements)) { return $requirements; }
