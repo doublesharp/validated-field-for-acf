@@ -4,7 +4,7 @@ Tags: acf, advanced custom fields, validation, validate, regex, php, mask, input
 Requires at least: 6.0
 Requires PHP: 8.0
 Tested up to: 7.1.3
-Stable tag: trunk
+Stable tag: 2.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -60,7 +60,7 @@ Global configuration is under `Settings > Validated Field`.
 6. Example of client side PHP validation failure.
 
 == Changelog ==
-= 1.8.0-dev (unreleased) =
+= 2.0.0 (unreleased) =
 * Split the shared runtime and original field validation into Free, with optional business workflows and advanced tools in a separate Pro add-on.
 * Preserve configuration and confidential computed values when the required add-on is absent; park unavailable queued work for explicit review.
 * Add Polylang translation-family uniqueness for cross-record post scopes, including REST saves.

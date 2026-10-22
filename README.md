@@ -6,7 +6,7 @@ The development build includes the original validated-field wrapper, masks, rege
 
 ## Development status
 
-Version 1.8.0-dev requires WordPress 6.0+, PHP 8.0+ and ACF 6.0+. It is an unreleased development build. Current-runtime qualification does not establish minimum-runtime support or complete PHP branch coverage. Existing ACF settings and legacy field identities are retained.
+Version 2.0.0 requires WordPress 6.0+, PHP 8.0+ and ACF 6.0+. It is an unreleased development build. Current-runtime qualification does not establish minimum-runtime support or complete PHP branch coverage. Existing ACF settings and legacy field identities are retained.
 
 ACF must be installed separately. The optional Validated Field Pro add-on extends these shared services with rich editing, advanced queries, workflows and background tools. Neither edition bundles ACF.
 
