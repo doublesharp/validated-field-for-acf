@@ -88,7 +88,7 @@ final class Index {
                 $generation = NativeTables::generation($object);
             }
             $state = self::state($object);
-            if ($state['complete']) { Storage::commit(); return $state; }
+            if ($state['complete']) { return Storage::commit() ? $state : self::error(); }
             global $wpdb;
             if (!$state['cursor'] && $wpdb->delete(Storage::table('index'), ['object_key' => $object]) === false) { throw new \RuntimeException('Index reset failed.'); }
             $ids = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_type=%s AND ID>%d ORDER BY ID ASC LIMIT %d", $object, $state['cursor'], $batch_size));

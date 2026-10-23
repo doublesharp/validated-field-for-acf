@@ -1509,7 +1509,7 @@
     safe(() => designer()),
   );
   const premium = {};
-  for (const entry of window.vfWorkspaceExtensions?.actions() || []) Object.assign(premium, entry.factory({ $, el, button, state, notify, request, safe, label, input, select, textValue, openDialog, closeDialog, fieldControl, captureNavigation, navigationAction, captureDialogIntent, captureTable, beginTable, owned, dialogAction, dialogIntent, beginDialog, dialogRequest, mutation, refreshDialog, init, load, download, config }));
+  for (const entry of window.vfWorkspaceExtensions?.actions() || []) Object.assign(premium, entry.factory({ $, el, button, state, notify, request, safe, label, input, select, textValue, openDialog, closeDialog, fieldControl, captureNavigation, navigationAction, captureDialog, captureDialogIntent, captureTable, beginTable, owned, dialogAction, dialogIntent, beginDialog, dialogRequest, mutation, refreshDialog, init, load, download, config }));
   async function configurationExport() { const { request } = owned(captureDialog()); download({ filename: 'vf-configuration.json', content: JSON.stringify(await request('configuration_export'), null, 2), mime_type: 'application/json' }); }
   safe(init)();
 })();

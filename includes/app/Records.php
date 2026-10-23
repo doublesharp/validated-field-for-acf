@@ -55,6 +55,10 @@ final class Records {
             $lock = Storage::lock('record:' . $id);
             if (is_wp_error($lock)) { Storage::rollback(); return $lock; }
             self::flush_cache($id);
+            $post = get_post($id);
+            if (!$post || $post->post_type !== $object || !get_post_status_object($post->post_status) || in_array($post->post_status, ['trash', 'auto-draft', 'inherit'], true)) {
+                Storage::rollback(); return self::error('derived_unavailable', 'Derived field is unavailable.', 409);
+            }
             $current = Schema::assert_current($object);
             $requirements = Requirements::assert_operation('update', $object, $id, $context);
             if (is_wp_error($current) || is_wp_error($requirements)) { Storage::rollback(); return is_wp_error($current) ? $current : $requirements; }

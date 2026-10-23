@@ -39,7 +39,9 @@ final class Query {
             if (!is_array($column) || array_diff(array_keys($column),['field','direction','mode'])) { return self::error('Invalid sort column.'); }
             $name=$column['field']??null; $valid=self::field($name,$object,$definitions,$types);
             if (is_wp_error($valid)) { return $valid; }
-            if (!is_string($column['direction']??null) || !in_array(strtoupper($column['direction']),['ASC','DESC'],true)) { return self::error('Invalid sort direction.'); }
+            $direction=$column['direction']??null;
+            if (!is_string($direction) || !in_array($direction=strtoupper($direction),['ASC','DESC'],true)) { return self::error('Invalid sort direction.'); }
+            $column['direction']=$direction;
             $mode=self::mode($column['mode']??'raw',$definitions[$name]??[]);
             if (is_wp_error($mode)) { return $mode; }
             if ($mode==='raw' && $types[$name]==='list') { return self::error('List sorting requires a display mode.'); }
@@ -102,9 +104,9 @@ final class Query {
             foreach ($sort as $i=>$column) {
                 $a=$keys[$left['id']][$i]; $b=$keys[$right['id']][$i];
                 $comparison=$a===null || $b===null ? (($a!==null)<=>($b!==null)) : (is_float($a)||is_int($a) ? ($a<=>$b) : strnatcasecmp($a,$b));
-                if ($comparison) { return $comparison*(strtoupper($column['direction'])==='ASC'?1:-1); }
+                if ($comparison) { return $comparison*($column['direction']==='ASC'?1:-1); }
             }
-            return ($left['id']<=>$right['id'])*(strtoupper($sort[0]['direction'])==='ASC'?1:-1);
+            return ($left['id']<=>$right['id'])*($sort[0]['direction']==='ASC'?1:-1);
         });
         $aggregates=self::aggregate($items,$metrics);
         if (is_wp_error($aggregates)) { return $aggregates; }

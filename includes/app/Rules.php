@@ -149,7 +149,57 @@ class Rules {
             foreach ($left as $key=>$value) { if (!array_key_exists($key,$right) || !self::unchanged($value,$right[$key])) { return false; } }
             return true;
         }
+        if (is_numeric($left) && is_numeric($right)) {
+            $left=self::storage_number($left); $right=self::storage_number($right);
+            return $left!==null && $right!==null && $left===$right;
+        }
         return self::equal($left,$right) || (self::empty_value($left) && self::empty_value($right));
+    }
+
+    /** Normalize decimal digits and scale without rounding stored numeric strings. */
+    private static function storage_number($value): ?array {
+        if (is_float($value)) {
+            if (!is_finite($value)) { return array($value); }
+            // Find the shortest round-trip representation, independent of PHP's precision settings.
+            for ($precision=1; $precision<=17; ++$precision) {
+                $text=str_replace(localeconv()['decimal_point'],'.',sprintf('%.'.$precision.'g',$value));
+                if ((float)$text===$value) { break; }
+            }
+        } else { $text=trim((string)$value," \t\n\r\v\f"); }
+        if (preg_match('/^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/D',$text,$parts)!==1) { return null; }
+        $fraction=$parts[3] ?? '';
+        $digits=ltrim($parts[2].$fraction,'0');
+        if ($digits==='') { return array('','0','0'); }
+        $sign=$parts[1]==='-' ? '-' : '';
+        $coefficient=rtrim($digits,'0');
+        $offset=strlen($digits)-strlen($coefficient)-strlen($fraction);
+        return array($sign,$coefficient,self::storage_exponent($parts[4] ?? '0',$offset));
+    }
+
+    /** Exponents may exceed native integer limits; only the digit-count offset is an int. */
+    private static function storage_exponent(string $exponent, int $offset): string {
+        $negative=$exponent[0]==='-';
+        $digits=ltrim($exponent,'+-0');
+        if ($digits==='') { $digits='0'; $negative=false; }
+        if ($offset===0) { return ($negative ? '-' : '').$digits; }
+        $other=ltrim((string)$offset,'-');
+        $other_negative=$offset<0;
+        $subtract=$negative!==$other_negative;
+        if ($subtract && (strlen($digits)<strlen($other) || (strlen($digits)===strlen($other) && strcmp($digits,$other)<0))) {
+            $swap=$digits; $digits=$other; $other=$swap; $negative=$other_negative;
+        }
+        $result=''; $carry=0;
+        for ($i=strlen($digits)-1,$j=strlen($other)-1; $i>=0 || $j>=0 || $carry>0; --$i,--$j) {
+            $a=$i>=0 ? (int)$digits[$i] : 0;
+            $b=$j>=0 ? (int)$other[$j] : 0;
+            $digit=$a+($subtract ? -$b : $b)+$carry;
+            if ($subtract) { $carry=$digit<0 ? -1 : 0; if ($digit<0) { $digit+=10; } }
+            else { $carry=intdiv($digit,10); $digit%=10; }
+            $result.=$digit;
+        }
+        $result=ltrim(strrev($result),'0');
+        if ($result==='') { return '0'; }
+        return ($negative ? '-' : '').$result;
     }
 
     public static function compare($left, string $operator, $right): bool {

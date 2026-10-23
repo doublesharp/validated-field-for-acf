@@ -76,6 +76,7 @@ final class Unique {
             $wpdb->suppress_errors($previous);
             if ($result === false) { return new \WP_Error('unique_storage', 'Unable to reserve unique value.', ['status' => 503]); }
             $owner = $wpdb->get_var($wpdb->prepare('SELECT record_id FROM ' . self::table() . ' WHERE key_hash = %s FOR UPDATE', $hash));
+            if ($wpdb->last_error || $owner === null) { return self::storage_error(); }
             // A new record temporarily claims with ID zero inside its uncommitted transaction.
             if ((int) $owner !== $id || (!$id && $result === 0)) { return self::duplicate($object, $name, $id); }
         }
