@@ -236,7 +236,7 @@ final class Admin {
         if (($field['type'] ?? '') === 'validated_field') {
             $field = array_replace($field, $field['sub_field'] ?? [], array_intersect_key($field, array_flip(['name', 'label', 'required', 'readonly'])));
         }
-        $metadata = array_intersect_key($field, array_flip(['name', 'label', 'type', 'required', 'choices', 'readonly', 'multiple', 'min', 'max', 'step', 'instructions', 'default_value']));
+        $metadata = array_intersect_key($field, array_flip(['name', 'label', 'type', 'field_type', 'required', 'choices', 'readonly', 'multiple', 'min', 'max', 'step', 'instructions', 'default_value']));
         foreach ($field['sub_fields'] ?? [] as $child) { $metadata['sub_fields'][] = self::field_metadata($child, $depth + 1); }
         foreach ($field['layouts'] ?? [] as $layout) {
             $item = array_intersect_key($layout, array_flip(['name', 'label']));

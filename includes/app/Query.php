@@ -299,6 +299,7 @@ final class Query {
     private static function date($value,array $field): ?float {
         if (!is_scalar($value)) { return null; }
         $field=self::definition($field); $value=(string)$value;
+        if (strpos($value,"\0")!==false) { return null; }
         $formats=($field['type']??'')==='date_picker'?['Ymd','Y-m-d']:(($field['type']??'')==='time_picker'?['H:i:s','H:i']:['Y-m-d H:i:s','Y-m-d H:i','Y-m-d\TH:i:sP','Y-m-d\TH:i:s']);
         foreach ($formats as $format) {
             $date=\DateTimeImmutable::createFromFormat('!'.$format,$value,wp_timezone());

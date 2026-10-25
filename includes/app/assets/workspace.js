@@ -924,7 +924,7 @@
       return {node,read:()=>attachment || null};
     }
     if (type === "true_false") {
-      const node = input("1", "checkbox", { checked: !!value });
+      const node = input("1", "checkbox", { checked: [true, 1, "1"].includes(value) });
       return { node, read: () => (node.checked ? 1 : 0) };
     }
     if (
@@ -1023,8 +1023,9 @@
             .map((control) => control.value),
       };
     }
-    if (["gallery", "relationship", "link", "google_map"].includes(type) || field.multiple) {
-      const ids = ["gallery", "relationship", "post_object", "user"].includes(type);
+    const taxonomyList = type === "taxonomy" && ["checkbox", "multi_select"].includes(field.field_type ?? "checkbox");
+    if (["gallery", "relationship", "link", "google_map"].includes(type) || field.multiple || taxonomyList) {
+      const ids = ["gallery", "relationship", "post_object", "user", "taxonomy"].includes(type);
       const structured = type === "link" || type === "google_map";
       const node = el("div");
       const editor = el("textarea", {
