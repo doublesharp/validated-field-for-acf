@@ -45,7 +45,36 @@
 .vf-disclosure > summary { cursor: pointer; list-style: none; }
 .vf-disclosure > summary::-webkit-details-marker { display: none; }
 .vf-disclosure > summary::after { content: "⌄"; margin-left: 10px; font-size: 14px; }
-.vf-object-current { font-size: 27px; font-weight: 650; line-height: 1.3; letter-spacing: -.5px; padding: 3px 0; overflow-wrap: anywhere; }
+.vf-object-switcher { max-width: 100%; }
+.vf-object-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid #b8c7d8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 1px 2px #16283b0a;
+  font-size: 27px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -.5px;
+  overflow-wrap: anywhere;
+}
+.vf-object-current:hover { border-color: var(--vf-blue); background: #f8faff; }
+.vf-object-switcher > .vf-object-current::after {
+  content: "";
+  flex: 0 0 9px;
+  width: 9px;
+  height: 9px;
+  margin: 0 3px 4px 20px;
+  border-right: 2px solid var(--vf-blue);
+  border-bottom: 2px solid var(--vf-blue);
+  transform: rotate(45deg);
+}
+.vf-object-switcher[open] > .vf-object-current { border-color: var(--vf-blue); background: #f0f5ff; }
+.vf-object-switcher[open] > .vf-object-current::after { margin-bottom: -4px; transform: rotate(225deg); }
 .vf-navigation-menu {
   display: grid;
   position: absolute;
