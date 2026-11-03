@@ -388,7 +388,9 @@
         navigationMenu("Tools", "vf-workspace-tools", [
           button("Background jobs", safe(() => jobsDialog())),
           button("Field indexes", safe(indexDialog)),
-          button("Configuration transfer", safe(() => premium.configuration ? premium.configuration() : configurationExport())),
+          config.configurationUrl
+            ? el("a", { href: config.configurationUrl, text: "Configuration transfer" })
+            : button("Configuration transfer", safe(() => premium.configuration ? premium.configuration() : configurationExport())),
           el("a", { href: "edit.php?post_type=acf-field-group", text: "ACF field groups" }),
           el("a", { href: "options-general.php?page=acf-validated-field", text: "Settings" }),
         ]),

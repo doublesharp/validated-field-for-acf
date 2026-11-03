@@ -5,6 +5,7 @@ defined('ABSPATH') || exit;
 
 final class Admin {
     public static function boot(): void {
+        ConfigurationPage::boot();
         add_action('admin_menu', static function (): void {
             add_menu_page('Validated Field', 'Validated Field', 'read', 'validated-field-workspace', [__CLASS__, 'render'], 'dashicons-database', 26);
         });
@@ -27,6 +28,7 @@ final class Admin {
         wp_add_inline_script('acf-vf-workspace', 'window.vfWorkspace=' . wp_json_encode([
             'url' => admin_url('admin-ajax.php'), 'nonce' => wp_create_nonce('acf-vf-workspace'),
             'configure' => current_user_can('manage_options'),
+            'configurationUrl' => admin_url('admin.php?page=validated-field-configuration'),
             'proUpgradeUrl' => esc_url_raw((string) ACF_VF_PRO_UPGRADE_URL, ['http','https']),
             'proActive' => defined('ACF_VF_PRO_VERSION'),
             'extensions' => Extensions::metadata(),

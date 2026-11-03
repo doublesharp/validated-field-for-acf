@@ -36,6 +36,22 @@
 .vf-native-tables-card select { margin: 0 8px; }
 .vf-native-tables-card fieldset { margin: 20px 0; padding-top: 18px; border-top: 1px solid #e3eaf3; }
 .vf-native-tables-card > h2:not(:first-child), .vf-native-tables-card > h3 { margin-top: 24px; }
+.vf-transfer .vf-settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vf-transfer .notice { margin: 0 0 20px; }
+.vf-transfer label[for="vf-configuration-file"] { display: block; margin-bottom: 8px; font-weight: 600; }
+.vf-transfer input[type="file"] { max-width: 100%; }
+.vf-transfer textarea { width: 100%; max-width: 100%; padding: 12px; border-color: #bfccde; border-radius: 6px; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.vf-transfer summary { padding: 8px 0; color: #2457aa; cursor: pointer; font-weight: 600; }
+.vf-transfer-objects { margin: 20px 0; }
+.vf-transfer-objects li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px 0; border-bottom: 1px solid #e3eaf3; }
+.vf-transfer-objects span { color: #63758b; }
+.vf-transfer-review { grid-column: 1 / -1; }
+.vf-transfer-counts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.vf-transfer-counts > div { padding: 16px; border-radius: 8px; background: #f1f6fd; }
+.vf-transfer-counts strong { display: block; font-size: 24px; color: #2457aa; }
+.vf-transfer-counts span { font-size: 12px; }
+.vf-transfer-warning { padding: 10px 14px; border-left: 3px solid #dba617; background: #fff8e5; }
+.vf-transfer-diff { max-height: 360px; overflow: auto; padding: 16px; border-radius: 6px; background: #f5f7fa; font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 /* Keep native ACF controls in their host layout; style only this field's settings. */
 .acf-field-object-validated-field .acf-field-settings { background: #fafcff; }
 .acf-field-object-validated-field .acf-field-settings > .acf-field { border-color: #e3eaf3; padding-top: 18px; padding-bottom: 18px; }
@@ -43,7 +59,7 @@
 .acf-field-object-validated-field .acf-field-settings .description { color: #63758b; line-height: 1.6; max-width: 680px; }
 .acf-field-object-validated-field .acf-field-settings :is(input[type="text"], select, textarea) { border-color: #bfccde; border-radius: 6px; }
 .acf-field-object-validated-field .vf-rule-setting textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.6; }
-@media (max-width: 960px) { .vf-settings-grid { grid-template-columns: 1fr; } }
+@media (max-width: 960px) { .vf-settings-grid, .vf-transfer .vf-settings-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) {
   .vf-settings { margin: 18px 10px 24px 0; }
   .vf-settings-card, .vf-settings .acf-vf-pro-card { padding: 20px; }
@@ -51,4 +67,6 @@
   .vf-settings .vf-settings-header h1 { font-size: 26px; }
   .acf-vf-pro-card > h2 { font-size: 22px; }
   .vf-native-tables-card select { max-width: 100%; margin-left: 0; }
+  .vf-transfer .vf-settings-header { align-items: flex-start; flex-direction: column; }
+  .vf-transfer-counts { grid-template-columns: 1fr; }
 }
