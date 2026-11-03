@@ -364,6 +364,26 @@
   overflow: auto;
   max-height: 65vh;
 }
+/* Tab contents scroll within a stable designer frame. */
+.vf-workspace dialog:has(.vfd-designer) {
+  height: min(820px, 90dvh);
+  overflow: hidden;
+}
+.vf-workspace dialog:has(.vfd-designer) > form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+}
+.vf-workspace dialog:has(.vfd-designer) :is(.vf-dialog-header, .vf-dialog-footer) {
+  flex-shrink: 0;
+}
+.vf-workspace dialog:has(.vfd-designer) #vf-dialog-body {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
 .vf-icon-button {
   border: 0;
   background: transparent;
