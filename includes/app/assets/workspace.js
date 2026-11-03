@@ -30,6 +30,17 @@
       text,
       onclick: action,
     });
+  const navigationMenu = (label, className, items) => {
+    const summary = el("summary", { class: "vf-button", text: label });
+    const disclosure = el("details", { class: className + " vf-disclosure", name: "vf-navigation" }, [
+      summary, el("div", { class: "vf-navigation-menu" }, items),
+    ]);
+    items.forEach(item => item.addEventListener("click", () => {
+      disclosure.open = false;
+      summary.focus();
+    }, true));
+    return disclosure;
+  };
   const state = {
     objects: [],
     object: null,
@@ -354,24 +365,33 @@
     state.objects = objects;
     clearObsoleteDialog();
     const nav = $("#vf-objects");
-    nav.replaceChildren(
-      ...state.objects.map((object) =>
-        button(
-          object.label,
-          safe(() => choose(object.slug)),
-        ),
-      ),
-    );
-    nav
-      .querySelectorAll("button")
-      .forEach(
-        (node, index) => (node.dataset.object = state.objects[index].slug),
-      );
+    const summary = el("summary", { class: "vf-object-current", text: "Choose an object", "aria-label": "Switch object" });
+    const picker = el("details", { class: "vf-object-switcher vf-disclosure", name: "vf-navigation" });
+    const choices = state.objects.map(object => {
+      const node = button(object.label, safe(() => {
+        picker.open = false;
+        summary.focus();
+        return choose(object.slug);
+      }));
+      node.dataset.object = object.slug;
+      return node;
+    });
+    const search = input("", "search", { "aria-label": "Find an object", placeholder: "Find an object…" });
+    search.addEventListener("input", () => {
+      choices.forEach(node => { node.hidden = !node.textContent.toLowerCase().includes(search.value.toLowerCase()); });
+    });
+    picker.append(summary, el("div", { class: "vf-navigation-menu vf-object-options" }, [search, ...choices]));
+    picker.hidden = !state.objects.length;
+    nav.replaceChildren(picker);
     if (config.configure)
       nav.append(
-        button("Background jobs", safe(() => jobsDialog())),
-        button("Field indexes", safe(indexDialog)),
-        button("Configuration transfer", safe(() => premium.configuration ? premium.configuration() : configurationExport())),
+        navigationMenu("Tools", "vf-workspace-tools", [
+          button("Background jobs", safe(() => jobsDialog())),
+          button("Field indexes", safe(indexDialog)),
+          button("Configuration transfer", safe(() => premium.configuration ? premium.configuration() : configurationExport())),
+          el("a", { href: "edit.php?post_type=acf-field-group", text: "ACF field groups" }),
+          el("a", { href: "options-general.php?page=acf-validated-field", text: "Settings" }),
+        ]),
       );
     $("#vf-create-object").hidden = !config.configure;
     if (state.objects.length) {
@@ -449,6 +469,9 @@
     state.view = "";
     state.selected.clear();
     $("#vf-title").textContent = state.object.label;
+    $(".vf-object-current").textContent = state.object.label;
+    $(".vf-object-current").setAttribute("aria-label", "Switch object, current: " + state.object.label);
+    $(".vf-object-switcher").open = false;
     $("#vf-subtitle").textContent =
       `Manage ${state.object.label.toLowerCase()} and keep every change validated.`;
     $("#vf-objects")
@@ -457,13 +480,6 @@
         node.setAttribute("aria-current", String(node.dataset.object === slug)),
       );
     const actions = [];
-    if (config.configure && !state.object.native_table)
-      actions.push(
-        button(
-          "Configure",
-          safe(() => designer(slug)),
-        ),
-      );
     if (state.object.can_create)
       actions.push(
         button(
@@ -472,6 +488,10 @@
           true,
         ),
       );
+    if (config.configure && !state.object.native_table)
+      actions.push(navigationMenu("Object actions", "vf-object-actions", [
+        button("Edit object", safe(() => designer(slug))),
+      ]));
     $("#vf-header-actions").replaceChildren(...actions);
     let results;
     try { results = await Promise.all([

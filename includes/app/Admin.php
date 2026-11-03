@@ -38,8 +38,7 @@ final class Admin {
         if (!current_user_can('read')) { return; }
         ?>
         <div id="vf-workspace" class="vf-workspace">
-            <aside class="vf-sidebar"><div class="vf-brand"><span class="dashicons dashicons-database" aria-hidden="true"></span> Validated Field</div><p class="vf-kicker">DATA WORKSPACE</p><nav id="vf-objects" aria-label="Objects"></nav><button type="button" class="vf-button vf-new-object" id="vf-create-object">+ Create object</button><a class="vf-native-link" href="<?php echo esc_url(admin_url('edit.php?post_type=acf-field-group')); ?>">Open ACF field groups ↗</a></aside>
-            <main class="vf-main"><header class="vf-header"><div><p class="vf-kicker">WORKSPACE</p><h1 id="vf-title">Your data, organized</h1><p id="vf-subtitle">Choose an object to manage its records.</p></div><div id="vf-header-actions"></div></header>
+            <main class="vf-main"><header class="vf-header"><div class="vf-workspace-heading"><p class="vf-kicker">Validated Field</p><h1 id="vf-title" class="screen-reader-text">Your data, organized</h1><div class="vf-heading-controls"><nav id="vf-objects" aria-label="Workspace navigation"></nav><button type="button" class="vf-button" id="vf-create-object" hidden>Create object</button></div><p id="vf-subtitle">Choose an object to manage its records.</p></div><div id="vf-header-actions"></div></header>
                 <div id="vf-feedback" role="status" aria-live="polite" aria-atomic="true"></div>
                 <section id="vf-content" aria-label="Records" aria-busy="true"><div class="vf-empty">Loading your workspace…</div></section>
             </main>
