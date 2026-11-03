@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Marketing destination shared by the settings page and workspace designer.
 // Define this earlier in wp-config.php to override the default.
 if ( ! defined( 'ACF_VF_PRO_UPGRADE_URL' ) ) {
-	define( 'ACF_VF_PRO_UPGRADE_URL', 'https://www.doublesharp.com/' );
+	define( 'ACF_VF_PRO_UPGRADE_URL', 'https://validated-field.doublesharp.com/pro/' );
 }
 
 /** Register the wrapper after ACF has loaded its native field types. */

@@ -291,7 +291,10 @@ final class Records {
 
     private static function defaults(string $object): array {
         $values = [];
-        foreach (Schema::fields($object) as $name => $field) { if (array_key_exists('default_value', $field) && $field['default_value'] !== null) { $values[$name] = $field['default_value']; } }
+        foreach (Schema::fields($object) as $name => $field) {
+            if (($field['type'] ?? '') === 'validated_field') { $field = array_replace($field, $field['sub_field'] ?? []); }
+            if (array_key_exists('default_value', $field) && $field['default_value'] !== null) { $values[$name] = $field['default_value']; }
+        }
         return $values;
     }
 

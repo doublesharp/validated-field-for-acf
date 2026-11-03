@@ -21,7 +21,8 @@ final class Admin {
         wp_enqueue_style('acf-vf-designer', $base . 'workspace-designer.css', ['acf-vf-workspace'], $version('workspace-designer.css'));
         wp_enqueue_script('acf-vf-extensions', $base . 'workspace-extensions.js', [], $version('workspace-extensions.js'), true);
         wp_enqueue_script('acf-vf-designer', $base . 'workspace-designer.js', ['acf-vf-extensions'], $version('workspace-designer.js'), true);
-        wp_enqueue_script('acf-vf-workspace', $base . 'workspace.js', ['acf-vf-designer'], $version('workspace.js'), true);
+        wp_enqueue_script('acf-vf-mask', plugins_url('js/jquery.maskedinput.js', ACF_VF_PLUGIN_FILE), ['jquery'], ACF_VF_VERSION, true);
+        wp_enqueue_script('acf-vf-workspace', $base . 'workspace.js', ['acf-vf-designer', 'acf-vf-mask'], $version('workspace.js'), true);
         do_action('acf_vf/app/workspace_assets', $hook);
         wp_add_inline_script('acf-vf-workspace', 'window.vfWorkspace=' . wp_json_encode([
             'url' => admin_url('admin-ajax.php'), 'nonce' => wp_create_nonce('acf-vf-workspace'),
@@ -174,8 +175,8 @@ final class Admin {
             $metadata = self::field_metadata($field);
             $metadata['computed'] = !empty($field['formula']) || !empty($field['rollup']);
             $metadata['provider_missing'] = (!empty($field['formula']) && !Extensions::has('calculations.formula')) || (!empty($field['rollup']) && !Extensions::has('calculations.rollup'));
-            $metadata['can_create'] = !$metadata['computed'] && empty($field['readonly']) && Permissions::can('create', $object, 0, $name);
-            $metadata['can_update'] = !$metadata['computed'] && empty($field['readonly']) && Permissions::can('update', $object, $id, $name);
+            $metadata['can_create'] = !$metadata['computed'] && empty($metadata['readonly']) && Permissions::can('create', $object, 0, $name);
+            $metadata['can_update'] = !$metadata['computed'] && empty($metadata['readonly']) && Permissions::can('update', $object, $id, $name);
             if (isset($field['readonly_when']) && !Rules::condition_accessible($field['readonly_when'], [], $object, $id)) {
                 $metadata['readonly'] = true;
                 $metadata['can_create'] = false;
@@ -234,9 +235,11 @@ final class Admin {
     private static function field_metadata(array $field, int $depth = 0): array {
         if ($depth > 12) { return []; }
         if (($field['type'] ?? '') === 'validated_field') {
+            $field['readonly'] = !empty($field['readonly']) || \ACF_VF_Validation::is_true($field['read_only'] ?? false);
             $field = array_replace($field, $field['sub_field'] ?? [], array_intersect_key($field, array_flip(['name', 'label', 'required', 'readonly'])));
+            $field['mask_autoclear'] = \ACF_VF_Validation::is_true($field['mask_autoclear'] ?? true);
         }
-        $metadata = array_intersect_key($field, array_flip(['name', 'label', 'type', 'field_type', 'required', 'choices', 'readonly', 'multiple', 'min', 'max', 'step', 'instructions', 'default_value']));
+        $metadata = array_intersect_key($field, array_flip(['name', 'label', 'type', 'field_type', 'required', 'choices', 'readonly', 'multiple', 'min', 'max', 'step', 'instructions', 'default_value', 'mask', 'mask_autoclear', 'mask_placeholder']));
         foreach ($field['sub_fields'] ?? [] as $child) { $metadata['sub_fields'][] = self::field_metadata($child, $depth + 1); }
         foreach ($field['layouts'] ?? [] as $layout) {
             $item = array_intersect_key($layout, array_flip(['name', 'label']));

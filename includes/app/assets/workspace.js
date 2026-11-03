@@ -30,14 +30,6 @@
       text,
       onclick: action,
     });
-  const toolbarViewport = window.matchMedia?.("(max-width: 600px)");
-  toolbarViewport?.addEventListener("change", ({ matches }) => {
-    const more = $("#vf-content .vf-toolbar-more");
-    if (!more) return;
-    const focused = more.contains(document.activeElement);
-    more.open = !matches;
-    if (focused) (matches ? more.querySelector("summary") : $("#vf-content input[type=search]")).focus();
-  });
   const state = {
     objects: [],
     object: null,
@@ -570,12 +562,8 @@
     if (savedView) toolbar.insertBefore(savedView, primary);
     if (secondary.childElementCount) {
       const more = el("details", { class: "vf-toolbar-more" }, [
-        el("summary", { class: "vf-button", text: "More actions", onblur: () => {
-          // Native CSS hiding can blur the summary before the media change event.
-          if (toolbarViewport && !toolbarViewport.matches) search.focus();
-        } }), secondary,
+        el("summary", { class: "vf-button", text: "More actions" }), secondary,
       ]);
-      more.open = !toolbarViewport?.matches;
       toolbar.append(more);
     }
     const all = input("", "checkbox", { "aria-label": "Select current page" });
@@ -1086,6 +1074,9 @@
         : input("", htmlType);
     node.value = textValue(value);
     if (htmlType === "number") node.step = "any";
+    if (field.mask && node.tagName === "INPUT" && ["text", "email", "url", "tel"].includes(htmlType) && window.jQuery?.fn.mask) {
+      window.jQuery(node).mask(field.mask, { autoclear: field.mask_autoclear !== false, placeholder: field.mask_placeholder || "_" });
+    }
     return {
       node,
       read: () =>

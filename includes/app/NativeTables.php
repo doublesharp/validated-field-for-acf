@@ -26,7 +26,12 @@ final class NativeTables {
         add_action('transition_post_status',[self::class,'transitioning_post'],PHP_INT_MIN,3);
         add_action('wp_insert_post',[self::class,'inserted_post'],PHP_INT_MIN,3);
         add_action('deleted_post',[self::class,'deleted_post'],PHP_INT_MIN,2);
-        add_action('admin_menu',static function (): void { add_submenu_page('validated-field-workspace','WordPress tables','WordPress tables','manage_options','validated-field-tables',[self::class,'settings']); },20);
+        add_action('acf_vf/settings_sections',[self::class,'settings_section'],20);
+        add_action('admin_init',static function (): void {
+            if (($_GET['page']??'')!=='validated-field-tables' || !current_user_can('manage_options') || isset($_POST['vf_native_table_nonce'])) { return; }
+            $object=is_string($_GET['object']??null)?sanitize_key(wp_unslash($_GET['object'])):'';
+            wp_safe_redirect(add_query_arg(['page'=>'acf-validated-field','object'=>$object],admin_url('options-general.php')).'#vf-wordpress-tables'); exit;
+        });
     }
     private static function stored(): array { $value=get_option('acf_vf_native_tables',[]); return is_array($value)?$value:[]; }
     public static function enabled(string $object): bool { return isset(self::stored()[$object]) && !isset(Schema::objects()[$object]); }
@@ -471,6 +476,12 @@ final class NativeTables {
     }
     public static function settings(): void {
         if (!current_user_can('manage_options')) { return; }
+        echo '<div class="wrap"><h1>'.esc_html__('Validated Field','validated-field-for-acf').'</h1>';
+        self::settings_section();
+        echo '</div>';
+    }
+    public static function settings_section(): void {
+        if (!current_user_can('manage_options')) { return; }
         $notice=''; $types=[];
         foreach (get_post_types(['show_ui'=>true],'objects') as $slug=>$type) {
             if (!isset(Schema::objects()[$slug]) && !in_array($slug,['attachment','revision','nav_menu_item','acf-field-group','acf-field','acf-post-type','acf-taxonomy'],true)) { $types[$slug]=$type; }
@@ -484,9 +495,9 @@ final class NativeTables {
             $notice=is_wp_error($result)?$result->get_error_message():__('Table settings saved.','validated-field-for-acf');
         }
         if (!isset($types[$object])) { $object=(string)array_key_first($types); }
-        echo '<div class="wrap"><h1>'.esc_html__('WordPress tables','validated-field-for-acf').'</h1><p>'.esc_html__('Add existing ACF fields to posts, pages and custom post types. Native editors, visibility and field storage stay in place. Choose a post type to see fields that apply to all its records.','validated-field-for-acf').'</p>';
+        echo '<section id="vf-wordpress-tables" class="vf-settings-card vf-native-tables-card"><h2>'.esc_html__('WordPress tables','validated-field-for-acf').'</h2><p>'.esc_html__('Add existing ACF fields to posts, pages and custom post types. Native editors, visibility and field storage stay in place. Choose a post type to see fields that apply to all its records.','validated-field-for-acf').'</p>';
         if ($notice) { echo '<div class="notice notice-info"><p>'.esc_html($notice).'</p></div>'; }
-        echo '<form method="get"><input type="hidden" name="page" value="validated-field-tables"><p><label for="vf-native-object">'.esc_html__('Post type','validated-field-for-acf').' </label><select id="vf-native-object" name="object">';
+        echo '<form method="get"><input type="hidden" name="page" value="acf-validated-field"><p><label for="vf-native-object">'.esc_html__('Post type','validated-field-for-acf').' </label><select id="vf-native-object" name="object">';
         foreach ($types as $slug=>$type) { echo '<option value="'.esc_attr($slug).'"'.selected($object,$slug,false).'>'.esc_html($type->labels->name).'</option>'; }
         echo '</select> '; submit_button(__('Choose post type','validated-field-for-acf'),'secondary','choose',false); echo '</p></form>';
         if ($object!=='') {
@@ -506,8 +517,8 @@ final class NativeTables {
         foreach (self::stored() as $slug=>$config) {
             $names=[];
             foreach ((array)($config['fields']??[]) as $key) { $field=is_string($key)?acf_get_field($key):false; $names[]=$field?($field['label']?:$field['name']):__('Unavailable field','validated-field-for-acf'); }
-            echo '<li><a href="'.esc_url(add_query_arg(['page'=>'validated-field-tables','object'=>$slug],admin_url('admin.php'))).'">'.esc_html($types[$slug]->labels->name??$slug).'</a>: '.esc_html(implode(', ',$names)).'</li>';
+            echo '<li><a href="'.esc_url(add_query_arg(['page'=>'acf-validated-field','object'=>$slug],admin_url('options-general.php')).'#vf-wordpress-tables').'">'.esc_html($types[$slug]->labels->name??$slug).'</a>: '.esc_html(implode(', ',$names)).'</li>';
         }
-        echo '</ul></div>';
+        echo '</ul></section>';
     }
 }

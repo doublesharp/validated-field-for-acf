@@ -1,0 +1,54 @@
+.vf-settings { max-width: 1160px; margin: 28px 24px 40px 0; color: #20334b; }
+.vf-settings-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; padding: 8px 2px; }
+.vf-settings .vf-settings-header h1 { padding: 0; color: #142b45; font-size: 30px; font-weight: 650; letter-spacing: -.6px; }
+.vf-settings-header p { margin: 8px 0 0; color: #586b80; font-size: 14px; }
+.vf-settings .vf-settings-eyebrow { margin: 0 0 8px; color: #436eae; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; }
+.vf-edition-badge { padding: 7px 13px; border: 1px solid #cddcf6; border-radius: 20px; background: #eaf1ff; color: #2457aa; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+.vf-settings-grid { display: grid; grid-template-columns: minmax(270px, .8fr) minmax(0, 1.4fr); align-items: start; gap: 20px; }
+.vf-settings-card, .vf-settings .acf-vf-pro-card { box-sizing: border-box; min-width: 0; max-width: none; margin: 0; padding: 26px; border: 1px solid #d9e2ee; border-radius: 12px; background: #fff; box-shadow: 0 2px 4px #20334b04; }
+.vf-settings h2 { margin: 0 0 10px; color: #142b45; font-size: 19px; line-height: 1.4; }
+.vf-settings h3 { font-size: 14px; color: #142b45; }
+.vf-settings p, .vf-settings li, .vf-settings dd { font-size: 13px; line-height: 1.65; }
+.vf-settings-muted { color: #63758b; margin-bottom: 22px; }
+.vf-settings-card form > p { margin: 16px 0; }
+.vf-settings-card form label { line-height: 1.6; }
+.vf-settings .button { border-radius: 6px; min-height: 36px; padding: 2px 12px; }
+.vf-settings .button-primary { background: #245be1; border-color: #245be1; }
+.vf-settings .button-primary:hover { background: #174ac1; border-color: #174ac1; }
+.vf-settings .acf-vf-pro-card { border-top: 3px solid #245be1; background: linear-gradient(135deg, #f7faff, #fff 65%); }
+.acf-vf-pro-card > h2 { max-width: 440px; font-size: 25px; letter-spacing: -.5px; }
+.acf-vf-pro-card dl { display: grid; gap: 16px; margin: 24px 0; }
+.vf-pro-feature { padding-left: 15px; border-left: 3px solid #d7e4ff; }
+.vf-pro-feature dt { color: #203d64; font-size: 13px; }
+.vf-pro-feature dd { margin: 3px 0 0; color: #586b80; }
+.acf-vf-pro-card ol { margin: 12px 0 18px 20px; }
+.vf-license-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.vf-license-heading h2 { margin: 0; }
+.vf-license-status { border-radius: 20px; padding: 4px 11px; color: #725526; background: #fff3db; font-size: 12px; font-weight: 600; }
+.vf-license-status--active { color: #246344; background: #e6f5ec; }
+.vf-license-status--expired, .vf-license-status--revoked { color: #973f39; background: #fbeae8; }
+.vf-license-note { padding: 11px 14px; border-radius: 7px; color: #476383; background: #f1f6fd; }
+.vf-license-card p { overflow-wrap: anywhere; }
+.vf-license-card input[type="password"] { display: block; width: 100%; max-width: 440px; margin-top: 7px; border-color: #bfcddd; border-radius: 6px; }
+.vf-license-card form > p:last-child { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0; }
+.vf-native-tables-card { grid-column: 1 / -1; }
+.vf-native-tables-card > p { max-width: 760px; color: #586b80; }
+.vf-native-tables-card select { margin: 0 8px; }
+.vf-native-tables-card fieldset { margin: 20px 0; padding-top: 18px; border-top: 1px solid #e3eaf3; }
+.vf-native-tables-card > h2:not(:first-child), .vf-native-tables-card > h3 { margin-top: 24px; }
+/* Keep native ACF controls in their host layout; style only this field's settings. */
+.acf-field-object-validated-field .acf-field-settings { background: #fafcff; }
+.acf-field-object-validated-field .acf-field-settings > .acf-field { border-color: #e3eaf3; padding-top: 18px; padding-bottom: 18px; }
+.acf-field-object-validated-field .acf-field-settings .acf-label label { color: #203d64; font-weight: 600; }
+.acf-field-object-validated-field .acf-field-settings .description { color: #63758b; line-height: 1.6; max-width: 680px; }
+.acf-field-object-validated-field .acf-field-settings :is(input[type="text"], select, textarea) { border-color: #bfccde; border-radius: 6px; }
+.acf-field-object-validated-field .vf-rule-setting textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.6; }
+@media (max-width: 960px) { .vf-settings-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .vf-settings { margin: 18px 10px 24px 0; }
+  .vf-settings-card, .vf-settings .acf-vf-pro-card { padding: 20px; }
+  .vf-settings-header { gap: 12px; }
+  .vf-settings .vf-settings-header h1 { font-size: 26px; }
+  .acf-vf-pro-card > h2 { font-size: 22px; }
+  .vf-native-tables-card select { max-width: 100%; margin-left: 0; }
+}

@@ -144,31 +144,58 @@
   outline-offset: 2px;
 }
 .vf-toolbar {
+  position: relative;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   align-items: center;
   background: white;
-  padding: 16px;
+  padding: 10px 12px;
   border: 1px solid var(--vf-line);
   border-radius: 9px 9px 0 0;
 }
 .vf-toolbar input[type="search"] {
   min-width: 180px;
+  max-width: 360px;
   flex: 1;
 }
-.vf-toolbar-primary,
-.vf-toolbar-more,
-.vf-toolbar-secondary {
-  display: contents;
+.vf-toolbar-primary {
+  display: flex;
+  gap: 8px;
+}
+.vf-toolbar-more {
+  display: block;
+  position: relative;
+  margin-left: auto;
 }
 .vf-toolbar-more > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  list-style: none;
+  cursor: pointer;
+}
+.vf-toolbar-more > summary::-webkit-details-marker {
   display: none;
 }
-@media (min-width: 601px) {
-  .vf-toolbar-more::details-content {
-    display: contents;
-  }
+.vf-toolbar-more > summary::after { content: "+"; }
+.vf-toolbar-more[open] > summary::after { content: "−"; }
+.vf-toolbar-secondary {
+  display: grid;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 6px;
+  padding: 10px;
+  background: white;
+  border: 1px solid var(--vf-line);
+  border-radius: 7px;
+  box-shadow: 0 8px 24px #1c30421a;
+}
+.vf-toolbar-secondary > :not(button) {
+  grid-column: 1 / -1;
 }
 .vf-workspace input:not([type="checkbox"]):not([type="radio"]),
 .vf-workspace select,
@@ -212,8 +239,9 @@
 .vf-table th[data-field] { padding-right: 26px; min-width: 40px; }
 .vf-column-resize { position: absolute; inset: 0 0 0 auto; width: 12px; cursor: col-resize; touch-action: none; }
 .vf-column-resize:hover, .vf-column-resize:focus-visible { background: #235dd533; }
-.vf-column-control { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(90px, 160px) auto auto; gap: 8px; align-items: center; margin: 8px 0; }
+.vf-column-control { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(90px, 160px) auto auto; gap: 8px; align-items: center; margin: 8px 0; padding: 9px 12px; border: 1px solid var(--vf-line); border-radius: 8px; background: #fafcfe; }
 .vf-column-control .vf-field { margin: 0; flex-direction: row; align-items: center; }
+.vf-column-control > input { min-width: 0; width: 100%; }
 .vf-table th,
 .vf-table td {
   padding: 13px 16px;
@@ -363,6 +391,14 @@
   color: var(--vf-muted);
   font-size: 12px;
 }
+.vf-field:has(> input[type="checkbox"]) { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; column-gap: 10px; }
+.vf-field:has(> input[type="checkbox"]) > span { grid-column: 2; grid-row: 1; }
+.vf-field > input[type="checkbox"] { grid-column: 1; grid-row: 1; margin: 0; }
+.vf-field:has(> input[type="checkbox"]) > small { grid-column: 2; }
+#vf-dialog-body h3 { font-size: 14px; line-height: 1.5; margin: 24px 0 12px; color: #243d5a; }
+#vf-dialog-body > div > .vf-help:first-child { padding: 12px 14px; margin: 0 0 18px; border-radius: 8px; background: #f2f6fc; line-height: 1.6; }
+#vf-dialog-body > div > details:not(.vfd-card):not(.vfd-details) { margin-top: 18px; padding: 12px 14px; border: 1px solid var(--vf-line); border-radius: 8px; }
+#vf-dialog-body > div > details > summary { cursor: pointer; font-size: 12px; font-weight: 600; }
 .vf-field input:not([type="checkbox"]),
 .vf-field select {
   width: 100%;
@@ -514,6 +550,8 @@
 }
 
 @media (max-width: 600px) {
+  .vf-column-control { grid-template-columns: minmax(0, 1fr) 78px 36px 36px; gap: 6px; padding: 8px; }
+  .vf-column-control .vf-field > span { overflow-wrap: anywhere; }
   .vf-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -523,6 +561,7 @@
   .vf-toolbar input[type="search"],
   .vf-toolbar > select {
     width: 100%;
+    max-width: none;
     min-height: 44px;
     flex: auto;
   }
@@ -543,6 +582,7 @@
   .vf-toolbar-more {
     display: block;
     min-width: 0;
+    margin-left: 0;
   }
   .vf-toolbar-more > summary {
     display: flex;
@@ -560,9 +600,14 @@
   }
   .vf-toolbar-secondary {
     display: grid;
+    position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding-top: 12px;
+    padding-left: 0;
+    padding-right: 0;
+    border: 0;
+    box-shadow: none;
   }
   .vf-toolbar-secondary > :not(button) {
     grid-column: 1 / -1;

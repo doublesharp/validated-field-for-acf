@@ -19,6 +19,7 @@ class acf_field_validated_field extends acf_field {
 		add_action( 'wp_ajax_acf_vf_sub_settings', array( $this, 'ajax_sub_settings' ) );
 		add_action( 'admin_init', array( $this, 'register_options' ) );
 		add_action( 'admin_menu', array( $this, 'settings_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'settings_assets' ) );
 		add_filter( 'acf/form-post/skip_save', array( $this, 'set_save_context' ), 10, 2 );
 		add_filter( 'acf/pre_submit_form', array( $this, 'set_frontend_context' ) );
 		$this->detect_frontend_context();
@@ -239,6 +240,7 @@ class acf_field_validated_field extends acf_field {
 		if ( ! is_admin() && ! ACF_VF_Validation::is_true( get_option( 'acf_vf_frontend_css', true ) ) ) { wp_dequeue_style( 'colors' ); }
 	}
 	public function field_group_admin_enqueue_scripts() {
+		$this->settings_assets( 'acf-field-group' );
 		$editor = wp_enqueue_code_editor( array( 'type' => 'text/x-php' ) );
 		wp_enqueue_script( 'acf-vf-admin', plugins_url( 'js/admin.js', ACF_VF_PLUGIN_FILE ), array( 'acf-field-group', 'jquery' ), ACF_VF_VERSION, true );
 		wp_localize_script( 'acf-vf-admin', 'acfVfSettings', array( 'nonce' => wp_create_nonce( 'acf-vf-settings' ), 'editor' => $editor ) );
@@ -249,26 +251,38 @@ class acf_field_validated_field extends acf_field {
 		}
 	}
 	public function settings_menu() { add_options_page( __( 'Validated Field', 'acf_vf' ), __( 'Validated Field', 'acf_vf' ), 'manage_options', 'acf-validated-field', array( $this, 'settings_page' ) ); }
+	public function settings_assets( $hook ): void {
+		if ( ! in_array( $hook, array( 'settings_page_acf-validated-field', 'settings_page_acf-vf-pro-license', 'acf-field-group' ), true ) ) { return; }
+		wp_enqueue_style( 'acf-vf-settings', plugins_url( 'includes/app/assets/settings.css', ACF_VF_PLUGIN_FILE ), array(), (string) filemtime( __DIR__ . '/app/assets/settings.css' ) );
+	}
 	public function settings_page() {
 		if ( ! current_user_can( 'manage_options' ) ) { return; }
-		echo '<div class="wrap"><h1>' . esc_html__( 'Validated Field', 'acf_vf' ) . '</h1><form action="options.php" method="post">';
+		echo '<div class="wrap vf-settings"><header class="vf-settings-header"><div><p class="vf-settings-eyebrow">' . esc_html__( 'SETUP & UPDATES', 'acf_vf' ) . '</p><h1>' . esc_html__( 'Validated Field', 'acf_vf' ) . '</h1><p>' . esc_html__( 'Clean data. Smoother workflows. Built around your fields.', 'acf_vf' ) . '</p></div><span class="vf-edition-badge">' . esc_html( defined( 'ACF_VF_PRO_VERSION' ) ? 'PRO' : 'FREE' ) . '</span></header><div class="vf-settings-grid"><section class="vf-settings-card"><h2>' . esc_html__( 'General settings', 'acf_vf' ) . '</h2><p class="vf-settings-muted">' . esc_html__( 'Choose where your validation runs.', 'acf_vf' ) . '</p><form action="options.php" method="post">';
 		settings_fields( 'acf_vf' );
 		foreach ( array( 'acf_vf_drafts' => __( 'Validate drafts globally', 'acf_vf' ), 'acf_vf_frontend' => __( 'Validate acf_form() submissions', 'acf_vf' ), 'acf_vf_frontend_css' => __( 'Load ACF form admin colors', 'acf_vf' ), 'acf_vf_debug' => __( 'Debug mode (legacy setting)', 'acf_vf' ) ) as $name => $label ) {
 			echo '<p><label><input type="hidden" name="' . esc_attr( $name ) . '" value="0"><input type="checkbox" name="' . esc_attr( $name ) . '" value="1" ' . checked( ACF_VF_Validation::is_true( get_option( $name, $name !== 'acf_vf_debug' ) ), true, false ) . '> ' . esc_html( $label ) . '</label></p>';
 		}
-		submit_button(); echo '</form>';
+		submit_button(); echo '</form></section>';
 		$this->render_pro_promotion();
-		echo '</div>';
+		$this->render_settings_sections();
+		echo '</div></div>';
 	}
+	public function render_settings_sections(): void { do_action( 'acf_vf/settings_sections' ); }
 	private function render_pro_promotion(): void {
 		if ( defined( 'ACF_VF_PRO_VERSION' ) ) { return; }
 		$url = esc_url( (string) ACF_VF_PRO_UPGRADE_URL, array( 'http', 'https' ) );
 		if ( $url === '' ) { return; }
-		echo '<section class="card acf-vf-pro-card" aria-labelledby="acf-vf-pro-title"><h2 id="acf-vf-pro-title">' . esc_html__( 'Build more with Validated Field Pro', 'acf_vf' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Add calculations, workflow automation and advanced data tools.', 'acf_vf' ) . '</p><ul class="ul-disc">';
-		foreach ( array( __( 'Formulas and rollups', 'acf_vf' ), __( 'Automation and approval workflows', 'acf_vf' ), __( 'Saved views and bulk editing', 'acf_vf' ), __( 'Imports and configuration tools', 'acf_vf' ) ) as $feature ) {
-			echo '<li>' . esc_html( $feature ) . '</li>';
+		echo '<section class="card acf-vf-pro-card" aria-labelledby="acf-vf-pro-title"><p class="vf-settings-eyebrow">VALIDATED FIELD PRO</p><h2 id="acf-vf-pro-title">' . esc_html__( 'Turn your fields into a workflow with Pro', 'acf_vf' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Keep Free’s validation and input masks. Add the tools to calculate values, manage more records and automate the next step.', 'acf_vf' ) . '</p><dl>';
+		foreach ( array(
+			__( 'Calculations that stay in sync', 'acf_vf' ) => __( 'Use formulas and rollups to calculate totals and summarize related records.', 'acf_vf' ),
+			__( 'Workflows that move work forward', 'acf_vf' ) => __( 'Run actions in the background and add approval rules to your processes.', 'acf_vf' ),
+			__( 'Tables built for real work', 'acf_vf' ) => __( 'Save views, use advanced filters, edit in bulk, import records and run background exports.', 'acf_vf' ),
+		) as $feature => $description ) {
+			echo '<div class="vf-pro-feature"><dt><strong>' . esc_html( $feature ) . '</strong></dt><dd>' . esc_html( $description ) . '</dd></div>';
 		}
-		echo '</ul><p><a class="button" href="' . $url . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Explore Pro', 'acf_vf' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'acf_vf' ) . '</span></a></p></section>';
+		echo '</dl><p><a class="button button-primary" href="' . $url . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Get Validated Field Pro', 'acf_vf' ) . '<span class="screen-reader-text"> ' . esc_html__( '(opens in a new tab)', 'acf_vf' ) . '</span></a></p><h3>' . esc_html__( 'How to upgrade', 'acf_vf' ) . '</h3><ol>';
+		foreach ( array( __( 'Get your Pro license and download the Pro ZIP.', 'acf_vf' ), __( 'Install Pro alongside Free from Plugins → Add Plugin → Upload Plugin. Keep Free active.', 'acf_vf' ), __( 'Return to these settings and activate your license with your consent to receive updates.', 'acf_vf' ) ) as $step ) { echo '<li>' . esc_html( $step ) . '</li>'; }
+		echo '</ol><p>' . esc_html__( 'Your installed Pro features keep working when update access ends.', 'acf_vf' ) . '</p></section>';
 	}
 }

@@ -1,9 +1,9 @@
 /* All designer styles are scoped. The parent workspace owns dialog sizing. */
 .vfd-designer {
-  --vfd-line: #c6d0dc;
+  --vfd-line: #d7e1ee;
   --vfd-muted: #48576b;
-  --vfd-accent: #174eac;
-  --vfd-surface: #f5f7fb;
+  --vfd-accent: #245be1;
+  --vfd-surface: #f7faff;
   color: #182638;
   font-size: 14px;
   line-height: 1.5;
@@ -15,16 +15,18 @@
 .vfd-designer .vfd-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
-  padding: 0 0 12px;
+  gap: 6px;
+  padding: 7px;
   margin-bottom: 18px;
-  border-bottom: 1px solid var(--vfd-line);
+  border: 1px solid var(--vfd-line);
+  border-radius: 10px;
+  background: var(--vfd-surface);
 }
 .vfd-designer .vfd-button {
   appearance: none;
   background: #fff;
-  border: 1px solid #a5b2c3;
-  border-radius: 5px;
+  border: 1px solid #c8d5e6;
+  border-radius: 6px;
   color: #243951;
   cursor: pointer;
   font: inherit;
@@ -65,8 +67,8 @@
 .vfd-designer .vfd-control > :is(input:not([type="checkbox"]), select, textarea) {
   appearance: auto;
   background: #fff;
-  border: 1px solid #9caabd;
-  border-radius: 4px;
+  border: 1px solid #bdcbde;
+  border-radius: 6px;
   color: #182638;
   display: block;
   font: inherit;
@@ -95,7 +97,7 @@
 .vfd-designer .vfd-fieldset {
   background: #fff;
   border: 1px solid var(--vfd-line);
-  border-radius: 6px;
+  border-radius: 9px;
   margin: 12px 0 16px;
   min-width: 0;
   padding: 12px 14px 4px;
@@ -103,7 +105,7 @@
 .vfd-designer .vfd-fieldset > legend { color: #243951; font-weight: 600; max-width: 100%; padding: 0 6px; }
 .vfd-designer .vfd-card, .vfd-designer .vfd-details {
   border: 1px solid var(--vfd-line);
-  border-radius: 6px;
+  border-radius: 9px;
   margin: 0 0 12px;
   min-width: 0;
   padding: 0 14px;
