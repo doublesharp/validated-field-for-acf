@@ -52,6 +52,12 @@ final class NativeGuard {
         }, 20, 2);
         add_action('load-post-new.php', [__CLASS__, 'redirect_editor']);
         add_action('load-post.php', [__CLASS__, 'redirect_editor']);
+        add_action('load-edit.php', [__CLASS__, 'redirect_list']);
+    }
+    public static function redirect_list(): void {
+        $type = isset($_GET['post_type']) && is_string($_GET['post_type']) ? sanitize_key(wp_unslash($_GET['post_type'])) : 'post';
+        if (!Schema::managed_object($type)) { return; }
+        wp_safe_redirect(admin_url('admin.php?page=validated-field-workspace&object=' . rawurlencode($type))); exit;
     }
     public static function redirect_editor(): void {
         $id = isset($_GET['post']) ? absint($_GET['post']) : 0;

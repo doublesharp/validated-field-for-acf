@@ -13,7 +13,7 @@ final class Schema {
 
     public static function private_registration(array $args, string $slug): array {
         if (!self::managed_object($slug)) { return $args; }
-        foreach (['public','publicly_queryable','show_in_rest','show_in_graphql','query_var','rewrite'] as $flag) { $args[$flag] = false; }
+        foreach (['public','publicly_queryable','show_in_rest','show_in_graphql','query_var','rewrite','show_in_menu','show_in_admin_bar'] as $flag) { $args[$flag] = false; }
         $args['exclude_from_search'] = true;
         return $args;
     }
@@ -381,7 +381,7 @@ final class Schema {
                 continue;
             }
             $managed_type = get_post_type_object($slug);
-            foreach (['public', 'publicly_queryable', 'show_in_rest', 'show_in_graphql', 'query_var', 'rewrite'] as $setting) { $managed_type->$setting = false; }
+            foreach (['public', 'publicly_queryable', 'show_in_rest', 'show_in_graphql', 'query_var', 'rewrite', 'show_in_menu', 'show_in_admin_bar'] as $setting) { $managed_type->$setting = false; }
             $managed_type->exclude_from_search = true;
             if (function_exists('acf_add_local_field_group')) { self::register_fields($slug, $definition); }
         }
