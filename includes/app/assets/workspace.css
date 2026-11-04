@@ -712,6 +712,79 @@
 }
 .vf-selection-status .vf-button { background: #fff; border-color: #b7c8ee; color: #1d3f8f; }
 
+/* The same record form keeps its draft as its presentation changes. */
+.vf-workspace dialog[data-presentation="panel"],
+.vf-workspace dialog[data-presentation="page"] { padding: 0; overflow: hidden; }
+.vf-workspace dialog[data-presentation="panel"] > form,
+.vf-workspace dialog[data-presentation="page"] > form { height: 100%; display: flex; flex-direction: column; min-height: 0; margin: 0; }
+.vf-workspace dialog[data-presentation="panel"] :is(.vf-dialog-header,.vf-dialog-footer),
+.vf-workspace dialog[data-presentation="page"] :is(.vf-dialog-header,.vf-dialog-footer) { flex-shrink: 0; }
+.vf-workspace dialog[data-presentation="panel"] #vf-dialog-body,
+.vf-workspace dialog[data-presentation="page"] #vf-dialog-body { flex: 1; min-height: 0; max-height: none; }
+.vf-record-form > .vf-grid { gap: 14px; margin-bottom: 20px; }
+.vf-record-form > .vf-grid > .vf-field { margin-bottom: 0; }
+.vf-workspace dialog[data-presentation="panel"] .vf-grid { grid-template-columns: 1fr; }
+.vf-table tr[data-editing] { background: #eaf1ff; }
+.vf-table tr[data-editing] td:first-child { box-shadow: inset 3px 0 var(--vf-blue); }
+.vf-workspace dialog[data-presentation="panel"] {
+  position: fixed;
+  inset: 56px 24px 24px auto;
+  margin: 0;
+  width: 416px;
+  height: calc(100dvh - 80px);
+  max-height: none;
+  box-shadow: 0 8px 32px #15243a18;
+}
+.vf-workspace[data-record-editor="panel"] .vf-main { padding-right: 472px; }
+.vf-workspace dialog[data-presentation="panel"] .vf-dialog-header { padding: 17px 20px; }
+.vf-workspace dialog[data-presentation="panel"] #vf-dialog-body { padding: 20px; }
+.vf-workspace dialog[data-presentation="panel"] .vf-dialog-footer { padding: 14px 20px; }
+.vf-workspace dialog[data-presentation="page"] {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+}
+.vf-workspace dialog[data-presentation="page"]::backdrop { background: #f5f7fa; }
+.vf-workspace dialog[data-presentation="page"] .vf-dialog-header { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 2px; padding: 8px max(20px, calc((100vw - 740px) / 2 + 20px)) 16px; background: #fff; }
+.vf-workspace dialog[data-presentation="page"] .vf-dialog-header [data-close] { order: -1; margin-left: -6px; }
+.vf-workspace dialog[data-presentation="page"] .vf-dialog-header h2 { font-size: 21px; line-height: 1.3; letter-spacing: -0.01em; }
+.vf-workspace dialog[data-presentation="page"] #vf-dialog-body { width: min(740px, 100%); align-self: center; padding: 24px 20px; }
+.vf-workspace dialog[data-presentation="page"] .vf-dialog-footer { padding: 16px max(20px, calc((100vw - 740px) / 2 + 20px)); }
+.vf-workspace .vf-record-back { display: inline-flex; align-items: center; gap: 4px; width: auto; height: auto; font: inherit; font-size: 13px; font-weight: 600; min-height: 44px; padding: 8px 10px 8px 6px; border: 0; border-radius: 6px; background: none; color: var(--vf-blue); cursor: pointer; }
+.vf-workspace .vf-record-back svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vf-workspace .vf-record-back:hover { background: #f0f5ff; }
+.vf-workspace .vf-record-back:focus-visible { outline: 2px solid var(--vf-blue); outline-offset: 1px; }
+
+/* Record context and secondary actions lead the form, clear of the Save footer. */
+.vf-record-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 0 0 22px; padding: 0 0 18px; border-bottom: 1px solid var(--vf-line); }
+.vf-record-identity { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vf-record-name { font-size: 15px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.vf-record-meta { color: var(--vf-muted); font-size: 12px; }
+.vf-record-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.vf-record-actions .vf-button { min-height: 36px; }
+.vf-workspace .vf-record-actions .vf-record-delete { color: #b32d2e; }
+.vf-workspace .vf-record-actions .vf-record-delete:hover { border-color: #b32d2e; background: #fcf0f1; }
+.vf-record-form .vf-field { margin-bottom: 20px; }
+.vf-record-form .vf-field > span { font-size: 13px; color: #243d5a; }
+.vf-record-form .vf-related:not(:empty) { margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--vf-line); }
+.vf-workspace dialog:is([data-presentation="panel"],[data-presentation="page"]) #vf-dialog-body { padding-bottom: 32px; }
+
+/* Beside the pane, Open stays reachable while wide tables scroll under it. */
+.vf-workspace[data-record-editor="panel"] .vf-records :is(th,td):last-child { position: sticky; right: 0; z-index: 1; background: #fff; box-shadow: inset 1px 0 var(--vf-line); }
+.vf-workspace[data-record-editor="panel"] .vf-records th:last-child { z-index: 3; background: #f9fbfd; }
+.vf-workspace[data-record-editor="panel"] .vf-records tbody tr:hover td:last-child { background: #f8faff; }
+.vf-workspace[data-record-editor="panel"] .vf-records tr[data-editing] td:last-child { background: #eaf1ff; }
+.vf-workspace dialog[data-presentation="page"] .vf-field input,
+.vf-workspace dialog[data-presentation="page"] .vf-field select { min-height: 44px; }
+.vf-workspace dialog[data-presentation="page"] .vf-dialog-footer .vf-button { min-height: 44px; padding-inline: 18px; }
+
 @media (max-width: 782px) {
   .vf-workspace-tools { position: absolute; }
   .vf-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px 12px; margin-bottom: 18px; }

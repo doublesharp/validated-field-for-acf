@@ -122,7 +122,10 @@
         if (control) {
           control.disabled = true;
           control.textContent = control === $("#vf-dialog-submit") ? "Retry refresh" : "Retry";
-          if (control === $("#vf-dialog-submit")) $("#vf-dialog-body").querySelectorAll("input,select,textarea,button").forEach(node => { node.disabled = true; });
+          if (control === $("#vf-dialog-submit")) {
+            $("#vf-dialog-body").querySelector(".vf-record-form")?.removeAttribute("data-record-dirty");
+            $("#vf-dialog-body").querySelectorAll("input,select,textarea,button").forEach(node => { node.disabled = true; });
+          }
         }
         if (await complete(operation, result) === false) throw abandoned;
         committed = false; result = undefined;
@@ -224,6 +227,9 @@
         : String(value);
   let dialogSubmit = null;
   let returnFocus = null;
+  let returnRecord = null;
+  let recordEditor = false;
+  let presentationMode = "dialog";
   let initialized = false;
   let dialogGeneration = 0;
   let dialogSession = null;
@@ -256,7 +262,7 @@
     }
   }
   function clearDialog() {
-    closeDialog();
+    closeDialog(false);
     $("#vf-dialog-title").textContent = "";
     $("#vf-dialog-body").replaceChildren();
     $("#vf-dialog-submit").hidden = true;
@@ -267,6 +273,7 @@
       if (pendingDialog?.independent) {
         dialogSession = null; dialogSubmit = null;
         $("#vf-dialog").close(); $("#vf-dialog-body").replaceChildren();
+        syncEditorState();
       } else clearDialog();
     }
   }
@@ -280,11 +287,63 @@
     try { return await request(operation, data); }
     catch (error) { if (ownsDialog()) { pendingDialog = null; throw error; } }
   }
-  function openDialog(title, body, submit, saveLabel = "Save", independent = false) {
+  function canLeaveRecord() {
+    return presentationMode !== "panel" || !$("#vf-dialog").open ||
+      !$("#vf-dialog-body").querySelector('[data-record-dirty="true"]') ||
+      window.confirm("Discard the unsaved changes to this record?");
+  }
+  function syncEditorState() {
+    const dialog = $("#vf-dialog"), open = recordEditor && dialog.open;
+    $("#vf-workspace")?.setAttribute("data-record-editor", open ? presentationMode : "closed");
+    const id = $("#vf-dialog-body").querySelector(".vf-record-form")?.getAttribute("data-record-id");
+    $("#vf-content")?.querySelectorAll("[data-record]").forEach(row => {
+      const editing = !!open && row.getAttribute("data-record") === id;
+      row.toggleAttribute("data-editing", editing);
+      if (editing) row.setAttribute("aria-current", "true");
+      else row.removeAttribute("aria-current");
+    });
+  }
+  function presentDialog() {
+    const dialog = $("#vf-dialog");
+    const mode = recordEditor ? (window.innerWidth >= 1360 ? "panel" : "page") : "dialog";
+    if (dialog.open && presentationMode === mode) { syncEditorState(); return; }
+    const active = document.activeElement;
+    if (dialog.open) dialog.close();
+    presentationMode = mode;
+    dialog.setAttribute("data-presentation", mode);
+    const back = dialog.querySelector(".vf-dialog-header [data-close]");
+    if (back) {
+      if (mode === "page") {
+        const svg = "http://www.w3.org/2000/svg", icon = document.createElementNS(svg, "svg"), path = document.createElementNS(svg, "path");
+        icon.setAttribute("viewBox", "0 0 16 16"); icon.setAttribute("aria-hidden", "true"); icon.setAttribute("focusable", "false");
+        path.setAttribute("d", "M10 3 5 8l5 5");
+        icon.append(path);
+        back.replaceChildren(icon, "Back to records");
+      } else back.textContent = "×";
+      back.setAttribute("aria-label", mode === "page" ? "Back to records" : mode === "panel" ? "Close editor" : "Close dialog");
+      back.classList.toggle("vf-record-back", mode === "page");
+    }
+    if (mode === "panel") dialog.show();
+    else dialog.showModal();
+    syncEditorState();
+    if (active && dialog.contains(active)) active.focus({ preventScroll: true });
+  }
+  window.addEventListener?.("resize", () => { if (recordEditor && $("#vf-dialog").open) presentDialog(); });
+  $("#vf-dialog").addEventListener("keydown", event => {
+    if (event.key === "Escape" && !event.defaultPrevented && presentationMode === "panel" && $("#vf-dialog").open) {
+      event.preventDefault(); closeDialog();
+    }
+  });
+  function openDialog(title, body, submit, saveLabel = "Save", independent = false, record = false) {
+    if (!canLeaveRecord()) { pendingDialog = null; return false; }
     beginDialog(independent);
     dialogSession = pendingDialog; pendingDialog = null;
     const generation = dialogGeneration;
-    returnFocus = document.activeElement;
+    if (!$("#vf-dialog").open || !returnFocus || !$("#vf-dialog").contains(document.activeElement)) {
+      returnFocus = document.activeElement;
+      returnRecord = returnFocus?.closest?.("[data-record]")?.getAttribute("data-record");
+    }
+    recordEditor = record;
     $("#vf-dialog-title").textContent = title;
     $("#vf-dialog-body").replaceChildren(body);
     const current = captureDialog();
@@ -297,7 +356,7 @@
       pendingDialog = null; ++dialogGeneration;
       return submit({ ...owned(current), control: $("#vf-dialog-submit") });
     } : null;
-    $("#vf-dialog").showModal();
+    presentDialog();
     setTimeout(
       () => generation === dialogGeneration &&
         $("#vf-dialog-body")
@@ -305,13 +364,18 @@
           ?.focus(),
       0,
     );
+    return true;
   }
-  function closeDialog() {
+  function closeDialog(restoreFocus = true, confirmed = false) {
+    if (restoreFocus !== false && !confirmed && !canLeaveRecord()) return false;
     ++dialogGeneration;
     dialogSession = null; pendingDialog = null;
     dialogSubmit = null;
     $("#vf-dialog").close();
-    returnFocus?.focus();
+    syncEditorState();
+    const target = returnFocus?.isConnected ? returnFocus :
+      $("#vf-content")?.querySelector(`[data-record="${returnRecord}"] .vf-cell`) || $('[aria-label="Search records"]');
+    if (restoreFocus !== false) target?.focus();
   }
   function clearFieldError(field) {
     const message = field.querySelector(".vf-field-error");
@@ -491,7 +555,7 @@
   }
   async function choose(slug, sourceDialog = null) {
     const object = state.objects.find((object) => object.slug === slug);
-    if (!object) return false;
+    if (!object || !canLeaveRecord()) return false;
     ++navigationGeneration;
     ++state.generation;
     rebindDialog(sourceDialog);
@@ -811,6 +875,7 @@
       ]),
       ...(premium.metrics ? [premium.metrics(result)] : []),
     );
+    syncEditorState();
   }
   function freeScalar(definition) {
     if (!definition) return false;
@@ -993,7 +1058,7 @@
         if (!window.wp?.media) { notify("The WordPress media library could not load.", true); return; }
         const frame = window.wp.media({title:"Choose " + field.label, multiple:false, ...(type === "image" ? {library:{type:"image"}} : {})});
         frame.on("select", () => {if (!current()) return; const selected = frame.state().get("selection").first().toJSON();attachment=selected.id;summary.textContent=selected.filename || selected.title;node.dispatchEvent(new Event("change",{bubbles:true}));});
-        frame.on("close", () => setTimeout(() => {if (current() && !$("#vf-dialog").open) $("#vf-dialog").showModal();}, 0));
+        frame.on("close", () => setTimeout(() => {if (current() && !$("#vf-dialog").open) presentDialog();}, 0));
         $("#vf-dialog").close(); frame.open();
       });
       choose.setAttribute("aria-label", "Choose " + (type === "image" ? "image" : "file"));
@@ -1189,7 +1254,10 @@
       descriptor = await request("form", { object: object.slug, id: record?.id || 0 });
     } catch (error) { if (!ownsDialog()) return false; throw error; }
     if (!ownsDialog()) return false;
-    const body = el("div");
+    const body = el("div", { class: "vf-record-form", "data-record-id": record?.id || 0 });
+    const markDirty = () => body.setAttribute("data-record-dirty", "true");
+    body.addEventListener("input", markDirty);
+    body.addEventListener("change", markDirty);
     const title = input(record?.title || "");
     const status = select(
       {
@@ -1249,8 +1317,8 @@
             ]);
             const target = state.objects.find(object => object.slug === group.object);
             const navigate = async (slug, item, fields) => {
-              if (!ownsDialog()) return;
-              closeDialog();
+              if (!ownsDialog() || !canLeaveRecord()) return;
+              closeDialog(true, true);
               const dialogIntent = dialogGeneration;
               let next;
               try { next = await choose(slug); }
@@ -1267,12 +1335,7 @@
           });
         })
         .catch((error) => { if (ownsDialog()) notify(error.message, true); });
-      const actions = el("div", { class: "vf-toolbar" }, [
-        button(
-          "History",
-          safe(() => auditDialog(record)),
-        ),
-        descriptor.can_delete ? button("Delete record", () => {
+      const remove = descriptor.can_delete ? button("Delete record", () => {
           const confirmation = el("p", {
             text: `Delete “${record.title}”? Related-record restrictions still apply.`,
           });
@@ -1284,11 +1347,20 @@
             }),
             "Delete record",
           );
-        }) : null,
-      ]);
-      body.append(actions);
+        }) : null;
+      remove?.classList.add("vf-record-delete");
+      body.prepend(el("div", { class: "vf-record-summary" }, [
+        el("div", { class: "vf-record-identity" }, [
+          el("strong", { class: "vf-record-name", text: record.title || "(Untitled)" }),
+          el("span", { class: "vf-record-meta", text: `${state.object.singular} #${record.id}` }),
+        ]),
+        el("div", { class: "vf-record-actions", role: "group", "aria-label": "Record actions" }, [
+          button("History", safe(() => auditDialog(record))),
+          remove,
+        ]),
+      ]));
     }
-    openDialog(
+    const opened = openDialog(
       record ? `${descriptor.can_update ? "Edit" : "View"} ${state.object.singular}` : `New ${state.object.singular}`,
       body,
       (record ? descriptor.can_update : descriptor.can_create) ? mutation(async ({ request }) => {
@@ -1307,7 +1379,9 @@
           },
         });
       }, async ({ load }) => { await load(); notify("Record saved."); }) : null,
+      "Save", false, true,
     );
+    if (!opened) return false;
     presentation = captureDialog();
     return ownsDialog;
   }
