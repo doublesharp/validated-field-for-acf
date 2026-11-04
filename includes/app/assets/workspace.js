@@ -23,12 +23,14 @@
       );
     return node;
   };
-  const button = (text, action, primary = false) =>
+  // Icons are decorative CSS glyphs keyed by data-icon, so accessible names stay the visible label.
+  const button = (text, action, primary = false, icon) =>
     el("button", {
       type: "button",
       class: `vf-button${primary ? " vf-primary" : ""}`,
       text,
       onclick: action,
+      ...(icon ? { "data-icon": icon } : {}),
     });
   const navigationMenu = (label, className, items) => {
     const summary = el("summary", { class: "vf-button", text: label });
@@ -302,6 +304,11 @@
       if (editing) row.setAttribute("aria-current", "true");
       else row.removeAttribute("aria-current");
     });
+    syncScrollCue();
+  }
+  function syncScrollCue() {
+    const wrap = document.querySelector("#vf-content .vf-table-wrap");
+    if (wrap) wrap.toggleAttribute("data-scroll-more", wrap.scrollLeft + wrap.clientWidth < wrap.scrollWidth - 1);
   }
   function presentDialog() {
     const dialog = $("#vf-dialog");
@@ -328,7 +335,7 @@
     syncEditorState();
     if (active && dialog.contains(active)) active.focus({ preventScroll: true });
   }
-  window.addEventListener?.("resize", () => { if (recordEditor && $("#vf-dialog").open) presentDialog(); });
+  window.addEventListener?.("resize", () => { if (recordEditor && $("#vf-dialog").open) presentDialog(); else syncScrollCue(); });
   $("#vf-dialog").addEventListener("keydown", event => {
     if (event.key === "Escape" && !event.defaultPrevented && presentationMode === "panel" && $("#vf-dialog").open) {
       event.preventDefault(); closeDialog();
@@ -655,8 +662,8 @@
       );
     });
     const primary = el("div", { class: "vf-toolbar-primary" }, [
-      button("Filters", navigationAction(filtersDialog)),
-      button("Columns", navigationAction(columnsDialog)),
+      button("Filters", navigationAction(filtersDialog), false, "filter"),
+      button("Columns", navigationAction(columnsDialog), false, "columns"),
     ]);
     const toolbar = el("div", { class: "vf-toolbar" }, [search, primary]);
     const secondary = el("div", { class: "vf-toolbar-secondary" });
@@ -693,7 +700,7 @@
         state.layout = value;
         renderList(result);
         $('.vf-layout-switch [aria-pressed="true"]').focus();
-      }));
+      }), false, value);
       choice.setAttribute("aria-pressed", String(state.layout === value));
       layout.append(choice);
     }
@@ -821,6 +828,8 @@
             button(
               "Open",
               navigationAction(() => recordDialog(row)),
+              false,
+              "open",
             ),
           ]),
         ]);
@@ -858,7 +867,7 @@
     updateSelection();
     $("#vf-content").replaceChildren(
       toolbar,
-      el("div", { class: "vf-table-wrap vf-records", "data-layout": state.layout }, [
+      el("div", { class: "vf-table-wrap vf-records", "data-layout": state.layout, onscroll: syncScrollCue }, [
         el("table", { class: `vf-table${state.stickyHeader ? " vf-sticky-header" : ""}` }, [el("thead", {}, [head]), tbody]),
       ]),
       ...(!state.rows.length ? [empty] : []),
@@ -1347,7 +1356,7 @@
             }),
             "Delete record",
           );
-        }) : null;
+        }, false, "delete") : null;
       remove?.classList.add("vf-record-delete");
       body.prepend(el("div", { class: "vf-record-summary" }, [
         el("div", { class: "vf-record-identity" }, [
@@ -1355,7 +1364,7 @@
           el("span", { class: "vf-record-meta", text: `${state.object.singular} #${record.id}` }),
         ]),
         el("div", { class: "vf-record-actions", role: "group", "aria-label": "Record actions" }, [
-          button("History", safe(() => auditDialog(record))),
+          button("History", safe(() => auditDialog(record)), false, "history"),
           remove,
         ]),
       ]));
