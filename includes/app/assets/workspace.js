@@ -51,6 +51,7 @@
     stickyHeader: true,
     views: [],
     selected: new Set(),
+    layout: "cards",
     generation: 0,
   };
   let refreshGeneration = 0;
@@ -174,11 +175,11 @@
             `${state.object?.fields[item.field]?.label || item.field || "Record"}: ${item.message}`,
         )
         .join("; ");
-      throw new Error(
+      throw Object.assign(new Error(
         details ||
           result.data?.message ||
           "The request failed. Please try again.",
-      );
+      ), { fields: errors });
     }
     return result.data;
   };
@@ -312,6 +313,18 @@
     $("#vf-dialog").close();
     returnFocus?.focus();
   }
+  function clearFieldError(field) {
+    const message = field.querySelector(".vf-field-error");
+    if (!message) return;
+    const control = field.querySelector('[aria-invalid="true"]');
+    if (control) {
+      control.removeAttribute("aria-invalid");
+      const descriptions = (control.getAttribute("aria-describedby") || "").split(" ").filter(id => id && id !== message.id);
+      if (descriptions.length) control.setAttribute("aria-describedby", descriptions.join(" "));
+      else control.removeAttribute("aria-describedby");
+    }
+    message.remove();
+  }
   $("#vf-dialog").addEventListener("cancel", event => {
     event.preventDefault();
     closeDialog();
@@ -327,6 +340,7 @@
     const submit = $("#vf-dialog-submit");
     submit.disabled = true;
     $("#vf-dialog-body").querySelector(".vf-dialog-error")?.remove();
+    $("#vf-dialog-body").querySelectorAll("[data-vf-field]").forEach(clearFieldError);
     try {
       const completion = dialogSubmit();
       generation = dialogGeneration;
@@ -334,13 +348,26 @@
       if (generation === dialogGeneration && session === dialogSession) closeDialog();
     } catch (error) {
       if (error === abandoned || generation !== dialogGeneration) return;
-      $("#vf-dialog-body").prepend(
-        el("div", {
+      const summary = el("div", {
           class: "vf-alert vf-error vf-dialog-error",
           role: "alert",
+          tabindex: -1,
           text: error.message,
-        }),
-      );
+        });
+      $("#vf-dialog-body").prepend(summary);
+      let first = null;
+      const fields = [...$("#vf-dialog-body").querySelectorAll("[data-vf-field]")];
+      for (const [index, item] of (error.fields || []).entries()) {
+        const field = fields.find(node => node.getAttribute("data-vf-field") === item.field);
+        const control = field?.querySelector("input,select,textarea,button");
+        if (!control || field.querySelector(".vf-field-error")) continue;
+        const id = `vf-field-error-${index}`;
+        field.append(el("small", { class: "vf-field-error", id, text: item.message }));
+        control.setAttribute("aria-invalid", "true");
+        control.setAttribute("aria-describedby", [control.getAttribute("aria-describedby"), id].filter(Boolean).join(" "));
+        first ||= control;
+      }
+      (first || summary).focus();
     } finally {
       if (generation !== undefined && session === dialogSession) submit.disabled = false;
     }
@@ -382,10 +409,13 @@
     });
     picker.append(summary, el("div", { class: "vf-navigation-menu vf-object-options" }, [search, ...choices]));
     picker.hidden = !state.objects.length;
+    const create = $("#vf-create-object");
+    create.remove();
     nav.replaceChildren(picker);
     if (config.configure)
       nav.append(
-        navigationMenu("Tools", "vf-workspace-tools", [
+        navigationMenu("Manage", "vf-workspace-tools vf-object-actions", [
+          create,
           button("Background jobs", safe(() => jobsDialog())),
           button("Field indexes", safe(indexDialog)),
           config.configurationUrl
@@ -395,6 +425,7 @@
           el("a", { href: "options-general.php?page=acf-validated-field", text: "Settings" }),
         ]),
       );
+    else nav.append(create);
     $("#vf-create-object").hidden = !config.configure;
     if (state.objects.length) {
       const params = new URLSearchParams(location.search);
@@ -470,6 +501,7 @@
     state.query = { page: 1, per_page: 20 };
     state.view = "";
     state.selected.clear();
+    $("#vf-feedback").replaceChildren();
     $("#vf-title").textContent = state.object.label;
     $(".vf-object-current").textContent = state.object.label;
     $(".vf-object-current").setAttribute("aria-label", "Switch object, current: " + state.object.label);
@@ -490,10 +522,12 @@
           true,
         ),
       );
-    if (config.configure && !state.object.native_table)
-      actions.push(navigationMenu("Object actions", "vf-object-actions", [
-        button("Edit object", safe(() => designer(slug))),
-      ]));
+    $(".vf-edit-object")?.remove();
+    if (config.configure && !state.object.native_table) {
+      const edit = button("Edit object", safe(() => designer(slug)));
+      edit.classList.add("vf-edit-object");
+      $(".vf-workspace-tools .vf-navigation-menu").prepend(edit);
+    }
     $("#vf-header-actions").replaceChildren(...actions);
     let results;
     try { results = await Promise.all([
@@ -544,6 +578,7 @@
     let timer;
     search.addEventListener("input", () => {
       clearTimeout(timer);
+      $("#vf-feedback").replaceChildren();
       const intent = beginTable(current);
       timer = setTimeout(
         safe(async () => {
@@ -559,9 +594,9 @@
       button("Filters", navigationAction(filtersDialog)),
       button("Columns", navigationAction(columnsDialog)),
     ]);
-    if (state.object.can_create) primary.append(button("Quick Add", navigationAction(quickAdd)));
     const toolbar = el("div", { class: "vf-toolbar" }, [search, primary]);
     const secondary = el("div", { class: "vf-toolbar-secondary" });
+    if (state.object.can_create) secondary.append(button("Quick Add", navigationAction(quickAdd)));
     premium.toolbar?.(secondary);
     if (state.object.can_export)
       secondary.append(
@@ -588,14 +623,44 @@
       ]);
       toolbar.append(more);
     }
+    const layout = el("div", { class: "vf-layout-switch", role: "group", "aria-label": "Record layout" });
+    for (const [value, text] of [["cards", "Cards"], ["table", "Table"]]) {
+      const choice = button(text, navigationAction(() => {
+        state.layout = value;
+        renderList(result);
+        $('.vf-layout-switch [aria-pressed="true"]').focus();
+      }));
+      choice.setAttribute("aria-pressed", String(state.layout === value));
+      layout.append(choice);
+    }
+    toolbar.append(layout);
     const all = input("", "checkbox", { "aria-label": "Select current page" });
+    const selectionCount = el("span", { role: "status" });
+    const selection = el("div", { class: "vf-selection-status" }, [
+      selectionCount,
+      button("Clear selection", () => {
+        state.selected.clear();
+        $("#vf-content").querySelectorAll("[data-row-select]").forEach((node) => (node.checked = false));
+        updateSelection();
+        all.focus();
+      }),
+    ]);
+    function updateSelection() {
+      const onPage = state.rows.filter((row) => state.selected.has(row.id)).length;
+      all.checked = state.rows.length > 0 && onPage === state.rows.length;
+      all.indeterminate = onPage > 0 && !all.checked;
+      selectionCount.textContent = `${state.selected.size} selected`;
+      selection.hidden = !state.selected.size;
+    }
     all.addEventListener("change", () => {
       state.selected.clear();
       if (all.checked) state.rows.forEach((row) => state.selected.add(row.id));
       $("#vf-content")
         .querySelectorAll("[data-row-select]")
         .forEach((node) => (node.checked = all.checked));
+      updateSelection();
     });
+    const cardFields = state.columns.filter((item) => item.field !== "title").slice(0, 2);
     const primarySort = Array.isArray(state.query.sort) ? state.query.sort[0] : state.query.sort;
     const ascending = primarySort?.direction?.toLowerCase() === "asc";
     const head = el("tr", {}, [
@@ -649,21 +714,22 @@
         const check = input("", "checkbox", {
           "aria-label": `Select ${row.title || row.id}`,
           "data-row-select": row.id,
+          checked: state.selected.has(row.id),
         });
-        check.addEventListener("change", () =>
-          check.checked
-            ? state.selected.add(row.id)
-            : state.selected.delete(row.id),
-        );
-        return el("tr", {}, [
-          el("td", {}, [check]),
+        check.addEventListener("change", () => {
+          if (check.checked) state.selected.add(row.id);
+          else state.selected.delete(row.id);
+          updateSelection();
+        });
+        return el("tr", { "data-record": row.id }, [
+          el("td", { class: "vf-row-selection" }, [check]),
           ...state.columns.map((column) => {
             const value =
               column.field in row
                 ? row[column.field]
                 : row.fields[column.field];
             const display = row.display?.[column.field] ?? textValue(value);
-            const cell = el("td", { title: display });
+            const cell = el("td", { title: display, "data-field": column.field, "data-label": column.label, class: cardFields.includes(column) ? "vf-card-meta" : "" });
             if (column.field === "title")
               cell.append(
                 el("button", {
@@ -687,7 +753,7 @@
             premium.formatCell?.(cell, row, column);
             return cell;
           }),
-          el("td", {}, [
+          el("td", { class: "vf-row-open" }, [
             button(
               "Open",
               navigationAction(() => recordDialog(row)),
@@ -696,17 +762,15 @@
         ]);
       }),
     );
-    if (!state.rows.length)
-      tbody.append(
-        el("tr", {}, [
-          el("td", { colspan: state.columns.length + 2 }, [
-            el("div", {
-              class: "vf-empty",
-              text: "No records match this view.",
-            }),
-          ]),
-        ]),
-      );
+    const empty = el("div", { class: "vf-empty vf-results-empty" }, [
+      el("h2", { text: "No records match this view." }),
+      el("p", { text: state.query.search ? `No results for “${state.query.search}”. Try another search or clear it to return to your records.` : "Try adjusting the filters to see more records." }),
+      state.query.search ? button("Clear search", navigationAction(async () => {
+        state.query.search = ""; state.query.page = 1;
+        const intent = beginTable(current);
+        if (await load(intent) && intent()) $('[aria-label="Search records"]').focus();
+      })) : null,
+    ]);
     const previous = button(
       "Previous",
       safe(async () => {
@@ -727,11 +791,14 @@
       }),
     );
     next.disabled = result.page >= result.total_pages;
+    updateSelection();
     $("#vf-content").replaceChildren(
       toolbar,
-      el("div", { class: "vf-table-wrap" }, [
+      el("div", { class: "vf-table-wrap vf-records", "data-layout": state.layout }, [
         el("table", { class: `vf-table${state.stickyHeader ? " vf-sticky-header" : ""}` }, [el("thead", {}, [head]), tbody]),
       ]),
+      ...(!state.rows.length ? [empty] : []),
+      selection,
       el("div", { class: "vf-pagination" }, [
         el("span", { text: `${result.total} records` }),
         el("div", {}, [
@@ -1160,8 +1227,11 @@
       fieldNodes[name] = label(
         field.label + (field.required ? " *" : ""),
         control.node,
-        field.provider_missing ? "Calculated value may be stale: its runtime provider is unavailable." : "",
+        field.provider_missing ? "Calculated value may be stale: its runtime provider is unavailable." : control.node.disabled ? "Read only" : "",
       );
+      if (["INPUT", "SELECT", "TEXTAREA"].includes(control.node.tagName)) control.node.setAttribute("aria-label", field.label + (field.required ? " *" : ""));
+      fieldNodes[name].setAttribute("data-vf-field", name);
+      for (const type of ["input", "change"]) fieldNodes[name].addEventListener(type, () => clearFieldError(fieldNodes[name]));
     });
     const formFields = el("div");
     if (premium.layout) premium.layout({ descriptor, record, controls, fieldNodes, body, formFields });
