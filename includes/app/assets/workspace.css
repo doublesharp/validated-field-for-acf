@@ -781,11 +781,14 @@
 .vf-workspace[data-record-editor="panel"] .vf-records th:last-child { z-index: 3; background: #f9fbfd; }
 .vf-workspace[data-record-editor="panel"] .vf-records tbody tr:hover td:last-child { background: #f8faff; }
 .vf-workspace[data-record-editor="panel"] .vf-records tr[data-editing] td:last-child { background: #eaf1ff; }
+.vf-workspace[data-record-editor="panel"] .vf-records :is(th,td):last-child::before { content: ""; position: absolute; top: 0; bottom: 0; right: 100%; width: 24px; pointer-events: none; background: linear-gradient(to right, transparent, #fff); }
+.vf-workspace[data-record-editor="panel"] .vf-records th:last-child::before { background: linear-gradient(to right, transparent, #f9fbfd); }
 .vf-workspace dialog[data-presentation="page"] .vf-field input,
 .vf-workspace dialog[data-presentation="page"] .vf-field select { min-height: 44px; }
 .vf-workspace dialog[data-presentation="page"] .vf-dialog-footer .vf-button { min-height: 44px; padding-inline: 18px; }
 
 @media (max-width: 782px) {
+  .vf-record-actions .vf-button { min-height: 44px; }
   .vf-workspace-tools { position: absolute; }
   .vf-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px 12px; margin-bottom: 18px; }
   .vf-workspace-heading { display: contents; }

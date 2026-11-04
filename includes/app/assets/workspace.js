@@ -288,7 +288,7 @@
     catch (error) { if (ownsDialog()) { pendingDialog = null; throw error; } }
   }
   function canLeaveRecord() {
-    return presentationMode !== "panel" || !$("#vf-dialog").open ||
+    return !recordEditor || !$("#vf-dialog").open ||
       !$("#vf-dialog-body").querySelector('[data-record-dirty="true"]') ||
       window.confirm("Discard the unsaved changes to this record?");
   }
@@ -360,7 +360,7 @@
     setTimeout(
       () => generation === dialogGeneration &&
         $("#vf-dialog-body")
-          .querySelector("input,select,textarea,button")
+          .querySelector(record ? "input,select,textarea" : "input,select,textarea,button")
           ?.focus(),
       0,
     );
